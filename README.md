@@ -1,38 +1,44 @@
 # c64rust
 
+<<<<<<< HEAD
 _USE DEV BRANCH!!!_
 
 This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to 
+=======
+This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to
+>>>>>>> e8e73db (rom/ram differentation and rom init logic)
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
 ## Current state
 
-The emulator is in an early state of development. My current focus is to make MOS6502 instruction set 
-implemented together with correct C64 RAM and ROM emulation. 
+The emulator is in an early state of development. My current focus is to make MOS6502 instruction set
+implemented together with correct C64 RAM and ROM emulation.
 
 ## Features and goals
 
 ### Short-term / realistic goals
 - Complete MOS6510 emulation (with RAM and ROM addressing)
 - Partial VIC II emulation (text mode only)
-- Ability to boot the emulator with binary kernel and succesfully load it
+- Ability to boot the emulator with binary kernel and successfully load it
 
 ### Ambitions
 - Keyboard emulation
-- VIC II graphics
+- VIC II graphics (without sprites and smooth scrolling)
 
 ### Long-term goals
+- Sprites and smooth scrolling
 - Sound
-- Joystic simulation
+- Joystick emulation
 - Cartridge binaries support
 
 ### No-goals
-- Making competitive product to Vice and other well-estiablished emulators.
+- Making competitive product to Vice and other well-established emulators.
+- CRT emulation
 
 ## References
 
-Below there is a list of posts that helped me to gain actual knowledge about C64/MOS6510 architecture 
-and answered many of my questions. 
+Below there is a list of posts that helped me to gain actual knowledge about C64/MOS6510 architecture
+and answered many of my questions.
 
 ### CPU
 #### Instruction set
@@ -45,6 +51,7 @@ and answered many of my questions.
 
 ### Memory
 #### Memory map
+- [Commodore 64 memory map](https://sta.c64.org/cbm64mem.html)
 #### Bank switching
 - [Bank switching on C64 wiki](https://www.c64-wiki.com/wiki/Bank_Switching)
 
