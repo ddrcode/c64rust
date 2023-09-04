@@ -3,9 +3,34 @@
 This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to 
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
+## Current state
+
+The emulator is in an early state of development. My current focus is to make MOS6502 instruction set 
+implemented together with correct C64 RAM and ROM emulation. 
+
+## Features and goals
+
+### Short-term / realistic goals
+- Complete MOS6510 emulation (with RAM and ROM addressing)
+- Partial VIC II emulation (text mode only)
+- Ability to boot the emulator with binary kernel and succesfully load it
+
+### Ambitions
+- Keyboard emulation
+- VIC II graphics
+
+### Long-term goals
+- Sound
+- Joystic simulation
+- Cartridge binaries support
+
+### No-goals
+- Making competitive product to Vice and other well-estiablished emulators.
+
 ## References
 
-Below there is a list of sites that helped me to gain actual knowledge about C64/MOS6510 architecture and answered many of my questions. 
+Below there is a list of posts that helped me to gain actual knowledge about C64/MOS6510 architecture 
+and answered many of my questions. 
 
 ### CPU
 #### Instruction set
