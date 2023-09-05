@@ -23,19 +23,19 @@ pub enum AddressMode {
 impl fmt::Display for AddressMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AddressMode::Implicit => write!(f, "Implicit"),
-            AddressMode::Accumulator => write!(f, "Accumulator"),
-            AddressMode::Immediate => write!(f, "Immediate"),
-            AddressMode::Relative => write!(f, "Relative"),
-            AddressMode::ZeroPage => write!(f, "Zero Page"),
-            AddressMode::ZeroPageX => write!(f, "Zero Page (X)"),
-            AddressMode::ZeroPageY => write!(f, "Zero Page (Y)"),
-            AddressMode::Absolute => write!(f, " Absolute"),
-            AddressMode::AbsoluteX => write!(f, "Absolute X"),
-            AddressMode::AbsoluteY => write!(f, "Absolute Y"),
-            AddressMode::Indirect => write!(f, "Indirect"),
-            AddressMode::IndirectX => write!(f, "Indirect X"),
-            AddressMode::IndirectY => write!(f, "Indirect Y")
+            Implicit => write!(f, "Implicit"),
+            Accumulator => write!(f, "Accumulator"),
+            Immediate => write!(f, "Immediate"),
+            Relative => write!(f, "Relative"),
+            ZeroPage => write!(f, "Zero Page"),
+            ZeroPageX => write!(f, "Zero Page (X)"),
+            ZeroPageY => write!(f, "Zero Page (Y)"),
+            Absolute => write!(f, " Absolute"),
+            AbsoluteX => write!(f, "Absolute X"),
+            AbsoluteY => write!(f, "Absolute Y"),
+            Indirect => write!(f, "Indirect"),
+            IndirectX => write!(f, "Indirect X"),
+            IndirectY => write!(f, "Indirect Y")
         }
     }
 }

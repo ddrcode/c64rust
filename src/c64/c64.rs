@@ -39,47 +39,48 @@ impl C64 {
 
     pub fn next(&mut self) -> bool {
         let def = self.decode_op();
-        self.inc_counter();
+        let operand = self.decode_operand(&def);
+        let address = if let Some(o)=&operand { self.decode_address(&def, &o) } else { None };
         let op = Operation {
             def: def,
-            operand: self.decode_operand(&def),
-            address: None
+            operand: operand,
+            address: address
         };
         (def.function)(&op, self);
         if let Mnemonic::BRK = def.mnemonic { false } else { true }
     }
 
-    fn get_counter(&self) -> u16 {
-        self.cpu.registers.counter
+    fn get_byte_and_inc_pc(&mut self) -> u8 {
+        let val = self.mem.get_byte(self.PC());
+        self.inc_counter();
+        val
     }
 
-    fn get_byte_for_counter(&self) -> u8 {
-        let x = self.mem.get_byte(self.cpu.registers.counter);
-        println!("get byte for counter ({:#06x}): {:#04x}", self.cpu.registers.counter,x);
-        x
+    fn get_word_and_inc_pc(&mut self) -> u16 {
+        let val = self.mem.get_word(self.PC());
+        self.inc_counter();
+        self.inc_counter();
+        val
     }
 
     fn inc_counter(&mut self) {
         self.cpu.registers.counter += 1;
     }
 
-    fn decode_op(&self) -> OperationDef {
-        let addr = self.get_counter();
-        let opcode = self.get_byte_for_counter();
+    fn decode_op(&mut self) -> OperationDef {
+        let opcode = self.get_byte_and_inc_pc();
         match self.cpu.operations.get(&opcode) {
             Some(op) => *op,
-            None => panic!("Opcode {:#04x} not found at address {:#06x}", opcode, addr)
+            None => panic!("Opcode {:#04x} not found at address {:#06x}", opcode, self.PC()-1)
         }
     }
 
     fn decode_operand(&mut self, op: &OperationDef) -> Option<Operand> {
-        match op.address_mode {
-            AddressMode::Implicit => None,
-            _ => {
-                let val = Operand::Byte(self.get_byte_for_counter());
-                self.inc_counter();
-                Some(val)
-            }
+        match op.operand_len() {
+            0 => None,
+            1 => Some(Operand::Byte(self.get_byte_and_inc_pc())),
+            2 => Some(Operand::Word(self.get_word_and_inc_pc())),
+            _ => panic!("Invalid operand length")
         }
     }
 
