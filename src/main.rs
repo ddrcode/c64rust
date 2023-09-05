@@ -24,9 +24,9 @@ fn main() {
     c64.power_on();
     println!("C64 EMU. {} operations implemented", c64.cpu.operations.len());
 
-    c64.load(&[0x69, 0x05, 0x69, 0x07, 0x00], 0x0100);
-    c64.run(0x0100);
-    // c64.run(0xe000); // start KERNAL
+    // c64.load(&[0x69, 0x05, 0x69, 0x07, 0x00], 0x0100);
+    // c64.run(0x0100);
+    c64.run(0xe000); // start KERNAL
 
     println!("Accumulator: {}", c64.cpu.registers.accumulator);
 }

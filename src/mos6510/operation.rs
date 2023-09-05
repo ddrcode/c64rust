@@ -3,16 +3,16 @@ use super::{ OperationDef, Operand, AddressMode::* };
 
 pub struct Operation {
     pub def: OperationDef,
+    pub operand: Option<Operand>,
     pub address: Option<u16>,
-    pub operand: Option<Operand>
 }
 
 impl Operation {
-    pub fn new(def: OperationDef) -> Self {
+    pub fn new(def: OperationDef, operand: Option<Operand>, address: Option<u16>) -> Self {
         Operation {
             def: def,
-            address: None,
-            operand: None
+            operand: operand,
+            address: address,
         }
     }
 }

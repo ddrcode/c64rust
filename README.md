@@ -48,10 +48,13 @@ and answered many of my questions.
 - [The 6502 Status Register: a Guide to Black Magic at 6502.org](http://forum.6502.org/viewtopic.php?f=2&t=6099)
 #### BCD (Binary code decimal)
 - [Decimal Mode by Bruce Clark (at 6502.org)](http://6502.org/tutorials/decimal_mode.html)
+#### Signed/unsigned numbers
+- [More about binary numbers](http://www.emulator101.com/more-about-binary-numbers.html)
 
 ### Memory
 #### Memory map
 - [Commodore 64 memory map](https://sta.c64.org/cbm64mem.html)
+- [C64 Memory Map](https://www.pagetable.com/c64ref/c64mem/)
 #### Bank switching
 - [Bank switching on C64 wiki](https://www.c64-wiki.com/wiki/Bank_Switching)
 
