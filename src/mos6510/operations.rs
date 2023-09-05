@@ -66,7 +66,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0x4d, 4, false, Absolute),
     ]);
 
-    add_group(LDA, op_lda, &[
+    add_group(LDA, op_load, &[
         (0xa9, 2, false, Immediate),
         (0xa5, 3, false, ZeroPage),
         (0xb5, 4, false, ZeroPageX),
@@ -74,8 +74,20 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0xa1, 2, false, IndirectX),
     ]);
 
-    add_group(LDX, op_ldx, &[
-        (0xa2, 2, false, Immediate)
+    add_group(LDX, op_load, &[
+        (0xa2, 2, false, Immediate),
+        (0xa6, 3, false, ZeroPage),
+        (0xb6, 4, false, ZeroPageY),
+        (0xae, 4, false, Absolute),
+        (0xbe, 4, true, AbsoluteY),
+    ]);
+
+    add_group(LDY, op_load, &[
+        (0xa0, 2, false, Immediate),
+        (0xa4, 3, false, ZeroPage),
+        (0xb4, 4, false, ZeroPageX),
+        (0xac, 4, false, Absolute),
+        (0xbc, 4, true, AbsoluteX),
     ]);
 
     add_group(ROL, op_rotate, &[
@@ -106,6 +118,10 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0x85, 3, false, ZeroPage),
         (0x95, 4, false, ZeroPageX),
         (0x8d, 4, false, Absolute),
+        (0x9d, 5, false, AbsoluteX),
+        (0x99, 5, false, AbsoluteY),
+        (0x81, 6, false, IndirectX),
+        (0x91, 6, false, IndirectY),
     ]);
 
     add_group(STX, op_store, &[
@@ -269,16 +285,14 @@ fn op_jsr(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
-fn op_lda(op: &Operation, c64: &mut C64) -> u8 {
+fn op_load(op: &Operation, c64: &mut C64) -> u8 {
     let val = get_val(op, c64).unwrap();
-    c64.cpu.registers.accumulator = val;
-    set_flags("NZ", &[false, val==0], c64); // TODO N flag?
-    op.def.cycles
-}
-
-fn op_ldx(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
-    c64.cpu.registers.x = val;
+    match op.def.mnemonic {
+        LDA => c64.cpu.registers.accumulator = val,
+        LDX => c64.cpu.registers.x = val,
+        LDY => c64.cpu.registers.y = val,
+        _ => panic!("{} is not a load operation", op.def.mnemonic)
+    };
     set_flags("NZ", &[false, val==0], c64); // TODO N flag?
     op.def.cycles
 }
