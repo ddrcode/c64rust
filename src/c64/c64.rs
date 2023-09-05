@@ -1,4 +1,6 @@
-use crate::mos6510::{ MOS6510, Operation, Mnemonic, AddressMode, Operand, ProcessorStatus };
+use crate::mos6510::{
+    MOS6510, Operation, OperationDef, Mnemonic, AddressMode, Operand, ProcessorStatus
+};
 use super::{ Memory };
 
 pub struct C64 {
@@ -36,11 +38,15 @@ impl C64 {
     }
 
     pub fn next(&mut self) -> bool {
-        let op = self.decode_op();
+        let def = self.decode_op();
         self.inc_counter();
-        let operand = self.decode_operand(&op);
-        (op.function)(&op, &operand, self);
-        if let Mnemonic::BRK = op.mnemonic { false } else { true }
+        let op = Operation {
+            def: def,
+            operand: self.decode_operand(&def),
+            address: None
+        };
+        (def.function)(&op, self);
+        if let Mnemonic::BRK = def.mnemonic { false } else { true }
     }
 
     fn get_counter(&self) -> u16 {
@@ -57,7 +63,7 @@ impl C64 {
         self.cpu.registers.counter += 1;
     }
 
-    fn decode_op(&self) -> Operation {
+    fn decode_op(&self) -> OperationDef {
         let addr = self.get_counter();
         let opcode = self.get_byte_for_counter();
         match self.cpu.operations.get(&opcode) {
@@ -66,19 +72,19 @@ impl C64 {
         }
     }
 
-    fn decode_operand(&mut self, op: &Operation) -> Operand {
+    fn decode_operand(&mut self, op: &OperationDef) -> Option<Operand> {
         match op.address_mode {
-            AddressMode::Implicit => Operand::None,
+            AddressMode::Implicit => None,
             _ => {
                 let val = Operand::Byte(self.get_byte_for_counter());
                 self.inc_counter();
-                val
+                Some(val)
             }
         }
     }
 
     // see http://www.emulator101.com/6502-addressing-modes.html
-    fn decode_address(&self, op: &Operation, operand: &Operand) -> Option<u16> {
+    fn decode_address(&self, op: &OperationDef, operand: &Operand) -> Option<u16> {
         match op.address_mode {
             AddressMode::Absolute => operand.get_word(),
             AddressMode::AbsoluteX => Some(operand.get_word().unwrap() + self.X() as u16),
