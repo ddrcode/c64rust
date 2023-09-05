@@ -16,8 +16,8 @@ pub struct OperationDef {
 impl OperationDef {
     pub fn len(&self) -> u8 {
         match self.address_mode {
-            Implicit | Accumulator | Immediate => 1,
-            Relative | ZeroPage | ZeroPageX | ZeroPageY | IndirectX | IndirectY => 2,
+            Implicit | Accumulator => 1,
+            Immediate | Relative | ZeroPage | ZeroPageX | ZeroPageY | IndirectX | IndirectY => 2,
             Absolute | AbsoluteX | AbsoluteY | Indirect => 3
         }
     }

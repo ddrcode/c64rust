@@ -1,5 +1,7 @@
+use std::fmt;
+
 // source: http://6502.org/tutorials/6502opcodes.html
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Mnemonic {
     ADC,
     AND,
@@ -57,5 +59,11 @@ pub enum Mnemonic {
     TXA,
     TXS,
     TYA
+}
+
+impl fmt::Display for Mnemonic {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 

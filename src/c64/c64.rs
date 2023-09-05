@@ -46,8 +46,19 @@ impl C64 {
             operand: operand,
             address: address
         };
+        self.print_op(&op);
         (def.function)(&op, self);
-        if let Mnemonic::BRK = def.mnemonic { false } else { true }
+        if Mnemonic::BRK == def.mnemonic { false } else { true }
+    }
+
+    fn print_op(&self, op: &Operation) {
+        let addr = self.PC() - op.def.len() as u16;
+        let val = match op.def.len() {
+            2 => format!("{:02x}   ", self.mem.get_byte(addr+1)),
+            3 => format!("{:02x} {:02x}", self.mem.get_byte(addr+1), self.mem.get_byte(addr+2)),
+            _ => String::from("     ")
+        };
+        println!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
     }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {
