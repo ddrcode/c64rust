@@ -1,4 +1,4 @@
-use super::{ AddressMode, Operand };
+use super::{ AddressMode, Operation };
 use crate::c64::C64;
 
 // source: http://6502.org/tutorials/6502opcodes.html
@@ -72,10 +72,10 @@ pub enum ProcessorFlag {
     Negative = 7
 }
 
-pub type OpFn = fn(&Operation, &Operand, &mut C64);
+pub type OpFn = fn(&Operation, &mut C64);
 
 #[derive(Copy, Clone)]
-pub struct Operation {
+pub struct OperationDef {
     pub opcode: u8,
     pub mnemonic: Mnemonic,
     pub cycles: u8,
@@ -84,6 +84,4 @@ pub struct Operation {
     pub address_mode: AddressMode,
     pub function: OpFn
 }
-
-
 
