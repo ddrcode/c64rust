@@ -17,12 +17,12 @@ impl C64 {
     }
 
     // registry shortcuts
-    fn A(&self) -> u8 { self.cpu.registers.accumulator }
-    fn X(&self) -> u8 { self.cpu.registers.x }
-    fn Y(&self) -> u8 { self.cpu.registers.y }
-    fn P(&self) -> ProcessorStatus { self.cpu.registers.status }
-    fn PC(&self) -> u16 { self.cpu.registers.counter }
-    fn SC(&self) -> u8 { self.cpu.registers.stack }
+    pub fn A(&self) -> u8 { self.cpu.registers.accumulator }
+    pub fn X(&self) -> u8 { self.cpu.registers.x }
+    pub fn Y(&self) -> u8 { self.cpu.registers.y }
+    pub fn P(&self) -> ProcessorStatus { self.cpu.registers.status }
+    pub fn PC(&self) -> u16 { self.cpu.registers.counter }
+    pub fn SC(&self) -> u8 { self.cpu.registers.stack }
 
     // boot sequence, etc
     pub fn power_on(&mut self) {
@@ -41,11 +41,7 @@ impl C64 {
         let def = self.decode_op();
         let operand = self.decode_operand(&def);
         let address = if let Some(o)=&operand { self.decode_address(&def, &o) } else { None };
-        let op = Operation {
-            def: def,
-            operand: operand,
-            address: address
-        };
+        let op = Operation::new(def, operand, address);
         self.print_op(&op);
         (def.function)(&op, self);
         if Mnemonic::BRK == def.mnemonic { false } else { true }
@@ -103,9 +99,23 @@ impl C64 {
             AddressMode::AbsoluteY => Some(operand.get_word().unwrap() + self.Y() as u16),
             AddressMode::ZeroPage => Some(operand.get_byte().unwrap() as u16),
             AddressMode::ZeroPageX => Some((operand.get_byte().unwrap() + self.X()) as u16),
+            AddressMode::ZeroPageY => Some((operand.get_byte().unwrap() + self.Y()) as u16),
             AddressMode::Indirect => Some(self.mem.get_word(operand.get_word().unwrap())),
+            AddressMode::IndirectX => panic!("Not implemented"),
+            AddressMode::IndirectY => panic!("Not implemented"),
+            AddressMode::Relative => Some(self.PC() + operand.get_byte().unwrap() as u16),
             _ => None
         }
+    }
+
+    pub fn push(&mut self, val: u8) {
+        self.mem.set_byte(0x100+self.SC() as u16, val);
+        self.cpu.registers.stack -= 1;
+    }
+
+    pub fn pop(&mut self) -> u8 {
+        self.cpu.registers.stack += 1;
+        self.mem.get_byte(0x100+self.SC() as u16)
     }
 
     pub fn load(&mut self, progmem: &[u8], addr: u16) {

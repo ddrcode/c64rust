@@ -2,13 +2,13 @@
 // source: https://www.nesdev.org/wiki/Status_flags
 #[derive(Copy, Clone)]
 pub struct ProcessorStatus {
-    carry: bool,
-    zero: bool,
-    interrupt_disable: bool,
-    decimal_mode: bool,
-    break_command: bool,
-    overflow: bool,
-    negative: bool
+    pub carry: bool,
+    pub zero: bool,
+    pub interrupt_disable: bool,
+    pub decimal_mode: bool,
+    pub break_command: bool,
+    pub overflow: bool,
+    pub negative: bool
 }
 
 impl ProcessorStatus {
