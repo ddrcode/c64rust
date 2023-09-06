@@ -13,18 +13,21 @@ pub trait RegSetter<T> {
     fn set_A(self, val: T);
     fn set_X(self, val: T);
     fn set_Y(self, val: T);
+    fn set_SC(self, val: T);
 }
 
 impl RegSetter<u8> for &mut C64 {
     fn set_A(self, val: u8) { self.cpu.registers.accumulator = Wrapping(val); }
     fn set_X(self, val: u8) { self.cpu.registers.x = Wrapping(val); }
     fn set_Y(self, val: u8) { self.cpu.registers.y = Wrapping(val); }
+    fn set_SC(self, val: u8) { self.cpu.registers.stack = Wrapping(val); }
 }
 
 impl RegSetter<Wrapping<u8>> for &mut C64 {
     fn set_A(self, val: Wrapping<u8>) { self.cpu.registers.accumulator = val; }
     fn set_X(self, val: Wrapping<u8>) { self.cpu.registers.x = val; }
     fn set_Y(self, val: Wrapping<u8>) { self.cpu.registers.y = val; }
+    fn set_SC(self, val: Wrapping<u8>) { self.cpu.registers.stack = val; }
 }
 
 impl C64 {
@@ -59,7 +62,10 @@ impl C64 {
     }
 
     pub fn start(&mut self) {
-        while self.next() {}
+        // while self.next() {}
+        for i in 0..4000000 {
+            self.next();
+        }
     }
 
     pub fn next(&mut self) -> bool {
@@ -67,7 +73,7 @@ impl C64 {
         let operand = self.decode_operand(&def);
         let address = if let Some(o)=&operand { self.decode_address(&def, &o) } else { None };
         let op = Operation::new(def, operand, address);
-        self.print_op(&op);
+        // self.print_op(&op);
         (def.function)(&op, self);
         if Mnemonic::BRK == def.mnemonic { false } else { true }
     }
@@ -171,6 +177,59 @@ impl C64 {
     pub fn run(&mut self, addr: u16) {
         self.cpu.registers.counter = addr;
         self.start();
+    }
+
+    // https://c64os.com/post/c64screencodes
+    pub fn screen_code_to_char(&self, sc: &u8) -> char {
+        match if *sc < 128u8 { *sc } else { sc-128 } {
+            0 => '@',
+            1 => 'A',
+            2 => 'B',
+            3 => 'C',
+            4 => 'D',
+            5 => 'E',
+            6 => 'F',
+            7 => 'G',
+            8 => 'H',
+            9 => 'I',
+            10 => 'J',
+            11 => 'K',
+            12 => 'L',
+            13 => 'M',
+            14 => 'N',
+            15 => 'O',
+            16 => 'P',
+            17 => 'Q',
+            18 => 'R',
+            19 => 'S',
+            20 => 'T',
+            21 => 'U',
+            22 => 'V',
+            23 => 'W',
+            24 => 'X',
+            25 => 'Y',
+            26 => 'Z',
+            27 => '[',
+            28 => '#',
+            29 => ']',
+            30 => '?',
+            31 => '?',
+            32 => ' ',
+            _ => '?'
+        }
+    }
+
+    pub fn print_screen(&self) {
+        let mut n = 0;
+        println!();
+        for i in 0x0400..0x07e8 {
+            let sc = self.mem.get_byte(i);
+            let ch = self.screen_code_to_char(&sc);
+            print!("{}", ch);
+            n += 1;
+            if n % 40 == 0 { println!() };
+        }
+        println!();
     }
 
     // utility functions
