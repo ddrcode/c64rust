@@ -2,7 +2,7 @@ use super::{
     Operation, OperationDef, Mnemonic, Mnemonic::*, AddressMode, AddressMode::*, OpFn, OpsMap, Operand,
     ProcessorStatus
 };
-use crate::c64::C64;
+use crate::c64::{ C64, RegSetter };
 
 // sources:
 // https://c64os.com/post/6502instructions
@@ -182,13 +182,13 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 fn get_val(op: &Operation, c64: &C64) -> Option<u8> {
     if let Some(addr) = op.address { Some(c64.mem.get_byte(addr)) }
     else if op.def.address_mode == Immediate { op.operand.as_ref().unwrap().get_byte() }
-    else if op.def.address_mode == Accumulator { Some(c64.A()) }
+    else if op.def.address_mode == Accumulator { Some(c64.A8()) }
     else { None }
 }
 
 fn set_val(val: u8, op: &Operation, c64: &mut C64) {
     if let Some(addr) = op.address { c64.mem.set_byte(addr, val) }
-    else if op.def.address_mode == Accumulator { c64.cpu.registers.accumulator = val }
+    else if op.def.address_mode == Accumulator { c64.set_A(val) }
     else { panic!("Can't set value for address mode {}", op.def.address_mode) };
 }
 
@@ -217,7 +217,7 @@ fn set_flags(flags: &str, vals: &[bool], c64: &mut C64) {
 
 fn op_adc(op: &Operation, c64: &mut C64) -> u8 {
     c64.cpu.registers.accumulator += get_val(op, c64).unwrap();
-    set_flags("NZCV", &[false, c64.A()==0, false, false], c64); // TODO fix C and V
+    set_flags("NZCV", &[false, c64.A8()==0, false, false], c64); // TODO fix C and V
     op.def.cycles
 }
 
@@ -244,7 +244,7 @@ fn op_brk(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 fn op_cmp(op: &Operation, c64: &mut C64) -> u8 {
-    let a = c64.A();
+    let a = c64.A8();
     let val = get_val(op, c64).unwrap();
     // TODO fix N flag: it should be a sign bit of the result
     // TODO check C flag - whether > or >= operator should be used
@@ -254,14 +254,14 @@ fn op_cmp(op: &Operation, c64: &mut C64) -> u8 {
 
 fn op_dex(op: &Operation, c64: &mut C64) -> u8 {
     c64.cpu.registers.x -= 1;
-    set_flags("NZ", &[false, c64.X() == 0], c64); // TODO N flag?
+    set_flags("NZ", &[false, c64.X8() == 0], c64); // TODO N flag?
     op.def.cycles
 }
 
 fn op_eor(op: &Operation, c64: &mut C64) -> u8 {
     let val = get_val(op, c64).unwrap();
     c64.cpu.registers.accumulator ^= val;
-    set_flags("NZ", &[false, c64.X() == 0], c64); // TODO N flag?
+    set_flags("NZ", &[false, c64.X8() == 0], c64); // TODO N flag?
     op.def.cycles
 }
 
@@ -299,9 +299,9 @@ fn op_jsr(op: &Operation, c64: &mut C64) -> u8 {
 fn op_load(op: &Operation, c64: &mut C64) -> u8 {
     let val = get_val(op, c64).unwrap();
     match op.def.mnemonic {
-        LDA => c64.cpu.registers.accumulator = val,
-        LDX => c64.cpu.registers.x = val,
-        LDY => c64.cpu.registers.y = val,
+        LDA => c64.set_A(val),
+        LDX => c64.set_X(val),
+        LDY => c64.set_Y(val),
         _ => panic!("{} is not a load operation", op.def.mnemonic)
     };
     set_flags("NZ", &[false, val==0], c64); // TODO N flag?
@@ -313,13 +313,12 @@ fn op_nop(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 fn op_push(op: &Operation, c64: &mut C64) -> u8 {
-    let addr = 0x0100 | c64.SC() as u16;
     let val = match op.def.mnemonic {
-        PHA => c64.A(),
+        PHA => c64.A8(),
         PHP => u8::from(&c64.P()),
         _ => panic!("{} is not a push operation", op.def.mnemonic)
     };
-    c64.mem.set_byte(addr, val);
+    c64.mem.set_byte(c64.stack_addr(), val);
     c64.cpu.registers.stack -= 1;
     op.def.cycles
 }
@@ -345,16 +344,16 @@ fn op_rts(op: &Operation, c64: &mut C64) -> u8 {
 fn op_sbc(op: &Operation, c64: &mut C64) -> u8 {
     let val = get_val(op, c64).unwrap();
     c64.cpu.registers.accumulator -= val;
-    let a = c64.A();
+    let a = c64.A8();
     set_flags("NZCV", &[a<val, a==0, a<val, false], c64); // TODO N and V flag?
     op.def.cycles
 }
 
 fn op_store(op: &Operation, c64: &mut C64) -> u8 {
     match op.def.mnemonic {
-        STA => store_byte(c64.A(), op, c64),
-        STX => store_byte(c64.X(), op, c64),
-        STY => store_byte(c64.Y(), op, c64),
+        STA => store_byte(c64.A8(), op, c64),
+        STX => store_byte(c64.X8(), op, c64),
+        STY => store_byte(c64.Y8(), op, c64),
         _ => panic!("{} is not a store operation", op.def.mnemonic)
     }
 }
@@ -363,11 +362,11 @@ fn op_transfer(op: &Operation, c64: &mut C64) -> u8 {
     match op.def.mnemonic {
         TAX => c64.cpu.registers.x = c64.A(),
         TAY => c64.cpu.registers.y = c64.A(),
-        TXA => c64.cpu.registers.accumulator = c64.X(),
-        TYA => c64.cpu.registers.accumulator = c64.Y(),
+        TXA => c64.set_A(c64.X()),
+        TYA => c64.set_A(c64.Y()),
         _ => panic!("{} is not a transfer operation", op.def.mnemonic)
     };
-    set_flags("NZ", &[false, c64.A()==0], c64); // TODO N flag?
+    set_flags("NZ", &[false, c64.A().0==0], c64); // TODO N flag?
     op.def.cycles
 }
 
