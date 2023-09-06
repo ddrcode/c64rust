@@ -1,3 +1,4 @@
+use std::num::Wrapping;
 use crate::mos6510::{
     MOS6510, Operation, OperationDef, Mnemonic, AddressMode, Operand, ProcessorStatus
 };
@@ -6,6 +7,24 @@ use super::{ Memory };
 pub struct C64 {
     pub cpu: MOS6510,
     pub mem: Memory
+}
+
+pub trait RegSetter<T> {
+    fn set_A(self, val: T);
+    fn set_X(self, val: T);
+    fn set_Y(self, val: T);
+}
+
+impl RegSetter<u8> for &mut C64 {
+    fn set_A(self, val: u8) { self.cpu.registers.accumulator = Wrapping(val); }
+    fn set_X(self, val: u8) { self.cpu.registers.x = Wrapping(val); }
+    fn set_Y(self, val: u8) { self.cpu.registers.y = Wrapping(val); }
+}
+
+impl RegSetter<Wrapping<u8>> for &mut C64 {
+    fn set_A(self, val: Wrapping<u8>) { self.cpu.registers.accumulator = val; }
+    fn set_X(self, val: Wrapping<u8>) { self.cpu.registers.x = val; }
+    fn set_Y(self, val: Wrapping<u8>) { self.cpu.registers.y = val; }
 }
 
 impl C64 {
@@ -17,12 +36,18 @@ impl C64 {
     }
 
     // registry shortcuts
-    pub fn A(&self) -> u8 { self.cpu.registers.accumulator }
-    pub fn X(&self) -> u8 { self.cpu.registers.x }
-    pub fn Y(&self) -> u8 { self.cpu.registers.y }
+    pub fn A(&self) -> Wrapping<u8> { self.cpu.registers.accumulator }
+    pub fn X(&self) -> Wrapping<u8> { self.cpu.registers.x }
+    pub fn Y(&self) -> Wrapping<u8> { self.cpu.registers.y }
+    pub fn A8(&self) -> u8 { self.cpu.registers.accumulator.0 }
+    pub fn X8(&self) -> u8 { self.cpu.registers.x.0 }
+    pub fn Y8(&self) -> u8 { self.cpu.registers.y.0 }
+    pub fn A16(&self) -> u16 { self.cpu.registers.accumulator.0 as u16 }
+    pub fn X16(&self) -> u16 { self.cpu.registers.x.0 as u16 }
+    pub fn Y16(&self) -> u16 { self.cpu.registers.y.0 as u16 }
     pub fn P(&self) -> ProcessorStatus { self.cpu.registers.status }
     pub fn PC(&self) -> u16 { self.cpu.registers.counter }
-    pub fn SC(&self) -> u8 { self.cpu.registers.stack }
+    pub fn SC(&self) -> Wrapping<u8> { self.cpu.registers.stack }
 
     // boot sequence, etc
     pub fn power_on(&mut self) {
@@ -96,26 +121,26 @@ impl C64 {
         let to_u16 = |a: u8, b: u8| -> (u16, u16) { (a as u16, b as u16) };
         match op.address_mode {
             AddressMode::Absolute => operand.get_word(),
-            AddressMode::AbsoluteX => Some(operand.get_word().unwrap() + self.X() as u16),
-            AddressMode::AbsoluteY => Some(operand.get_word().unwrap() + self.Y() as u16),
+            AddressMode::AbsoluteX => Some(operand.get_word().unwrap() + self.X16()),
+            AddressMode::AbsoluteY => Some(operand.get_word().unwrap() + self.Y16()),
             AddressMode::ZeroPage => Some(operand.get_byte_as_u16().unwrap()),
             AddressMode::ZeroPageX => {
-                let (o, x) = to_u16(operand.get_byte().unwrap(), self.X());
+                let (o, x) = to_u16(operand.get_byte().unwrap(), self.X8());
                 Some((o+x) & 0x00ff)
             },
             AddressMode::ZeroPageY => {
-                let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y());
+                let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y8());
                 Some((o+y) & 0x00ff)
             },
             AddressMode::Indirect => Some(self.mem.get_word(operand.get_word().unwrap())),
             AddressMode::IndirectX => {
-                let (o, x) = to_u16(operand.get_byte().unwrap(), self.X());
+                let (o, x) = to_u16(operand.get_byte().unwrap(), self.X8());
                 let lo = self.mem.get_byte((o+x) & 0x00ff) as u16;
                 let hi = u16::from(self.mem.get_byte((o+x+1) & 0x00ff)) << 8;
                 Some(hi | lo)
             },
             AddressMode::IndirectY => {
-                let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y());
+                let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y8());
                 let lo = self.mem.get_byte(o) as u16;
                 let hi = u16::from(self.mem.get_byte((o+1) & 0x00ff)) << 8;
                 Some((hi | lo) + y)
@@ -130,13 +155,13 @@ impl C64 {
     }
 
     pub fn push(&mut self, val: u8) {
-        self.mem.set_byte(0x100+self.SC() as u16, val);
+        self.mem.set_byte(0x0100 | self.SC().0 as u16, val);
         self.cpu.registers.stack -= 1;
     }
 
     pub fn pop(&mut self) -> u8 {
         self.cpu.registers.stack += 1;
-        self.mem.get_byte(0x100+self.SC() as u16)
+        self.mem.get_byte(0x0100 | self.SC().0 as u16)
     }
 
     pub fn load(&mut self, progmem: &[u8], addr: u16) {
@@ -146,6 +171,13 @@ impl C64 {
     pub fn run(&mut self, addr: u16) {
         self.cpu.registers.counter = addr;
         self.start();
+    }
+
+    // utility functions
+
+    /// Returns current stack memory address
+    pub fn stack_addr(&self) -> u16 {
+        0x0100 | self.SC().0 as u16
     }
 }
 
