@@ -11,7 +11,7 @@ use crate::c64::C64;
 
 pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
     type OpData = (u8, u8, bool, AddressMode);
-    
+
     let mut ops3 = OpsMap::new();
 
     let mut add_op = |mnemonic: Mnemonic, opcode: u8, cycles: u8, boundary: bool, am: AddressMode, opfn: OpFn| {
@@ -90,6 +90,13 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0xbc, 4, true, AbsoluteX),
     ]);
 
+    add_group(NOP, op_nop, &[
+        (0xea, 2, false, Implicit),
+        (0x80, 2, false, Immediate), // illegal
+        (0x04, 3, false, ZeroPage), // illegal
+        (0x34, 4, false, ZeroPageX), // illegal
+    ]);
+
     add_group(ROL, op_rotate, &[
         (0x2a, 2, false, Accumulator),
         (0x26, 5, false, ZeroPage),
@@ -150,8 +157,12 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         &[(CLC, 0x18), (SEC, 0x38), (CLD, 0xd8), (SED, 0xf8), (CLI, 0x58), (SEI, 0x78), (CLV, 0xb8)]);
 
     // transfer (between registers)
-    add_functional_group(2, false, Implicit, op_transfer, 
+    add_functional_group(2, false, Implicit, op_transfer,
         &[(TAX, 0xaa), (TAY, 0xa8), (TXA, 0x8a), (TYA, 0x98)]);
+
+    // stack push
+    add_functional_group(3, false, Implicit, op_push,
+        &[(PHA, 0x48), (PHP, 0x08)]);
 
 
     // jumps and returns
@@ -182,7 +193,7 @@ fn set_val(val: u8, op: &Operation, c64: &mut C64) {
 }
 
 fn store_byte(val: u8, op: &Operation, c64: &mut C64) -> u8 {
-    c64.mem.set_byte(op.address.unwrap(), val); 
+    c64.mem.set_byte(op.address.unwrap(), val);
     op.def.cycles
 }
 
@@ -214,12 +225,12 @@ fn op_branch(op: &Operation, c64: &mut C64) -> u8 {
     let branch: bool = match op.def.mnemonic {
         BCC => !c64.P().carry,
         BCS => c64.P().carry,
-        BNE => !c64.P().zero, 
+        BNE => !c64.P().zero,
         BEQ => c64.P().zero,
         BPL => !c64.P().negative,
         BMI => c64.P().negative,
         _ => panic!("{} is not a branch operation", op.def.mnemonic)
-    }; 
+    };
     if branch {
         c64.cpu.registers.counter = op.address.unwrap();
         return op.def.cycles + 1 // TODO consider page change
@@ -269,8 +280,8 @@ fn op_flag(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 // TODO: JMP doesn't support cross-page
-// For example, JMP ($30FF) will read the vector low byte from $30FF, but it will read the vector 
-// high byte from $3000, NOT from $4000 
+// For example, JMP ($30FF) will read the vector low byte from $30FF, but it will read the vector
+// high byte from $3000, NOT from $4000
 // see JMP on https://c64os.com/post/6502instructions
 fn op_jmp(op: &Operation, c64: &mut C64) -> u8 {
     c64.cpu.registers.counter = op.address.unwrap();
@@ -294,6 +305,22 @@ fn op_load(op: &Operation, c64: &mut C64) -> u8 {
         _ => panic!("{} is not a load operation", op.def.mnemonic)
     };
     set_flags("NZ", &[false, val==0], c64); // TODO N flag?
+    op.def.cycles
+}
+
+fn op_nop(op: &Operation, c64: &mut C64) -> u8 {
+    op.def.cycles
+}
+
+fn op_push(op: &Operation, c64: &mut C64) -> u8 {
+    let addr = 0x0100 | c64.SC() as u16;
+    let val = match op.def.mnemonic {
+        PHA => c64.A(),
+        PHP => u8::from(&c64.P()),
+        _ => panic!("{} is not a push operation", op.def.mnemonic)
+    };
+    c64.mem.set_byte(addr, val);
+    c64.cpu.registers.stack -= 1;
     op.def.cycles
 }
 

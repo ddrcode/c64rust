@@ -93,17 +93,38 @@ impl C64 {
 
     // see http://www.emulator101.com/6502-addressing-modes.html
     fn decode_address(&self, op: &OperationDef, operand: &Operand) -> Option<u16> {
+        let to_u16 = |a: u8, b: u8| -> (u16, u16) { (a as u16, b as u16) };
         match op.address_mode {
             AddressMode::Absolute => operand.get_word(),
             AddressMode::AbsoluteX => Some(operand.get_word().unwrap() + self.X() as u16),
             AddressMode::AbsoluteY => Some(operand.get_word().unwrap() + self.Y() as u16),
-            AddressMode::ZeroPage => Some(operand.get_byte().unwrap() as u16),
-            AddressMode::ZeroPageX => Some((operand.get_byte().unwrap() + self.X()) as u16),
-            AddressMode::ZeroPageY => Some((operand.get_byte().unwrap() + self.Y()) as u16),
+            AddressMode::ZeroPage => Some(operand.get_byte_as_u16().unwrap()),
+            AddressMode::ZeroPageX => {
+                let (o, x) = to_u16(operand.get_byte().unwrap(), self.X());
+                Some((o+x) & 0x00ff)
+            },
+            AddressMode::ZeroPageY => {
+                let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y());
+                Some((o+y) & 0x00ff)
+            },
             AddressMode::Indirect => Some(self.mem.get_word(operand.get_word().unwrap())),
-            AddressMode::IndirectX => panic!("Not implemented"),
-            AddressMode::IndirectY => panic!("Not implemented"),
-            AddressMode::Relative => Some(self.PC() + operand.get_byte().unwrap() as u16),
+            AddressMode::IndirectX => {
+                let (o, x) = to_u16(operand.get_byte().unwrap(), self.X());
+                let lo = self.mem.get_byte((o+x) & 0x00ff) as u16;
+                let hi = u16::from(self.mem.get_byte((o+x+1) & 0x00ff)) << 8;
+                Some(hi | lo)
+            },
+            AddressMode::IndirectY => {
+                let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y());
+                let lo = self.mem.get_byte(o) as u16;
+                let hi = u16::from(self.mem.get_byte((o+1) & 0x00ff)) << 8;
+                Some((hi | lo) + y)
+            },
+            AddressMode::Relative => {
+                //  TODO verify that - o must be signed int (check notation)
+                let (o, pc) = (operand.get_byte().unwrap() as i8, self.PC() as i64);
+                Some(((pc + o as i64) & 0xffff) as u16)
+            },
             _ => None
         }
     }

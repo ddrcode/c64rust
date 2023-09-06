@@ -12,6 +12,10 @@ impl Operand {
         }
     }
 
+    pub fn get_byte_as_u16(&self) -> Option<u16> {
+        if let Some(val)=self.get_byte() { Some(val as u16) } else { None }
+    }
+
     pub fn get_word(&self) -> Option<u16> {
         match self {
             Operand::Word(val) => Some(*val),
