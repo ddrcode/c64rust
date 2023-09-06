@@ -1,3 +1,4 @@
+use std::num::Wrapping;
 use super::{
     Operation, OperationDef, Mnemonic, Mnemonic::*, AddressMode, AddressMode::*, OpFn, OpsMap, Operand,
     ProcessorStatus
@@ -52,26 +53,62 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0x65, 3, false, ZeroPage)
     ]);
 
+    add_group(AND, op_bitwise, &[
+        (0x29, 2, false, Immediate),
+        (0x25, 3, false, ZeroPage),
+        (0x35, 4, false, ZeroPageX),
+        (0x2d, 4, false, Absolute),
+        (0x3d, 4, true, AbsoluteX),
+        (0x39, 4, true, AbsoluteY),
+        (0x21, 6, false, IndirectX),
+        (0x31, 5, true, IndirectY),
+    ]);
+
     add_group(CMP, op_cmp, &[
         (0xc9, 2, false, Immediate),
         (0xc5, 3, false, ZeroPage),
         (0xd5, 4, false, ZeroPageX),
         (0xcd, 4, false, Absolute),
+        (0xdd, 4, true, AbsoluteX),
+        (0xd9, 4, true, AbsoluteY),
+        (0xc1, 6, false, IndirectX),
+        (0xd1, 5, true, IndirectY),
     ]);
 
-    add_group(EOR, op_eor, &[
+    add_group(DEC, op_incdec_mem, &[
+        (0xc6, 5, false, ZeroPage),
+        (0xd6, 6, false, ZeroPageX),
+        (0xce, 6, false, Absolute),
+        (0xde, 7, false, AbsoluteX),
+    ]);
+
+    add_group(EOR, op_bitwise, &[
         (0x49, 2, false, Immediate),
         (0x45, 3, false, ZeroPage),
         (0x55, 4, false, ZeroPageX),
         (0x4d, 4, false, Absolute),
+        (0x5d, 4, true, AbsoluteX),
+        (0x59, 4, true, AbsoluteY),
+        (0x41, 6, false, IndirectX),
+        (0x51, 5, true, IndirectY),
+    ]);
+
+    add_group(INC, op_incdec_mem, &[
+        (0xe6, 5, false, ZeroPage),
+        (0xf6, 6, false, ZeroPageX),
+        (0xee, 6, false, Absolute),
+        (0xfe, 7, false, AbsoluteX),
     ]);
 
     add_group(LDA, op_load, &[
         (0xa9, 2, false, Immediate),
         (0xa5, 3, false, ZeroPage),
         (0xb5, 4, false, ZeroPageX),
-        (0xad, 3, false, Absolute),
-        (0xa1, 2, false, IndirectX),
+        (0xad, 4, false, Absolute),
+        (0xbd, 4, true, AbsoluteX),
+        (0xb9, 4, true, AbsoluteY),
+        (0xa1, 6, false, IndirectX),
+        (0xb1, 5, true, IndirectY),
     ]);
 
     add_group(LDX, op_load, &[
@@ -95,6 +132,17 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0x80, 2, false, Immediate), // illegal
         (0x04, 3, false, ZeroPage), // illegal
         (0x34, 4, false, ZeroPageX), // illegal
+    ]);
+
+    add_group(ORA, op_bitwise, &[
+        (0x09, 2, false, Immediate),
+        (0x05, 3, false, ZeroPage),
+        (0x15, 4, false, ZeroPageX),
+        (0x0d, 4, false, Absolute),
+        (0x1d, 4, true, AbsoluteX),
+        (0x19, 4, true, AbsoluteY),
+        (0x01, 6, false, IndirectX),
+        (0x11, 5, true, IndirectY),
     ]);
 
     add_group(ROL, op_rotate, &[
@@ -158,12 +206,15 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
     // transfer (between registers)
     add_functional_group(2, false, Implicit, op_transfer,
-        &[(TAX, 0xaa), (TAY, 0xa8), (TXA, 0x8a), (TYA, 0x98)]);
+        &[(TAX, 0xaa), (TAY, 0xa8), (TXA, 0x8a), (TYA, 0x98), (TXS, 0x9a), (TSX, 0xba)]);
 
     // stack push
     add_functional_group(3, false, Implicit, op_push,
         &[(PHA, 0x48), (PHP, 0x08)]);
-
+    //
+    // incrementation / decrementation
+    add_functional_group(2, false, Implicit, op_incdec_reg,
+        &[(DEX, 0xca), (DEY, 0x88), (INX, 0xe8), (INY, 0xc8)]);
 
     // jumps and returns
     add_op(JSR, 0x20, 6, false, Absolute, op_jsr);
@@ -171,7 +222,6 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
     // other
     add_op(BRK, 0x00, 7, false, Implicit, op_brk);
-    add_op(DEX, 0xca, 2, false, Implicit, op_dex);
 
     o.extend(ops3);
     o
@@ -243,6 +293,7 @@ fn op_brk(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
+// TODO add cycle for page change
 fn op_cmp(op: &Operation, c64: &mut C64) -> u8 {
     let a = c64.A8();
     let val = get_val(op, c64).unwrap();
@@ -252,16 +303,45 @@ fn op_cmp(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
-fn op_dex(op: &Operation, c64: &mut C64) -> u8 {
-    c64.cpu.registers.x -= 1;
-    set_flags("NZ", &[false, c64.X8() == 0], c64); // TODO N flag?
+fn op_incdec_mem(op: &Operation, c64: &mut C64) -> u8 {
+    let mut val = Wrapping(get_val(op, c64).unwrap());
+    match op.def.mnemonic {
+        DEC => val -= 1,
+        INC => val += 1,
+        _ => panic!("{} is not a inc/dec (mem) operation", op.def.mnemonic)
+    };
+    set_val(val.0, op, c64);
+    set_flags("NZ", &[false, val.0==0], c64); // TODO N flag?
     op.def.cycles
 }
 
-fn op_eor(op: &Operation, c64: &mut C64) -> u8 {
+fn op_incdec_reg(op: &Operation, c64: &mut C64) -> u8 {
+    match op.def.mnemonic {
+        DEX => c64.cpu.registers.x -= 1,
+        DEY => c64.cpu.registers.y -= 1,
+        INX => c64.cpu.registers.x += 1,
+        INY => c64.cpu.registers.y += 1,
+        _ => panic!("{} is not a inc/dec operation", op.def.mnemonic)
+    };
+    let val = match op.def.mnemonic {
+        DEX | INX => c64.X8(),
+        DEY | INY => c64.Y8(),
+        _ => panic!("{} is not a inc/dec operation", op.def.mnemonic)
+    };
+    set_flags("NZ", &[false, val==0], c64); // TODO N flag?
+    op.def.cycles
+}
+
+// TODO add cycle for page change
+fn op_bitwise(op: &Operation, c64: &mut C64) -> u8 {
     let val = get_val(op, c64).unwrap();
-    c64.cpu.registers.accumulator ^= val;
-    set_flags("NZ", &[false, c64.X8() == 0], c64); // TODO N flag?
+    match op.def.mnemonic {
+        AND => c64.cpu.registers.accumulator &= val,
+        ORA => c64.cpu.registers.accumulator |= val,
+        EOR => c64.cpu.registers.accumulator ^= val,
+        _ => panic!("{} is not a bitwise operation", op.def.mnemonic)
+    };
+    set_flags("NZ", &[false, c64.A8() == 0], c64); // TODO N flag?
     op.def.cycles
 }
 
@@ -296,6 +376,7 @@ fn op_jsr(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
+// FIXME add cycle for crossing page boundary
 fn op_load(op: &Operation, c64: &mut C64) -> u8 {
     let val = get_val(op, c64).unwrap();
     match op.def.mnemonic {
@@ -364,9 +445,13 @@ fn op_transfer(op: &Operation, c64: &mut C64) -> u8 {
         TAY => c64.cpu.registers.y = c64.A(),
         TXA => c64.set_A(c64.X()),
         TYA => c64.set_A(c64.Y()),
+        TXS => c64.set_SC(c64.X()),
+        TSX => c64.set_X(c64.SC()),
         _ => panic!("{} is not a transfer operation", op.def.mnemonic)
     };
-    set_flags("NZ", &[false, c64.A().0==0], c64); // TODO N flag?
+    if op.def.mnemonic != TXS { // TXS doesn't change any flag
+        set_flags("NZ", &[false, c64.A().0==0], c64); // TODO N flag?
+    }
     op.def.cycles
 }
 
