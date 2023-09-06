@@ -4,6 +4,11 @@ use crate::mos6510::{
 };
 use super::{ Memory };
 
+// see https://c64os.com/post/c64screencodes
+const SCREEN_CODES: &str = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
+                            -·······························································\
+                            @abcdefghijklmnopqrstuvwxyz[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
+                            -ABCDEFGHIJKLMNOPQRSTUVWXYZ·····································";
 pub struct C64 {
     pub cpu: MOS6510,
     pub mem: Memory
@@ -73,7 +78,7 @@ impl C64 {
         let operand = self.decode_operand(&def);
         let address = if let Some(o)=&operand { self.decode_address(&def, &o) } else { None };
         let op = Operation::new(def, operand, address);
-        // self.print_op(&op);
+        self.print_op(&op);
         (def.function)(&op, self);
         if Mnemonic::BRK == def.mnemonic { false } else { true }
     }
@@ -179,53 +184,13 @@ impl C64 {
         self.start();
     }
 
-    // https://c64os.com/post/c64screencodes
-    pub fn screen_code_to_char(&self, sc: &u8) -> char {
-        match if *sc < 128u8 { *sc } else { sc-128 } {
-            0 => '@',
-            1 => 'A',
-            2 => 'B',
-            3 => 'C',
-            4 => 'D',
-            5 => 'E',
-            6 => 'F',
-            7 => 'G',
-            8 => 'H',
-            9 => 'I',
-            10 => 'J',
-            11 => 'K',
-            12 => 'L',
-            13 => 'M',
-            14 => 'N',
-            15 => 'O',
-            16 => 'P',
-            17 => 'Q',
-            18 => 'R',
-            19 => 'S',
-            20 => 'T',
-            21 => 'U',
-            22 => 'V',
-            23 => 'W',
-            24 => 'X',
-            25 => 'Y',
-            26 => 'Z',
-            27 => '[',
-            28 => '#',
-            29 => ']',
-            30 => '?',
-            31 => '?',
-            32 => ' ',
-            _ => '?'
-        }
-    }
-
     pub fn print_screen(&self) {
+        let chars: Vec<char> = SCREEN_CODES.chars().collect();
         let mut n = 0;
         println!();
         for i in 0x0400..0x07e8 {
-            let sc = self.mem.get_byte(i);
-            let ch = self.screen_code_to_char(&sc);
-            print!("{}", ch);
+            let sc = self.mem.get_byte(i) as usize;
+            print!("{}", chars[sc]);
             n += 1;
             if n % 40 == 0 { println!() };
         }
@@ -244,11 +209,40 @@ impl C64 {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_add() {
+    fn asm_test(prog: &[u8], res: u8, flags: u8) {
         let mut c64 = C64::new();
-        c64.load(&[0x69, 0x05, 0x69, 0x07], 0x0100);
+        c64.cpu.registers.counter = 0x0300;
+        c64.load(prog, 0x0300);
         c64.next();
-        assert_eq!(0x0100, c64.PC());
+        c64.next();
+        assert_eq!(res, c64.A8());
+        assert_eq!(flags, u8::from(&c64.P())); // NV1BDIZC
+    }
+
+    #[test]
+    fn test_adc() {
+        asm_test(&[0xa9, 0x50, 0x69, 0x10], 0x60, 0b00100000);
+        asm_test(&[0xa9, 0x50, 0x69, 0x50], 0xa0, 0b11100000);
+        asm_test(&[0xa9, 0x50, 0x69, 0x90], 0xe0, 0b10100000);
+        asm_test(&[0xa9, 0x50, 0x69, 0xd0], 0x20, 0b00100001);
+        asm_test(&[0xa9, 0xd0, 0x69, 0x10], 0xe0, 0b10100000);
+        asm_test(&[0xa9, 0xd0, 0x69, 0x50], 0x20, 0b00100001);
+        asm_test(&[0xa9, 0xd0, 0x69, 0x90], 0x60, 0b01100001);
+        asm_test(&[0xa9, 0xd0, 0x69, 0xd0], 0xa0, 0b10100001);
+    }
+
+    #[test]
+    fn test_sbc() {
+        asm_test(&[0xa9, 0xf0, 0xe9, 0x07], 0xf0-0x07, 0b10100001);
+        // scenarios from: https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+        asm_test(&[0xa9, 0x50, 0xe9, 0xf0], 0x60, 0b00100000);
+        asm_test(&[0xa9, 0x50, 0xe9, 0xb0], 0xa0, 0b11100000);
+        asm_test(&[0xa9, 0x50, 0xe9, 0x70], 0xe0, 0b10100000);
+        asm_test(&[0xa9, 0x50, 0xe9, 0x30], 0x20, 0b00100001);
+        asm_test(&[0xa9, 0xd0, 0xe9, 0xf0], 0xe0, 0b10100000);
+        asm_test(&[0xa9, 0xd0, 0xe9, 0xb0], 0x20, 0b00100001);
+        asm_test(&[0xa9, 0xd0, 0xe9, 0x70], 0x60, 0b01100001);
+        asm_test(&[0xa9, 0xd0, 0xe9, 0x30], 0xa0, 0b10100001);
     }
 }
+
