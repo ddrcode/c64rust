@@ -64,7 +64,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0x31, 5, true, IndirectY),
     ]);
 
-    add_group(CMP, op_cmp, &[
+    add_group(CMP, op_compare, &[
         (0xc9, 2, false, Immediate),
         (0xc5, 3, false, ZeroPage),
         (0xd5, 4, false, ZeroPageX),
@@ -73,6 +73,18 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0xd9, 4, true, AbsoluteY),
         (0xc1, 6, false, IndirectX),
         (0xd1, 5, true, IndirectY),
+    ]);
+
+    add_group(CPX, op_compare, &[
+        (0xe0, 2, false, Immediate),
+        (0xe4, 3, false, ZeroPage),
+        (0xec, 4, false, Absolute),
+    ]);
+
+    add_group(CPY, op_compare, &[
+        (0xc0, 2, false, Immediate),
+        (0xc4, 3, false, ZeroPage),
+        (0xcc, 4, false, Absolute),
     ]);
 
     add_group(DEC, op_incdec_mem, &[
@@ -227,6 +239,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
     o
 }
 
+// ----------------------------------------------------------------------
 // helpers
 
 fn get_val(op: &Operation, c64: &C64) -> Option<u8> {
@@ -263,11 +276,30 @@ fn set_flags(flags: &str, vals: &[bool], c64: &mut C64) {
     }
 }
 
+fn set_nz_flags(val: u8, c64: &mut C64) {
+    c64.cpu.registers.status.negative = neg(val);
+    c64.cpu.registers.status.zero = zero(val);
+}
+
+fn neg(val: u8) -> bool { val & 0x80 > 0 }
+fn zero(val: u8) -> bool { val == 0 }
+
+// see https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+fn overflow(in1: u8, in2: u8, result: u8) -> bool {
+    ((in1^result) & (in2^result) & 0x80) > 0
+}
+
+// ----------------------------------------------------------------------
 // implementation of operations
 
 fn op_adc(op: &Operation, c64: &mut C64) -> u8 {
-    c64.cpu.registers.accumulator += get_val(op, c64).unwrap();
-    set_flags("NZCV", &[false, c64.A8()==0, false, false], c64); // TODO fix C and V
+    let a = c64.A8();
+    let val = get_val(op, c64).unwrap();
+    let carry = u16::from(c64.P().carry);
+    let sum = c64.A16() + val as u16 + carry;
+    c64.set_A((sum & 0xff) as u8);
+    let res = c64.A8();
+    set_flags("NZCV", &[neg(res), zero(res), sum>0xff, overflow(a, val, res)], c64);
     op.def.cycles
 }
 
@@ -294,12 +326,17 @@ fn op_brk(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 // TODO add cycle for page change
-fn op_cmp(op: &Operation, c64: &mut C64) -> u8 {
-    let a = c64.A8();
+fn op_compare(op: &Operation, c64: &mut C64) -> u8 {
     let val = get_val(op, c64).unwrap();
+    let reg = match op.def.mnemonic {
+        CMP => c64.A8(),
+        CPX => c64.X8(),
+        CPY => c64.Y8(),
+        _ => panic!("{} is not a compare operation", op.def.mnemonic)
+    };
     // TODO fix N flag: it should be a sign bit of the result
     // TODO check C flag - whether > or >= operator should be used
-    set_flags("NZC", &[false, a==val, a > val], c64);
+    set_flags("NZC", &[false, reg==val, reg >= val], c64);
     op.def.cycles
 }
 
@@ -311,7 +348,7 @@ fn op_incdec_mem(op: &Operation, c64: &mut C64) -> u8 {
         _ => panic!("{} is not a inc/dec (mem) operation", op.def.mnemonic)
     };
     set_val(val.0, op, c64);
-    set_flags("NZ", &[false, val.0==0], c64); // TODO N flag?
+    set_nz_flags(val.0, c64);
     op.def.cycles
 }
 
@@ -328,7 +365,7 @@ fn op_incdec_reg(op: &Operation, c64: &mut C64) -> u8 {
         DEY | INY => c64.Y8(),
         _ => panic!("{} is not a inc/dec operation", op.def.mnemonic)
     };
-    set_flags("NZ", &[false, val==0], c64); // TODO N flag?
+    set_nz_flags(val, c64);
     op.def.cycles
 }
 
@@ -341,7 +378,7 @@ fn op_bitwise(op: &Operation, c64: &mut C64) -> u8 {
         EOR => c64.cpu.registers.accumulator ^= val,
         _ => panic!("{} is not a bitwise operation", op.def.mnemonic)
     };
-    set_flags("NZ", &[false, c64.A8() == 0], c64); // TODO N flag?
+    set_nz_flags(c64.A8(), c64);
     op.def.cycles
 }
 
@@ -385,7 +422,7 @@ fn op_load(op: &Operation, c64: &mut C64) -> u8 {
         LDY => c64.set_Y(val),
         _ => panic!("{} is not a load operation", op.def.mnemonic)
     };
-    set_flags("NZ", &[false, val==0], c64); // TODO N flag?
+    set_nz_flags(val, c64);
     op.def.cycles
 }
 
@@ -422,11 +459,16 @@ fn op_rts(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
+// https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+// http://retro.hansotten.nl/uploads/mag6502/sbc_tsx_txs_instructions.pdf
 fn op_sbc(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
-    c64.cpu.registers.accumulator -= val;
     let a = c64.A8();
-    set_flags("NZCV", &[a<val, a==0, a<val, false], c64); // TODO N and V flag?
+    let val = get_val(op, c64).unwrap();
+    let carry = u16::from(!c64.P().carry);
+    let sum = c64.A16() + (!val) as u16 + carry;
+    c64.set_A((sum & 0xff) as u8);
+    let res = c64.A8();
+    set_flags("NZCV", &[neg(res), zero(res), sum>0xff, overflow(a, !val, res)], c64);
     op.def.cycles
 }
 
@@ -450,8 +492,18 @@ fn op_transfer(op: &Operation, c64: &mut C64) -> u8 {
         _ => panic!("{} is not a transfer operation", op.def.mnemonic)
     };
     if op.def.mnemonic != TXS { // TXS doesn't change any flag
-        set_flags("NZ", &[false, c64.A().0==0], c64); // TODO N flag?
+        set_nz_flags(c64.A8(), c64);
     }
     op.def.cycles
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_utils() {
+        assert!(neg(0x80));
+        assert!(zero(0));
+    }
+}
