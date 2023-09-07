@@ -605,7 +605,7 @@ fn op_jmp(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 fn op_jsr(op: &Operation, c64: &mut C64) -> u8 {
-    let pc = c64.PC();
+    let pc = c64.PC().wrapping_sub(1);
     c64.push((pc >> 8) as u8);
     c64.push((pc & 0x00ff) as u8);
     c64.cpu.registers.counter = op.address.unwrap();
@@ -671,7 +671,7 @@ fn op_rotate(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 fn op_rts(op: &Operation, c64: &mut C64) -> u8 {
-    c64.cpu.registers.counter = (c64.pop() as u16 | (c64.pop() as u16) << 8) as u16;
+    c64.cpu.registers.counter = (c64.pop() as u16 | (c64.pop() as u16) << 8).wrapping_add(1);
     op.def.cycles
 }
 
