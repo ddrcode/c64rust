@@ -599,10 +599,6 @@ fn op_flag(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
-// TODO: JMP doesn't support cross-page
-// For example, JMP ($30FF) will read the vector low byte from $30FF, but it will read the vector
-// high byte from $3000, NOT from $4000
-// see JMP on https://c64os.com/post/6502instructions
 fn op_jmp(op: &Operation, c64: &mut C64) -> u8 {
     c64.cpu.registers.counter = op.address.unwrap();
     op.def.cycles

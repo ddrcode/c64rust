@@ -202,6 +202,7 @@ impl C64 {
     }
 
     // see http://www.emulator101.com/6502-addressing-modes.html
+    // for indireact see JMP instruction on https://c64os.com/post/6502instructions
     fn decode_address(&self, op: &OperationDef, operand: &Operand) -> Option<u16> {
         let to_u16 = |a: u8, b: u8| -> (u16, u16) { (a as u16, b as u16) };
         match op.address_mode {
@@ -217,7 +218,12 @@ impl C64 {
                 let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y8());
                 Some((o + y) & 0x00ff)
             }
-            AddressMode::Indirect => Some(self.mem.get_word(operand.get_word().unwrap())),
+            AddressMode::Indirect => {
+                let addr = operand.get_word().unwrap();
+                let addr2 = (addr & 0xff00) | ((addr+1) & 0x00ff); // page change not allowed!
+                let (lo, hi) = to_u16(self.mem.get_byte(addr), self.mem.get_byte(addr2));
+                Some(lo | hi << 8)
+            }
             AddressMode::IndirectX => {
                 let (o, x) = to_u16(operand.get_byte().unwrap(), self.X8());
                 let lo = self.mem.get_byte((o + x) & 0x00ff) as u16;
