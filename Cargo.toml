@@ -1,5 +1,6 @@
 [package]
 name = "c64emu"
+description = "DDR's Commodore 64 emulator"
 version = "0.1.0"
 edition = "2021"
 
