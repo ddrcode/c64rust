@@ -50,7 +50,13 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
     add_group(ADC, op_adc, &[
         (0x69, 2, false, Immediate),
-        (0x65, 3, false, ZeroPage)
+        (0x65, 3, false, ZeroPage),
+        (0x75, 4, false, ZeroPageX),
+        (0x6d, 4, false, Absolute),
+        (0x7d, 4, true, AbsoluteX),
+        (0x79, 4, true, AbsoluteY),
+        (0x61, 6, false, IndirectX),
+        (0x71, 5, true, IndirectY),
     ]);
 
     add_group(AND, op_bitwise, &[
@@ -62,6 +68,19 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0x39, 4, true, AbsoluteY),
         (0x21, 6, false, IndirectX),
         (0x31, 5, true, IndirectY),
+    ]);
+
+    add_group(ASL, op_shift, &[
+        (0x0a, 2, false, Accumulator),
+        (0x06, 5, false, ZeroPage),
+        (0x16, 6, false, ZeroPageX),
+        (0x0e, 6, false, Absolute),
+        (0x1e, 7, false, AbsoluteX),
+    ]);
+
+    add_group(BIT, op_bit, &[
+        (0x24, 3, false, ZeroPage),
+        (0x2c, 4, false, Absolute)
     ]);
 
     add_group(CMP, op_compare, &[
@@ -137,6 +156,14 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
         (0xb4, 4, false, ZeroPageX),
         (0xac, 4, false, Absolute),
         (0xbc, 4, true, AbsoluteX),
+    ]);
+
+    add_group(LSR, op_shift, &[
+        (0x4a, 2, false, Accumulator),
+        (0x46, 5, false, ZeroPage),
+        (0x56, 6, false, ZeroPageX),
+        (0x4e, 6, false, Absolute),
+        (0x5e, 7, false, AbsoluteX),
     ]);
 
     add_group(NOP, op_nop, &[
@@ -294,6 +321,7 @@ fn overflow(in1: u8, in2: u8, result: u8) -> bool {
 // ----------------------------------------------------------------------
 // implementation of operations
 
+// TODO compute cycles for page cross
 fn op_adc(op: &Operation, c64: &mut C64) -> u8 {
     let a = c64.A8();
     let val = get_val(op, c64).unwrap();
@@ -302,6 +330,12 @@ fn op_adc(op: &Operation, c64: &mut C64) -> u8 {
     c64.set_A((sum & 0xff) as u8);
     let res = c64.A8();
     set_flags("NZCV", &[neg(res), zero(res), sum>0xff, overflow(a, val, res)], c64);
+    op.def.cycles
+}
+
+fn op_bit(op: &Operation, c64: &mut C64) -> u8 {
+    let val = get_val(op, c64).unwrap();
+    set_flags("NZV", &[neg(val), zero(val & c64.A8()), val & 0b01000000 > 0], c64);
     op.def.cycles
 }
 
@@ -336,9 +370,10 @@ fn op_compare(op: &Operation, c64: &mut C64) -> u8 {
         CPY => c64.Y8(),
         _ => panic!("{} is not a compare operation", op.def.mnemonic)
     };
-    // TODO fix N flag: it should be a sign bit of the result
+    let diff = (Wrapping(reg) - Wrapping(val)).0;
     // TODO check C flag - whether > or >= operator should be used
-    set_flags("NZC", &[false, reg==val, reg >= val], c64);
+    // N flag: http://6502.org/tutorials/compare_instructions.html
+    set_flags("NZC", &[neg(diff), reg==val, reg >= val], c64);
     op.def.cycles
 }
 
@@ -484,6 +519,18 @@ fn op_sbc(op: &Operation, c64: &mut C64) -> u8 {
     c64.set_A((sum & 0xff) as u8);
     let res = c64.A8();
     set_flags("NZCV", &[neg(res), zero(res), sum>0xff, overflow(a, !val, res)], c64);
+    op.def.cycles
+}
+
+fn op_shift(op: &Operation, c64: &mut C64) -> u8 {
+    let val = get_val(op, c64).unwrap();
+    let (res, carry) = match op.def.mnemonic {
+        ASL => ((Wrapping(val) << 1).0, val & 0b10000000 > 0),
+        LSR => (val >> 1, val & 1 > 0),
+        _ => panic!("{} is not a shift operation", op.def.mnemonic)
+    };
+    set_val(res, op, c64);
+    set_flags("NZC", &[neg(res), zero(res), carry], c64);
     op.def.cycles
 }
 
