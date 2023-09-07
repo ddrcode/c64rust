@@ -1,5 +1,7 @@
 # c64rust
 
+_USE DEV BRANCH!!!_
+
 This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
@@ -110,7 +112,10 @@ and answered many of my questions.
 - [Internals of BRK/IRQ/NMI/RESET on a MOS 6502 by Michael Steil](https://www.pagetable.com/?p=410)
 
 ### Page boundaries
+<<<<<<< HEAD
 
+=======
+>>>>>>> dab5b65 (fixed indirect adressing mode)
 - [Page Boundaries](http://forum.6502.org/viewtopic.php?t=469)
 
 ### VIC II
