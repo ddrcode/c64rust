@@ -5,7 +5,6 @@ use std::fs::File;
 use std::io::Read;
 
 mod c64;
-mod machine;
 mod mos6510;
 
 #[cfg(test)]
@@ -28,8 +27,6 @@ fn main() {
     c64.mem.init_rom(&rom[..]);
     c64.power_on();
 
-    // c64.load(&[0x69, 0x05, 0x69, 0x07, 0x00], 0x0100);
-    // c64.run(0x0100);
     c64.run(0xfce2); // start KERNAL
     c64.print_screen();
 }
