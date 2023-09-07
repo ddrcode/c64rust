@@ -1,6 +1,6 @@
 use std::num::Wrapping;
 use super::{
-    Operation, OperationDef, Mnemonic, Mnemonic::*, AddressMode, AddressMode::*, OpFn, OpsMap, Operand,
+    Operation, OperationDef, Mnemonic, Mnemonic::*, AddressMode, AddressMode::*, OpFn, OpsMap,
     ProcessorStatus
 };
 use crate::c64::{ C64, RegSetter };
@@ -463,7 +463,7 @@ fn op_load(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
-fn op_nop(op: &Operation, c64: &mut C64) -> u8 {
+fn op_nop(op: &Operation, _c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
