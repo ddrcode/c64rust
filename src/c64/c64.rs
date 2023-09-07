@@ -64,11 +64,21 @@ impl C64 {
         self.mem.set_byte(0x0001, 0x37);
         self.mem.set_word(0x0003, 0xb1aa);
         self.mem.set_word(0x0005, 0xb391);
+
+        // graphics register
+        // https://www.c64-wiki.com/wiki/53265
+        self.mem.set_byte(0xd011, 0b00011000);
+
+        // https://stackoverflow.com/questions/18811244/waiting-for-a-change-on-d012-c64-assembler
+        // https://codebase64.org/doku.php?id=base:double_irq_explained
+        self.mem.set_byte(0xd012, 0b11000001);
     }
 
     pub fn start(&mut self) {
         // while self.next() {}
         for i in 0..4000000 {
+            // if self.PC()==0xff61 { break; }
+            self.mem.set_byte(0xd012, (i%255)as u8);
             self.next();
         }
     }

@@ -234,6 +234,8 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
     // other
     add_op(BRK, 0x00, 7, false, Implicit, op_brk);
+    add_op(PLA, 0x68, 4, false, Implicit, op_pla);
+    add_op(PLA, 0x28, 4, false, Implicit, op_plc);
 
     o.extend(ops3);
     o
@@ -427,6 +429,19 @@ fn op_load(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 fn op_nop(op: &Operation, c64: &mut C64) -> u8 {
+    op.def.cycles
+}
+
+fn op_pla(op: &Operation, c64: &mut C64) -> u8 {
+    let val = c64.pop();
+    c64.set_A(val);
+    set_nz_flags(val, c64);
+    op.def.cycles
+}
+
+fn op_plc(op: &Operation, c64: &mut C64) -> u8 {
+    let val = c64.pop();
+    c64.cpu.registers.status = ProcessorStatus::from(val);
     op.def.cycles
 }
 
