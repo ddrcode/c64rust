@@ -2,16 +2,12 @@ use std::num::Wrapping;
 use crate::mos6510::{
     MOS6510, Operation, OperationDef, Mnemonic, AddressMode, Operand, ProcessorStatus
 };
-use super::{ Memory };
+use super::{ Memory, VIC_II };
 
-// see https://c64os.com/post/c64screencodes
-const SCREEN_CODES: &str = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-                            -·······························································\
-                            @abcdefghijklmnopqrstuvwxyz[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-                            -ABCDEFGHIJKLMNOPQRSTUVWXYZ·····································";
 pub struct C64 {
     pub cpu: MOS6510,
-    pub mem: Memory
+    pub mem: Memory,
+    pub gpu: VIC_II
 }
 
 pub trait RegSetter<T> {
@@ -39,7 +35,8 @@ impl C64 {
     pub fn new() -> Self {
         C64 {
             cpu: MOS6510::new(),
-            mem: Memory::new(None),
+            mem: Memory::new(),
+            gpu: VIC_II {}
         }
     }
 
@@ -203,16 +200,7 @@ impl C64 {
     }
 
     pub fn print_screen(&self) {
-        let chars: Vec<char> = SCREEN_CODES.chars().collect();
-        let mut n = 0;
-        println!();
-        for i in 0x0400..0x07e8 {
-            let sc = self.mem.get_byte(i) as usize;
-            print!("{}", chars[sc]);
-            n += 1;
-            if n % 40 == 0 { println!() };
-        }
-        println!();
+        self.gpu.print_screen(&self.mem);
     }
 
     // utility functions
