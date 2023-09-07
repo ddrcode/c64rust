@@ -1,18 +1,8 @@
 use crate::c64::*;
-
-fn asm_test(prog: &[u8], res: u8, flags: u8) {
-    let mut c64 = C64::new();
-    c64.cpu.registers.counter = 0x0300;
-    c64.load(prog, 0x0300);
-    while c64.next() {};
-    assert_eq!(res, c64.A8(), "Expecting result to be {:2x}", res);
-    let res_flags = u8::from(&c64.P()) & !0b100u8; // clear IRQ flag after BRK
-    assert_eq!(flags, res_flags, "Expecting flags to be {:b} but found {:b}", flags, res_flags);
-    // NV1BDIZC
-}
+use super::asm_test;
 
 #[test]
-fn test_adc() {
+fn test_adc() { //                              NV1BDIZC
     asm_test(&[0xa9, 0x50, 0x69, 0x10], 0x60, 0b00100000);
     asm_test(&[0xa9, 0x50, 0x69, 0x50], 0xa0, 0b11100000);
     asm_test(&[0xa9, 0x50, 0x69, 0x90], 0xe0, 0b10100000);
@@ -26,7 +16,9 @@ fn test_adc() {
 #[test]
 fn test_sbc() {
     asm_test(&[0xa9, 0xf0, 0xe9, 0x07], 0xf0-0x07, 0b10100001);
+
     // scenarios from: https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+    //                                          NV1BDIZC
     asm_test(&[0xa9, 0x50, 0xe9, 0xf0], 0x60, 0b00100000);
     asm_test(&[0xa9, 0x50, 0xe9, 0xb0], 0xa0, 0b11100000);
     asm_test(&[0xa9, 0x50, 0xe9, 0x70], 0xe0, 0b10100000);
