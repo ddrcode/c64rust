@@ -1,4 +1,4 @@
-use super::{ Mnemonic, AddressMode, AddressMode::*, Operation };
+use super::{AddressMode, AddressMode::*, Mnemonic, Operation};
 use crate::c64::C64;
 
 pub type OpFn = fn(&Operation, &mut C64) -> u8;
@@ -10,7 +10,7 @@ pub struct OperationDef {
     pub cycles: u8,
     pub page_boundary_cycle: bool,
     pub address_mode: AddressMode,
-    pub function: OpFn
+    pub function: OpFn,
 }
 
 impl OperationDef {
@@ -18,7 +18,7 @@ impl OperationDef {
         match self.address_mode {
             Implicit | Accumulator => 1,
             Immediate | Relative | ZeroPage | ZeroPageX | ZeroPageY | IndirectX | IndirectY => 2,
-            Absolute | AbsoluteX | AbsoluteY | Indirect => 3
+            Absolute | AbsoluteX | AbsoluteY | Indirect => 3,
         }
     }
 

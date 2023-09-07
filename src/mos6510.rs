@@ -1,25 +1,25 @@
-mod mnemonic;
-mod operations;
-mod registers;
-mod processor_status;
 mod address_mode;
 mod cpu;
+mod mnemonic;
 mod operand;
-mod operation_def;
 mod operation;
+mod operation_def;
+mod operations;
+mod processor_status;
+mod registers;
 
 use std::collections::HashMap;
 
 pub use {
-    mnemonic::Mnemonic,
-    registers::Registers,
-    operations::define_operations,
-    processor_status::ProcessorStatus,
     address_mode::AddressMode,
     cpu::MOS6510,
+    mnemonic::Mnemonic,
     operand::Operand,
-    operation_def::{ OperationDef, OpFn },
-    operation::Operation
+    operation::Operation,
+    operation_def::{OpFn, OperationDef},
+    operations::define_operations,
+    processor_status::ProcessorStatus,
+    registers::Registers,
 };
 
 pub type OpsMap = HashMap<u8, OperationDef>;

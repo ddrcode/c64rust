@@ -58,7 +58,7 @@ pub enum Mnemonic {
     TSX,
     TXA,
     TXS,
-    TYA
+    TYA,
 }
 
 impl fmt::Display for Mnemonic {
@@ -66,4 +66,3 @@ impl fmt::Display for Mnemonic {
         write!(f, "{:?}", self)
     }
 }
-

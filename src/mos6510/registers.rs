@@ -1,5 +1,5 @@
+use super::ProcessorStatus;
 use std::num::Wrapping;
-use super::{ ProcessorStatus };
 
 pub struct Registers {
     pub counter: u16,
@@ -7,7 +7,7 @@ pub struct Registers {
     pub accumulator: Wrapping<u8>,
     pub x: Wrapping<u8>,
     pub y: Wrapping<u8>,
-    pub status: ProcessorStatus
+    pub status: ProcessorStatus,
 }
 
 impl Registers {
@@ -19,7 +19,7 @@ impl Registers {
             accumulator: Wrapping(0),
             x: Wrapping(0),
             y: Wrapping(0),
-            status: ProcessorStatus::new()
+            status: ProcessorStatus::new(),
         }
     }
 }
