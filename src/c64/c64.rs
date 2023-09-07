@@ -65,6 +65,14 @@ impl C64 {
         self.mem.set_word(0x0003, 0xb1aa);
         self.mem.set_word(0x0005, 0xb391);
 
+        // Location where BASIC program text is stored
+        // https://www.pagetable.com/c64ref/c64mem/#002C
+        self.mem.set_word(0x002b, 0x0801);
+
+        // Highest address available to BASIC
+        // see https://www.pagetable.com/c64ref/c64mem/#0037
+        self.mem.set_word(0x0037, 0xa000);
+
         // graphics register
         // https://www.c64-wiki.com/wiki/53265
         self.mem.set_byte(0xd011, 0b00011000);
@@ -77,9 +85,9 @@ impl C64 {
     pub fn start(&mut self) {
         // while self.next() {}
         for i in 0..4000000 {
-            // if self.PC()==0xff61 { break; }
+            if self.PC()==0xe5cf { break; }
             self.mem.set_byte(0xd012, (i%255)as u8);
-            self.next();
+            if !self.next() { break };
         }
     }
 
@@ -90,7 +98,7 @@ impl C64 {
         let op = Operation::new(def, operand, address);
         self.print_op(&op);
         (def.function)(&op, self);
-        if Mnemonic::BRK == def.mnemonic { false } else { true }
+        Mnemonic::BRK != def.mnemonic
     }
 
     fn print_op(&self, op: &Operation) {
