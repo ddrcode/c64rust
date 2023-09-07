@@ -85,6 +85,7 @@ impl C64 {
         // while self.next() {}
         for i in 0..4000000 {
             if self.PC()==0xe5cf { break; }
+            // it simulates line drawing (to avoid infinite loop waiting for next line)
             self.mem.set_byte(0xd012, (i%255)as u8);
             if !self.next() { break };
         }
