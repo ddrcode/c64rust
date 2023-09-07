@@ -40,7 +40,10 @@ impl VIC_II {
         print!("{}", "  ".on_truecolor(0x6c, 0x5e, 0xb5));
         for i in 0x0400..0x07e8 {
             let sc = mem.get_byte(i) as usize;
-            print!("{}", format!("{}", chars[sc]).on_truecolor(0x35, 0x28, 0x79));
+            print!(
+                "{}",
+                format!("{}", chars[sc]).on_truecolor(0x35, 0x28, 0x79)
+            );
             n += 1;
             if n % 40 == 0 {
                 print!("{}", "  ".on_truecolor(0x6c, 0x5e, 0xb5));
@@ -52,4 +55,3 @@ impl VIC_II {
         println!("              ");
     }
 }
-

@@ -1,12 +1,12 @@
 extern crate colored;
 
+use std::env;
 use std::fs::File;
 use std::io::Read;
-use std::env;
 
-mod mos6510;
 mod c64;
 mod machine;
+mod mos6510;
 
 #[cfg(test)]
 mod tests;

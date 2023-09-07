@@ -1,8 +1,9 @@
-use crate::c64::*;
 use super::asm_test;
+use crate::c64::*;
 
 #[test]
-fn test_adc() { //                              NV1BDIZC
+fn test_adc() {
+    //                              NV1BDIZC
     asm_test(&[0xa9, 0x50, 0x69, 0x10], 0x60, 0b00110000);
     asm_test(&[0xa9, 0x50, 0x69, 0x50], 0xa0, 0b11110000);
     asm_test(&[0xa9, 0x50, 0x69, 0x90], 0xe0, 0b10110000);
@@ -15,7 +16,7 @@ fn test_adc() { //                              NV1BDIZC
 
 #[test]
 fn test_sbc() {
-    asm_test(&[0xa9, 0xf0, 0xe9, 0x07], 0xf0-0x07, 0b10110001);
+    asm_test(&[0xa9, 0xf0, 0xe9, 0x07], 0xf0 - 0x07, 0b10110001);
 
     // scenarios from: https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
     //                                          NV1BDIZC
@@ -28,4 +29,3 @@ fn test_sbc() {
     asm_test(&[0xa9, 0xd0, 0xe9, 0x70], 0x60, 0b01110001);
     asm_test(&[0xa9, 0xd0, 0xe9, 0x30], 0xa0, 0b10110001);
 }
-

@@ -1,8 +1,8 @@
-use super::{ Registers, define_operations, OpsMap };
+use super::{define_operations, OpsMap, Registers};
 
 pub struct MOS6510 {
     pub registers: Registers,
-    pub operations: OpsMap
+    pub operations: OpsMap,
 }
 
 impl MOS6510 {
@@ -12,7 +12,7 @@ impl MOS6510 {
 
         MOS6510 {
             registers: Registers::new(),
-            operations: operations
+            operations: operations,
         }
     }
 }

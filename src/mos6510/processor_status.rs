@@ -8,7 +8,7 @@ pub struct ProcessorStatus {
     pub decimal_mode: bool,
     pub break_command: bool,
     pub overflow: bool,
-    pub negative: bool
+    pub negative: bool,
 }
 
 impl ProcessorStatus {
@@ -20,7 +20,7 @@ impl ProcessorStatus {
             decimal_mode: false,
             break_command: false,
             overflow: false,
-            negative: false
+            negative: false,
         }
     }
 }
@@ -28,26 +28,26 @@ impl ProcessorStatus {
 impl From<&ProcessorStatus> for u8 {
     fn from(status: &ProcessorStatus) -> Self {
         status.carry as u8
-        | bool_to_bit(&status.zero, 1)
-        | (status.interrupt_disable as u8) << 2 
-        | (status.decimal_mode as u8) << 3 
-        | (status.break_command as u8) << 4 
-        | 1 << 5 
-        | (status.overflow as u8) << 6 
-        | (status.negative as u8) << 7 
+            | bool_to_bit(&status.zero, 1)
+            | (status.interrupt_disable as u8) << 2
+            | (status.decimal_mode as u8) << 3
+            | (status.break_command as u8) << 4
+            | 1 << 5
+            | (status.overflow as u8) << 6
+            | (status.negative as u8) << 7
     }
 }
 
 fn bool_to_bit(val: &bool, bit: u8) -> u8 {
     if bit > 7 {
-        panic!("illegal shift: shifting value by {} bits", bit); 
+        panic!("illegal shift: shifting value by {} bits", bit);
     }
     (*val as u8) << bit
 }
 
 fn bit_to_bool(val: &u8, bit: u8) -> bool {
     if bit > 7 {
-        panic!("illegal shift: shifting value by {} bits", bit); 
+        panic!("illegal shift: shifting value by {} bits", bit);
     }
     (*val & (1 << bit)) > 0
 }
@@ -84,8 +84,8 @@ mod tests {
 
     #[test]
     fn test_status_from_u8() {
-        let val = | x: u8 | -> u8 { u8::from(&ProcessorStatus::from(x)) };
-        let assert = | x: u8 | assert_eq!(x, val(x)); 
+        let val = |x: u8| -> u8 { u8::from(&ProcessorStatus::from(x)) };
+        let assert = |x: u8| assert_eq!(x, val(x));
         assert(0b00100000);
         assert(0b00100001);
         assert(0b00100010);
@@ -96,5 +96,3 @@ mod tests {
         assert(0b10100000);
     }
 }
-
-

@@ -1,8 +1,9 @@
-use crate::c64::*;
 use super::asm_test;
+use crate::c64::*;
 
 #[test]
-fn test_cmp() { //                              NV1BDIZC
+fn test_cmp() {
+    //                              NV1BDIZC
     asm_test(&[0xa9, 0x44, 0xc9, 0x44], 0x44, 0b00110011);
     asm_test(&[0xa9, 0x44, 0xc9, 0x04], 0x44, 0b00110001);
     asm_test(&[0xa9, 0x44, 0xc9, 0xf4], 0x44, 0b00110000);
