@@ -6,7 +6,6 @@ pub fn asm_test(prog: &[u8], res: u8, flags: u8) {
     c64.load(prog, 0x0300);
     while c64.next() {};
     assert_eq!(res, c64.A8(), "Expecting result to be {:2x}", res);
-    let res_flags = u8::from(&c64.P()) & !0b100u8; // clear IRQ flag after BRK
+    let res_flags = u8::from(&c64.P());
     assert_eq!(flags, res_flags, "Expecting flags to be {:b} but found {:b}", flags, res_flags);
-    // NV1BDIZC
 }

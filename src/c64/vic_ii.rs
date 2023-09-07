@@ -3,6 +3,26 @@
 use super::*;
 use colored::*;
 
+/*
+ * RGB values of C64 colours
+ * #000000 black
+ * #FFFFFF white
+ * #68372B red
+ * #70A4B2 light blue
+ * #6F3D86 purple
+ * #588D43 green
+ * #352879 dark blue
+ * #B8C76F yellow
+ * #6F4F25 brown
+ * #433900 dark brown
+ * #9A6759 light red
+ * #444444 dark grey
+ * #6C6C6C mid grey
+ * #9AD284 light green
+ * #6C5EB5 mid blue
+ * #959595 light grey
+ */
+
 // see https://c64os.com/post/c64screencodes
 const SCREEN_CODES: &str = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
                             -·······························································\

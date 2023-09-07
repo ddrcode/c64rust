@@ -237,7 +237,8 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
     // branching
     add_functional_group(2, true, Relative, op_branch,
-        &[(BCC, 0x90), (BCS, 0xb0), (BEQ, 0xf0), (BNE, 0xd0), (BPL, 0x10), (BMI, 0x30)]);
+        &[(BCC, 0x90), (BCS, 0xb0), (BEQ, 0xf0), (BNE, 0xd0),
+          (BPL, 0x10), (BMI, 0x30), (BVC, 0x50), (BVS, 0x70)]);
 
     // flag set/unset
     add_functional_group(2, false, Implicit, op_flag,
@@ -262,7 +263,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
     // other
     add_op(BRK, 0x00, 7, false, Implicit, op_brk);
     add_op(PLA, 0x68, 4, false, Implicit, op_pla);
-    add_op(PLA, 0x28, 4, false, Implicit, op_plc);
+    add_op(PLP, 0x28, 4, false, Implicit, op_plp);
 
     o.extend(ops3);
     o
@@ -294,12 +295,13 @@ fn set_flags(flags: &str, vals: &[bool], c64: &mut C64) {
     if chars.len() != vals.len() { panic!("Incorrect args length in set_flags") };
     for (i, ch) in chars.chars().enumerate() {
         match ch {
-            'Z' => c64.cpu.registers.status.zero = vals[i],
-            'N' => c64.cpu.registers.status.negative = vals[i],
             'C' => c64.cpu.registers.status.carry = vals[i],
+            'Z' => c64.cpu.registers.status.zero = vals[i],
             'I' => c64.cpu.registers.status.interrupt_disable = vals[i],
             'D' => c64.cpu.registers.status.decimal_mode = vals[i],
+            'B' => c64.cpu.registers.status.break_command = vals[i],
             'V' => c64.cpu.registers.status.overflow = vals[i],
+            'N' => c64.cpu.registers.status.negative = vals[i],
             _ => panic!("Unrecognized flag symbol: {}", ch)
         };
     }
@@ -347,6 +349,8 @@ fn op_branch(op: &Operation, c64: &mut C64) -> u8 {
         BEQ => c64.P().zero,
         BPL => !c64.P().negative,
         BMI => c64.P().negative,
+        BVC => !c64.P().overflow,
+        BVS => c64.P().overflow,
         _ => panic!("{} is not a branch operation", op.def.mnemonic)
     };
     if branch {
@@ -357,7 +361,7 @@ fn op_branch(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 fn op_brk(op: &Operation, c64: &mut C64) -> u8 {
-    set_flags("I", &[true], c64);
+    set_flags("B", &[true], c64);
     op.def.cycles
 }
 
@@ -474,7 +478,7 @@ fn op_pla(op: &Operation, c64: &mut C64) -> u8 {
     op.def.cycles
 }
 
-fn op_plc(op: &Operation, c64: &mut C64) -> u8 {
+fn op_plp(op: &Operation, c64: &mut C64) -> u8 {
     let val = c64.pop();
     c64.cpu.registers.status = ProcessorStatus::from(val);
     op.def.cycles
@@ -500,7 +504,7 @@ fn op_rotate(op: &Operation, c64: &mut C64) -> u8 {
         _ => panic!("{} is not a rotate operation", op.def.mnemonic)
     };
     set_val(new_val | mask, op, c64);
-    set_flags("NZC", &[false, new_val | mask == 0, carry], c64);
+    set_flags("NZC", &[neg(new_val | mask), zero(new_val | mask), carry], c64);
     op.def.cycles
 }
 
