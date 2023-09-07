@@ -1,6 +1,8 @@
 # c64rust
 
-This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to
+_USE DEV BRANCH!!!_
+
+This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to 
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
 ## Current state
