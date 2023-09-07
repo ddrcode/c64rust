@@ -8,6 +8,9 @@ mod mos6510;
 mod c64;
 mod machine;
 
+#[cfg(test)]
+mod tests;
+
 use crate::c64::C64;
 
 fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
