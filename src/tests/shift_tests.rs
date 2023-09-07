@@ -1,5 +1,5 @@
-use crate::c64::*;
 use super::asm_test;
+use crate::c64::*;
 
 #[test]
 fn test_asl() {

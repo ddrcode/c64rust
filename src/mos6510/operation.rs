@@ -1,5 +1,5 @@
+use super::{AddressMode::*, Operand, OperationDef};
 use std::fmt;
-use super::{ OperationDef, Operand, AddressMode::* };
 
 pub struct Operation {
     pub def: OperationDef,
@@ -17,14 +17,17 @@ impl Operation {
     }
 }
 
-
 impl fmt::Display for Operation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let m = self.def.mnemonic.to_string();
-        let o = if let Some(x) = &self.operand { x.to_string() } else { String::from("") };
+        let o = if let Some(x) = &self.operand {
+            x.to_string()
+        } else {
+            String::from("")
+        };
         match &self.def.address_mode {
-            Implicit => write!(f, "{}", m), 
-            Accumulator  => write!(f, "{} A", m),
+            Implicit => write!(f, "{}", m),
+            Accumulator => write!(f, "{} A", m),
             Immediate => write!(f, "{} #${}", m, o),
             Relative => write!(f, "{} ${}", m, o),
             ZeroPage => write!(f, "{} ${}", m, o),
@@ -39,4 +42,3 @@ impl fmt::Display for Operation {
         }
     }
 }
-

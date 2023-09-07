@@ -2,7 +2,7 @@ type Addr = u16;
 
 pub struct Memory {
     ram: Box<[u8]>,
-    rom: Box<[u8]>
+    rom: Box<[u8]>,
 }
 
 // TODO consider better way of initializing the memory
@@ -27,7 +27,7 @@ impl Memory {
         let size: usize = 1 << 16;
         Memory {
             ram: vec![0u8; size].into_boxed_slice(),
-            rom: vec![0u8; size].into_boxed_slice()
+            rom: vec![0u8; size].into_boxed_slice(),
         }
     }
 
@@ -36,7 +36,9 @@ impl Memory {
         for byte in data.iter() {
             self.rom[idx] = *byte;
             idx += 1;
-            if idx == 0xc000 { idx = 0xe000 };
+            if idx == 0xc000 {
+                idx = 0xe000
+            };
         }
     }
 
@@ -44,9 +46,15 @@ impl Memory {
     // check https://www.c64-wiki.com/wiki/Bank_Switching for details
     fn mem(&self, addr: Addr) -> &[u8] {
         let flag = self.ram[1] & 0b00000111;
-        if flag & 1 > 0 && addr >= 0xa000 && addr <= 0xbfff { return &self.rom };
-        if flag & 2 > 0 && addr >= 0xe000 && addr <= 0xffff { return &self.rom };
-        if flag & 4 == 0 && addr >= 0xd000 && addr <= 0xdfff { return &self.rom };
+        if flag & 1 > 0 && addr >= 0xa000 && addr <= 0xbfff {
+            return &self.rom;
+        };
+        if flag & 2 > 0 && addr >= 0xe000 && addr <= 0xffff {
+            return &self.rom;
+        };
+        if flag & 4 == 0 && addr >= 0xd000 && addr <= 0xdfff {
+            return &self.rom;
+        };
         &self.ram
     }
 
@@ -61,15 +69,14 @@ impl Memory {
     pub fn get_word(&self, addr: Addr) -> u16 {
         let idx = addr as usize;
         let mem = self.mem(addr);
-        (mem[idx] as u16) | ((mem[idx+1] as u16) << 8)
-
+        (mem[idx] as u16) | ((mem[idx + 1] as u16) << 8)
     }
 
     pub fn set_word(&mut self, addr: Addr, val: u16) {
         let idx = addr as usize;
         let [high, low] = val.to_be_bytes();
         self.ram[idx] = low;
-        self.ram[idx+1] = high; // little endian!
+        self.ram[idx + 1] = high; // little endian!
     }
 
     pub fn write(&mut self, addr: Addr, data: &[u8]) {
