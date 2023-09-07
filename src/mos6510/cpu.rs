@@ -1,4 +1,4 @@
-use super::{ Registers, define_operations, OpsMap, ProcessorStatus };
+use super::{ Registers, define_operations, OpsMap };
 
 pub struct MOS6510 {
     pub registers: Registers,
