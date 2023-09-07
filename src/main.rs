@@ -1,6 +1,6 @@
 extern crate colored;
 
-use std::fs::{ File, metadata };
+use std::fs::File;
 use std::io::Read;
 use std::env;
 

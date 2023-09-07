@@ -1,5 +1,4 @@
 mod mnemonic;
-mod processor_flag;
 mod operations;
 mod registers;
 mod processor_status;
@@ -13,7 +12,6 @@ use std::collections::HashMap;
 
 pub use {
     mnemonic::Mnemonic,
-    processor_flag::ProcessorFlag,
     registers::Registers,
     operations::define_operations,
     processor_status::ProcessorStatus,

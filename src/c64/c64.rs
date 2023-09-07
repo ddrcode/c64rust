@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use std::num::Wrapping;
 use crate::mos6510::{
     MOS6510, Operation, OperationDef, Mnemonic, AddressMode, Operand, ProcessorStatus
