@@ -66,7 +66,8 @@ Options:
 - The emulator boots (with some errors, but doesn't break) with provided C64 ROM
 
 This is the result of running current version of the emulator:
-![Screenshot](screenshots/first-version-with-bugs.png?raw=true "First (almost) working version")
+
+<img src="screenshots/first-version-with-bugs.png?raw=true" width="300"/>
 
 ## Features and goals
 
