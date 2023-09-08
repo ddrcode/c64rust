@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use colored::*;
 use super::{C64Config, Memory, VIC_II};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
@@ -131,16 +132,16 @@ impl C64 {
                     break;
                 }
             }
-            if let Some(addr) = self.config.exit_on_addr {
-                if self.PC() == addr {
-                    break;
-                }
-            }
             // it simulates line drawing (to avoid infinite loop waiting for next line)
             self.mem.set_byte(0xd012, (cycles % 255) as u8);
             if !self.next() {
                 break;
             };
+            if let Some(addr) = self.config.exit_on_addr {
+                if self.PC() == addr {
+                    break;
+                }
+            }
             cycles += 1;
         }
     }
@@ -172,7 +173,11 @@ impl C64 {
             ),
             _ => String::from("     "),
         };
-        println!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
+        print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
+        if self.config.verbose {
+            print!("{}|  {}", " ".repeat(13-op.to_string().len()), self.cpu.registers);
+        }
+        println!();
     }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {

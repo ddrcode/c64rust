@@ -6,6 +6,7 @@ pub struct C64Config {
     pub exit_on_addr: Option<u16>,
     pub exit_on_op: Option<Mnemonic>,
     pub disassemble: bool,
+    pub verbose: bool,
 }
 
 impl C64Config {
@@ -16,6 +17,7 @@ impl C64Config {
             exit_on_addr: None,
             exit_on_op: None,
             disassemble: false,
+            verbose: false
         }
     }
 }

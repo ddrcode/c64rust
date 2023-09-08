@@ -6,60 +6,15 @@ use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 
+mod cli_args;
 mod c64;
 mod mos6510;
 
 #[cfg(test)]
 mod tests;
 
+use crate::cli_args::Args;
 use crate::c64::{C64Config, C64};
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[arg(short, long)]
-    rom: Option<PathBuf>,
-
-    #[arg(long)]
-    ram: Option<PathBuf>,
-
-    #[arg(long = "ram-file-addr", default_value_t = 0)]
-    ram_file_addr: u16,
-
-    #[arg(short='a', long="start-addr", default_value_t=String::from("fce2"))]
-    start_addr: String,
-
-    #[arg(short, long)]
-    show_screen: bool,
-
-    #[arg(short = 'd', long)]
-    disassemble: bool,
-
-    #[arg(long = "max-cycles")]
-    max_cycles: Option<u64>,
-
-    #[arg(long = "max-time")]
-    max_time: Option<u64>,
-
-    #[arg(long = "stop-on-addr")]
-    stop_on_addr: Option<String>,
-}
-
-impl From<&Args> for C64Config {
-    fn from(args: &Args) -> Self {
-        C64Config {
-            max_time: args.max_time,
-            max_cycles: args.max_cycles,
-            exit_on_addr: if let Some(str) = &args.stop_on_addr {
-                Some(u16::from_str_radix(&str, 16).unwrap())
-            } else {
-                None
-            },
-            exit_on_op: None,
-            disassemble: args.disassemble,
-        }
-    }
-}
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
     let mut f = File::open(filename).expect("no file found");
@@ -85,6 +40,10 @@ fn main() {
     }
 
     c64.run(u16::from_str_radix(&args.start_addr, 16).unwrap()); // start KERNAL
+
+    if args.show_status {
+        println!("{}", c64.cpu.registers);
+    }
 
     if args.show_screen {
         c64.print_screen();
