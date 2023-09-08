@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]
 
-use super::{Memory, VIC_II};
+use super::{Memory, VIC_II, C64Config};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
 use std::num::Wrapping;
 
 pub struct C64 {
+    pub config: C64Config,
     pub cpu: MOS6510,
     pub mem: Memory,
     pub gpu: VIC_II,
@@ -50,8 +51,9 @@ impl RegSetter<Wrapping<u8>> for &mut C64 {
 }
 
 impl C64 {
-    pub fn new() -> Self {
+    pub fn new(config: C64Config) -> Self {
         C64 {
+            config: config,
             cpu: MOS6510::new(),
             mem: Memory::new(),
             gpu: VIC_II {},
@@ -122,16 +124,20 @@ impl C64 {
     }
 
     pub fn start(&mut self) {
-        // while self.next() {}
-        for i in 0..4000000 {
-            if self.PC() == 0xe5cf {
-                break;
+        let mut cycles = 0u64;
+        while true {
+            if let Some(max_cycles) = self.config.max_cycles {
+                if cycles > max_cycles { break; }
+            }
+            if let Some(addr) = self.config.exit_on_addr {
+                if self.PC() == addr { break; }
             }
             // it simulates line drawing (to avoid infinite loop waiting for next line)
-            self.mem.set_byte(0xd012, (i % 255) as u8);
+            self.mem.set_byte(0xd012, (cycles % 255) as u8);
             if !self.next() {
                 break;
             };
+            cycles += 1;
         }
     }
 
@@ -144,7 +150,9 @@ impl C64 {
             None
         };
         let op = Operation::new(def, operand, address);
-        self.print_op(&op);
+        if self.config.disassemble {
+            self.print_op(&op);
+        }
         (def.function)(&op, self);
         Mnemonic::BRK != def.mnemonic
     }

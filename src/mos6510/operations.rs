@@ -21,6 +21,9 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
                       boundary: bool,
                       am: AddressMode,
                       opfn: OpFn| {
+        if o.contains_key(&opcode) {
+            panic!("Opcode {} already exists in the opsmap", opcode);
+        }
         o.insert(
             opcode,
             OperationDef {
@@ -404,7 +407,13 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
     add_op(PLA, 0x68, 4, false, Implicit, op_pla);
     add_op(PLP, 0x28, 4, false, Implicit, op_plp);
 
-    o.extend(ops3);
+    for (key, val) in ops3.into_iter() {
+        if o.contains_key(&key) {
+            panic!("{} opcode already exists in the opsmap", key);
+        }
+        o.insert(key, val);
+    }
+
     o
 }
 
@@ -537,8 +546,6 @@ fn op_compare(op: &Operation, c64: &mut C64) -> u8 {
         _ => panic!("{} is not a compare operation", op.def.mnemonic),
     };
     let diff = (Wrapping(reg) - Wrapping(val)).0;
-    // TODO check C flag - whether > or >= operator should be used
-    // N flag: http://6502.org/tutorials/compare_instructions.html
     set_flags("NZC", &[neg(diff), reg == val, reg >= val], c64);
     op.def.cycles
 }
@@ -671,7 +678,7 @@ fn op_rotate(op: &Operation, c64: &mut C64) -> u8 {
 }
 
 fn op_rts(op: &Operation, c64: &mut C64) -> u8 {
-    c64.cpu.registers.counter = (c64.pop() as u16 | (c64.pop() as u16) << 8).wrapping_add(1);
+    c64.cpu.registers.counter = (c64.pop() as u16 | ((c64.pop() as u16) << 8)).wrapping_add(1);
     op.def.cycles
 }
 
@@ -715,8 +722,8 @@ fn op_store(op: &Operation, c64: &mut C64) -> u8 {
 
 fn op_transfer(op: &Operation, c64: &mut C64) -> u8 {
     match op.def.mnemonic {
-        TAX => c64.cpu.registers.x = c64.A(),
-        TAY => c64.cpu.registers.y = c64.A(),
+        TAX => c64.set_X(c64.A()),
+        TAY => c64.set_Y(c64.A()),
         TXA => c64.set_A(c64.X()),
         TYA => c64.set_A(c64.Y()),
         TXS => c64.set_SC(c64.X()),

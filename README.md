@@ -1,7 +1,5 @@
 # c64rust
 
-_USE DEV BRANCH!!!_
-
 This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
@@ -35,13 +33,46 @@ Options:
 
 ## Current state
 
+=======
+
+1. Download ROM file
+2. Execute:
+   `cargo run -- --rom your-rom-file -s -d --stop-on-addr e5d1`
+
+The instruction above boots the rom and breaks on infinite loop waiting for
+user input. Then it prints screen memory.
+
+Running options:
+
+```
+Usage: c64emu [OPTIONS]
+
+Options:
+  -r, --rom <ROM>
+      --ram <RAM>
+      --ram-file-addr <RAM_FILE_ADDR>  [default: 0]
+  -a, --start-addr <START_ADDR>        [default: fce2]
+  -s, --show-screen
+  -d, --disassemble
+      --max-cycles <MAX_CYCLES>
+      --max-time <MAX_TIME>
+      --stop-on-addr <STOP_ON_ADDR>
+  -h, --help                           Print help
+  -V, --version                        Print version
+```
+
+## Current state
+>>>>>>> 6710c0b (CLI params)
 - MOS6510 (6510) instruction set fully implemented
 - C64 memory addressing implemented (RAM/ROM switching)
 - The emulator can print out current screen memory (text only)
 - The emulator boots (with some errors, but doesn't break) with provided C64 ROM
+<<<<<<< HEAD
 
 This is the result of running current version of the emulator:
 ![Screenshot](screenshots/first-version-with-bugs.png?raw=true "First (almost) working version")
+=======
+>>>>>>> 6710c0b (CLI params)
 
 ## Features and goals
 
@@ -112,10 +143,6 @@ and answered many of my questions.
 - [Internals of BRK/IRQ/NMI/RESET on a MOS 6502 by Michael Steil](https://www.pagetable.com/?p=410)
 
 ### Page boundaries
-<<<<<<< HEAD
-
-=======
->>>>>>> dab5b65 (fixed indirect adressing mode)
 - [Page Boundaries](http://forum.6502.org/viewtopic.php?t=469)
 
 ### VIC II
