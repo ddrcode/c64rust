@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use super::{Memory, VIC_II, C64Config};
+use super::{C64Config, Memory, VIC_II};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
@@ -127,10 +127,14 @@ impl C64 {
         let mut cycles = 0u64;
         while true {
             if let Some(max_cycles) = self.config.max_cycles {
-                if cycles > max_cycles { break; }
+                if cycles > max_cycles {
+                    break;
+                }
             }
             if let Some(addr) = self.config.exit_on_addr {
-                if self.PC() == addr { break; }
+                if self.PC() == addr {
+                    break;
+                }
             }
             // it simulates line drawing (to avoid infinite loop waiting for next line)
             self.mem.set_byte(0xd012, (cycles % 255) as u8);
@@ -228,7 +232,7 @@ impl C64 {
             }
             AddressMode::Indirect => {
                 let addr = operand.get_word().unwrap();
-                let addr2 = (addr & 0xff00) | ((addr+1) & 0x00ff); // page change not allowed!
+                let addr2 = (addr & 0xff00) | ((addr + 1) & 0x00ff); // page change not allowed!
                 let (lo, hi) = to_u16(self.mem.get_byte(addr), self.mem.get_byte(addr2));
                 Some(lo | hi << 8)
             }

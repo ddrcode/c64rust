@@ -15,7 +15,7 @@ impl C64Config {
             max_cycles: None,
             exit_on_addr: None,
             exit_on_op: None,
-            disassemble: false
+            disassemble: false,
         }
     }
 }

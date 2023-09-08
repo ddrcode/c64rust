@@ -33,8 +33,6 @@ Options:
 
 ## Current state
 
-=======
-
 1. Download ROM file
 2. Execute:
    `cargo run -- --rom your-rom-file -s -d --stop-on-addr e5d1`
@@ -62,17 +60,13 @@ Options:
 ```
 
 ## Current state
->>>>>>> 6710c0b (CLI params)
 - MOS6510 (6510) instruction set fully implemented
 - C64 memory addressing implemented (RAM/ROM switching)
 - The emulator can print out current screen memory (text only)
 - The emulator boots (with some errors, but doesn't break) with provided C64 ROM
-<<<<<<< HEAD
 
 This is the result of running current version of the emulator:
 ![Screenshot](screenshots/first-version-with-bugs.png?raw=true "First (almost) working version")
-=======
->>>>>>> 6710c0b (CLI params)
 
 ## Features and goals
 
@@ -143,6 +137,7 @@ and answered many of my questions.
 - [Internals of BRK/IRQ/NMI/RESET on a MOS 6502 by Michael Steil](https://www.pagetable.com/?p=410)
 
 ### Page boundaries
+
 - [Page Boundaries](http://forum.6502.org/viewtopic.php?t=469)
 
 ### VIC II
