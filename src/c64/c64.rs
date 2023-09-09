@@ -4,7 +4,6 @@ use super::{C64Config, Memory, VIC_II};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
-use colored::*;
 use std::num::Wrapping;
 
 pub struct C64 {
@@ -53,10 +52,11 @@ impl RegSetter<Wrapping<u8>> for &mut C64 {
 
 impl C64 {
     pub fn new(config: C64Config) -> Self {
+        let size = config.ram_size.clone();
         C64 {
             config: config,
             cpu: MOS6510::new(),
-            mem: Memory::new(),
+            mem: Memory::new(size),
             gpu: VIC_II {},
         }
     }
@@ -122,11 +122,15 @@ impl C64 {
         // https://stackoverflow.com/questions/18811244/waiting-for-a-change-on-d012-c64-assembler
         // https://codebase64.org/doku.php?id=base:double_irq_explained
         self.mem.set_byte(0xd012, 0b11000001);
+
+        // By default, after start, the PC is set to address from RST vector ($fffc)
+        // http://wilsonminesco.com/6502primer/MemMapReqs.html
+        self.cpu.registers.counter = self.mem.get_word(0xfffc);
     }
 
     pub fn start(&mut self) {
         let mut cycles = 0u64;
-        while true {
+        loop {
             if let Some(max_cycles) = self.config.max_cycles {
                 if cycles > max_cycles {
                     break;

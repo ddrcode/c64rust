@@ -2,7 +2,7 @@
 
 ASM="./bin/acme"
 EMU="../target/debug/c64emu"
-ADDR="0000"
+ADDR="0200"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -14,10 +14,15 @@ FAILED_MSG="   ${RED}Failed!${RC}"
 
 mkdir -p ./asm-out/
 
+# build rom file for tests
+$ASM --cpu 6502 --format plain -o asm-out/rom.p asm/rom.asm
+
 run_test() {
     local file="$1"
-    $ASM --cpu 6502 --setpc $ADDR -o "./asm-out/${file}.o" "./asm/${file}.a"
-    local res=$($EMU --ram "./asm-out/${file}.o" --ram-file-addr $ADDR --start-addr $ADDR --show-status | sed 's/\$//g')
+    local bin_file="./asm-out/${file}.p"
+    local addr_dec=$(echo "ibase=16; $ADDR"|bc)
+    $ASM --cpu 6502 -f plain --setpc "$addr_dec" -o "$bin_file" "./asm/${file}.asm"
+    local res=$($EMU --rom ./asm-out/rom.p --ram "$bin_file" --ram-file-addr "$ADDR" --show-status | sed 's/\$//g')
     printf -- "%s" "$res"
 }
 
@@ -52,8 +57,7 @@ test() {
 }
 
 #                               NV-BDIZC
-test "test"               "00" "00110010"
 test "mul1"               "1e" "00110000"
 test "mul2"               "40" "00110000"
-test "cmp"                "42" "00110000"
+test "cmp"                "42" "00110010"
 

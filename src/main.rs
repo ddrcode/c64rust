@@ -1,7 +1,6 @@
 extern crate colored;
 
 use clap::Parser;
-use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
@@ -36,10 +35,12 @@ fn main() {
 
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
-        c64.mem.write(args.ram_file_addr, &ram[..]);
+        let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
+        c64.mem.write(addr, &ram[..]);
     }
 
-    c64.run(u16::from_str_radix(&args.start_addr, 16).unwrap()); // start KERNAL
+    // c64.run(u16::from_str_radix(&args.start_addr, 16).unwrap()); // start KERNAL
+    c64.start();
 
     if args.show_status {
         println!("{}", c64.cpu.registers);

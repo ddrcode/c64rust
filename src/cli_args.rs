@@ -11,8 +11,8 @@ pub struct Args {
     #[arg(long)]
     pub ram: Option<PathBuf>,
 
-    #[arg(long = "ram-file-addr", default_value_t = 0)]
-    pub ram_file_addr: u16,
+    #[arg(long = "ram-file-addr", default_value_t=String::from("0200"))]
+    pub ram_file_addr: String,
 
     #[arg(short='a', long="start-addr", default_value_t=String::from("fce2"))]
     pub start_addr: String,
@@ -42,6 +42,8 @@ pub struct Args {
 impl From<&Args> for C64Config {
     fn from(args: &Args) -> Self {
         C64Config {
+            ram_size: 1 << 16,
+            rom_size: 1 << 16,
             max_time: args.max_time,
             max_cycles: args.max_cycles,
             exit_on_addr: if let Some(str) = &args.stop_on_addr {
