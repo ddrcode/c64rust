@@ -291,7 +291,10 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
             (0xe5, 3, false, ZeroPage),
             (0xf5, 4, false, ZeroPageX),
             (0xed, 3, false, Absolute),
+            (0xfd, 4, true, AbsoluteX),
+            (0xf9, 4, true, AbsoluteY),
             (0xe1, 6, false, IndirectX),
+            (0xf1, 5, true, IndirectY),
         ],
     );
 
@@ -684,6 +687,7 @@ fn op_rts(op: &Operation, c64: &mut C64) -> u8 {
 
 // https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
 // http://retro.hansotten.nl/uploads/mag6502/sbc_tsx_txs_instructions.pdf
+// TODO compute page crossing cycles
 fn op_sbc(op: &Operation, c64: &mut C64) -> u8 {
     let a = c64.A8();
     let val = get_val(op, c64).unwrap();
