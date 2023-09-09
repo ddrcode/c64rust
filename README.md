@@ -32,6 +32,7 @@ Options:
 ```
 
 ## Current state
+
 - MOS6502 (6510) instruction set fully implemented
 - C64 memory addressing implemented (RAM/ROM switching)
 - The emulator can print out current screen memory (text only)
@@ -74,9 +75,11 @@ Below there is a list of posts that helped me to gain actual knowledge about C64
 and answered many of my questions.
 
 ### CPU
+
 - [The 6502 Architecture (by prof William T. Verts)](https://people.cs.umass.edu/~verts/cmpsci201/spr_2004/Lecture_02_2004-01-30_The_6502_processor.pdf)
 
 #### Instruction set
+
 - [6502 / 6510 Instruction Set](https://c64os.com/post/6502instructions)
 - [6502 Instruction Set](https://www.masswerk.at/6502/6502_instruction_set.html#LSR)
 
@@ -120,11 +123,14 @@ and answered many of my questions.
 - [Page Boundaries](http://forum.6502.org/viewtopic.php?t=469)
 
 ### VIC II and graphics
+
 - [Double IRQ Explained](https://codebase64.org/doku.php?id=base:double_irq_explained)
 
 ### Keyboard
+
 - [How the C64 Keyboard Works](https://www.c64os.com/post/howthekeyboardworks)
 
 ### Online emulators (for testing instructions behaviour)
+
 - [Easy 6502](https://skilldrick.github.io/easy6502/)
 - [Visual 6502](http://visual6502.org/JSSim/expert.html)

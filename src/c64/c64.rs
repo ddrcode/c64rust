@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
-use colored::*;
 use super::{C64Config, Memory, VIC_II};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
+use colored::*;
 use std::num::Wrapping;
 
 pub struct C64 {
@@ -175,7 +175,11 @@ impl C64 {
         };
         print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
         if self.config.verbose {
-            print!("{}|  {}", " ".repeat(13-op.to_string().len()), self.cpu.registers);
+            print!(
+                "{}|  {}",
+                " ".repeat(13 - op.to_string().len()),
+                self.cpu.registers
+            );
         }
         println!();
     }

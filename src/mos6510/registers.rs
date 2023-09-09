@@ -1,7 +1,7 @@
 use super::ProcessorStatus;
-use std::num::Wrapping;
-use std::fmt;
 use colored::*;
+use std::fmt;
+use std::num::Wrapping;
 
 pub struct Registers {
     pub counter: u16,
@@ -14,13 +14,22 @@ pub struct Registers {
 
 impl fmt::Display for Registers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:${:04x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:${:08b}",
-            "PC".bold(), self.counter,
-            "A".bold(), self.accumulator,
-            "X".bold(), self.x,
-            "Y".bold(), self.y,
-            "S".bold(), self.stack,
-            "P".bold(), u8::from(&self.status))
+        write!(
+            f,
+            "{}:${:04x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:${:08b}",
+            "PC".bold(),
+            self.counter,
+            "A".bold(),
+            self.accumulator,
+            "X".bold(),
+            self.x,
+            "Y".bold(),
+            self.y,
+            "S".bold(),
+            self.stack,
+            "P".bold(),
+            u8::from(&self.status)
+        )
     }
 }
 

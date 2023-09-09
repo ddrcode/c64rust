@@ -17,7 +17,7 @@ impl C64Config {
             exit_on_addr: None,
             exit_on_op: None,
             disassemble: false,
-            verbose: false
+            verbose: false,
         }
     }
 }

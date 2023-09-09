@@ -1,6 +1,6 @@
+use crate::c64::C64Config;
 use clap::Parser;
 use std::path::PathBuf;
-use crate::c64::{C64Config};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -20,7 +20,7 @@ pub struct Args {
     #[arg(short, long)]
     pub show_screen: bool,
 
-    #[arg(long="show-status")]
+    #[arg(long = "show-status")]
     pub show_status: bool,
 
     #[arg(short = 'd', long)]
@@ -35,7 +35,7 @@ pub struct Args {
     #[arg(long = "stop-on-addr")]
     pub stop_on_addr: Option<String>,
 
-    #[arg(short='v', long)]
+    #[arg(short = 'v', long)]
     pub verbose: bool,
 }
 
@@ -51,8 +51,7 @@ impl From<&Args> for C64Config {
             },
             exit_on_op: None,
             disassemble: args.disassemble,
-            verbose: args.verbose
+            verbose: args.verbose,
         }
     }
 }
-
