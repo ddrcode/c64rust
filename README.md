@@ -69,6 +69,9 @@ This is the result of running current version of the emulator:
 - Making competitive product to Vice and other well-established emulators.
 - CRT emulation
 
+## Credits
+- @srounce - making the environment work with Nix Flake. So cool!
+
 ## References
 
 Below there is a list of posts that helped me to gain actual knowledge about C64/MOS6510 architecture
