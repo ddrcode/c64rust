@@ -1,3 +1,5 @@
 /target
 /rom
 .direnv/
+tests/asm-out
+

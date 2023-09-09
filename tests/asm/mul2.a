@@ -1,0 +1,22 @@
+; Test 8x8 multiplication
+
+; Variables:
+; $a0 - factor 1
+; $a1 - factor 2
+
+start   LDA #$8
+        STA $a0
+        STA $a1
+        LDA #0
+        LDX #$8
+        LSR $0a
+loop    BCC no_add
+        CLC
+        ADC $a1
+no_add  ROR
+        ROR $a0
+        DEX
+        BNE loop
+        STA $a1
+end     LDA $a0
+
