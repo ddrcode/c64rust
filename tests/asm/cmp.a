@@ -1,0 +1,103 @@
+; Tests 6502 CMP instruction for all address modes
+; 
+; Results:
+;    Passed: Register A set to $42
+;    Failed: Register A set to a branch op number that behaved incorrectly
+;            (result variable is being incremented after each branch)
+;
+; Algorithm
+; 1. The program contains a few CMP tests - one per adress mode
+; 2. Each test runs a CMP instruction and then contains three branch operations
+;    for Z, N and C flags respectively. The expected behavior is that program
+;    continues to the end without branching. Branching means your emulator behaves
+;    incorrectly (each branch always takes to 'err' section in the code)
+; 3. At the beginning of every test the code goins to 'clear' subroutine that
+;    clears A, X and Y registers
+; 4. After each test (branching) the program calls 'inc_score' soubroutine that
+;    increments result variable. In case of error, the value of that variable will bo
+;    loaded to a A register to help identify where the error occured. 
+;
+; Author: David de Rosier
+
+; * = $0600
+
+        JMP start
+
+result  !byte    0 
+
+clear:
+        LDA #0
+        LDX #0
+        LDY #0
+        CLC
+        RTS
+
+inc_score:
+        PHP
+        INC result
+        PLP
+        RTS
+
+start:
+        LDA #$80
+        STA $f0
+
+imd:
+        JSR clear
+        LDA #$42
+        CMP #$42
+        BNE err
+        JSR inc_score      ; result = 1
+        BMI err
+        JSR inc_score      ; result = 2
+        BCC err
+        JSR inc_score      ; result = 3
+
+zp:                        ; test for zero-page, equal
+        JSR clear
+        LDA #$80
+        CMP $f0
+        BNE err
+        JSR inc_score      ; result = 4
+        BMI err
+        JSR inc_score      ; result = 5
+        BCC err
+        JSR inc_score      ; result = 6
+
+zpx:
+        LDA #$f0
+        STA $f0
+        JSR clear
+        LDA #$01
+        LDX #$03
+        CMP ($ed,X)
+        BEQ err
+        JSR inc_score
+        BMI err
+        JSR inc_score
+        BCS err
+        JSR inc_score
+
+aby:
+        LDA #$04
+        STA $f0
+        JSR clear
+        LDA #$95
+        LDY #$1
+        CMP $ef,Y
+        BEQ err
+        JSR inc_score
+        BPL err
+        JSR inc_score
+        BCC err
+        JSR inc_score
+
+ok:
+        LDA #$42
+        JMP end
+
+err:
+        LDA result
+
+end:
+        CLC

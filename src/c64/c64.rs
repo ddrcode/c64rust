@@ -155,10 +155,10 @@ impl C64 {
             None
         };
         let op = Operation::new(def, operand, address);
+        (def.function)(&op, self);
         if self.config.disassemble {
             self.print_op(&op);
         }
-        (def.function)(&op, self);
         Mnemonic::BRK != def.mnemonic
     }
 
