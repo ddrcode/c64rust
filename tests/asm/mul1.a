@@ -2,33 +2,28 @@
 ;; Modified version of an example from here
 ;; see https://codeburst.io/lets-write-some-harder-assembly-language-code-c7860dcceba
 
-;; Adresses
-;; 0xa0 - RESULT
-;; 0xa1 - RESULT+1
-;; 0xa2 - TMP
-;; 0xa3 - MPR
-;; 0xa4 - MPD
+        JMP     start
 
-START   LDA     #$a      ; init MPR
-        STA     $a3
-        LDA     #$3      ; init MPD
-        STA     $a4
-        LDA     #0       ; zero accumulator
-        STA     $a2      ; clear address
-        STA     $a0      ; clear
-        STA     $a1      ; clear
-        LDX     #8       ; x is a counter
-MULT    LSR     $a3      ; shift mpr right - pushing a bit into C
-        BCC     NOADD    ; test carry bit
-        LDA     $a0       ; load A with low part of result
+
+mpr     !byte   $0a
+mpd     !byte   $3
+result  !word   0
+tmp     !byte   0
+
+
+start   LDX     #$8      ; x is a counter
+mult    LSR     mpr      ; shift mpr right - pushing a bit into C
+        BCC     noadd    ; test carry bit
+        LDA     result   ; load A with low part of result
         CLC
-        ADC     $a4      ; add mpd to res
-        STA     $a0      ; save result
-        LDA     $a1      ; add rest off shifted mpd
-        ADC     $a2
-        STA     $a1
-NOADD   ASL     $a4      ; shift mpd left, ready for next "loop"
-        ROL     $a2      ; save bit from mpd into temp
+        ADC     mpd      ; add mpd to res
+        STA     result   ; save result
+        LDA     result+1 ; add rest off shifted mpd
+        ADC     tmp
+        STA     result+1
+noadd   ASL     mpd      ; shift mpd left, ready for next "loop"
+        ROL     tmp      ; save bit from mpd into tmp
         DEX              ; decrement counter
-        BNE     MULT     ; go again if counter 0
-END     LDA     $a0      ; store RESULT in A
+        BNE     mult     ; go again if counter 0
+end     LDA     result   ; store RESULT in A
+
