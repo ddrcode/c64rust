@@ -70,7 +70,8 @@ This is the result of running current version of the emulator:
 - CRT emulation
 
 ## Credits
-- @srounce - making the environment work with Nix Flake. So cool!
+
+- [srounce](https://github.com/srounce) - making the environment work with Nix Flake. So cool!
 
 ## References
 

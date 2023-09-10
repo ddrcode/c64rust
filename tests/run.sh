@@ -7,10 +7,11 @@ ADDR="0200"
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 LIGHT_BLUE='\033[1;34m'
+LIGHT_GRAY='\033[0;37m'
 RC='\033[0m' # Reset Color
 
-OK_MSG="   ${GREEN}OK${RC}"
-FAILED_MSG="   ${RED}Failed!${RC}"
+OK_MSG="[   ${GREEN}OK${RC}   ]"
+FAILED_MSG="[ ${RED}Failed${RC} ]"
 
 mkdir -p ./asm-out/
 
@@ -26,38 +27,32 @@ run_test() {
     printf -- "%s" "$res"
 }
 
-assert() {
-    local expected="$1"
-    local actual="$2"
-    if [[ "$expected" == "$actual" ]]; then return 1; fi
-    return 0
-}
-
 test() {
     local file="$1"
-    local expected_a="$2"
-    local expected_p="$3"
+    echo -ne "Running test for ${LIGHT_BLUE}${file}.a${RC}\t\t\t\t"
 
-    echo ""
-    echo -e "Running test for ${LIGHT_BLUE}${file}.a${RC}"
     local res=$(run_test "$file")
-    local reg_a=$(echo "$res" | sed 's/.*A:\(..\).*/\1/')
-    local reg_p=$(echo "$res" | sed 's/.*P:\(.*\)/\1/')
-    local cmp1=$(assert "$expected_a" "$reg_a")
+    local reg_y=$(echo "$res" | sed 's/.*Y:\(..\).*/\1/')
 
+    if [ "00" == $reg_y ]; then
+        echo -e "$OK_MSG"
+        return 0
+    fi
+
+    echo -e "$FAILED_MSG"
+    echo ""
+    echo -e "                                             ${LIGHT_GRAY}NV-BDIZC${RC}"
     echo "   State: $res"
-    echo "               NV-BDIZC"
-    echo "   Expected P: ${expected_p}, Expected A: ${expected_a}"
-    echo "   Actual P:   ${reg_p}, Actual A:   ${reg_a}"
-
-    assert "$expected_a" "$reg_a"  && echo -e "$FAILED_MSG" && exit 1
-    assert "$expected_p" "$reg_p"  && echo -e "$FAILED_MSG" && exit 1
-    echo -e "$OK_MSG"
-    return 0
+    echo ""
+    echo "   Reg A - test id of the last successfully completed test"
+    echo "   Reg Y - error code"
+    echo "   Reg P - last status before the error"
+    echo ""
 }
 
-#                               NV-BDIZC
-test "mul1"               "1e" "00110000"
-test "mul2"               "40" "00110000"
-test "cmp"                "42" "00110010"
+test "mul1"
+test "mul2"
+test "cmp" 
+test "adc" 
+test "sbc" 
 
