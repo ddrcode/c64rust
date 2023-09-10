@@ -20,13 +20,15 @@ Usage: c64emu [OPTIONS]
 Options:
   -r, --rom <ROM>
       --ram <RAM>
-      --ram-file-addr <RAM_FILE_ADDR>  [default: 0]
+      --ram-file-addr <RAM_FILE_ADDR>  [default: 0200]
   -a, --start-addr <START_ADDR>        [default: fce2]
   -s, --show-screen
+      --show-status
   -d, --disassemble
       --max-cycles <MAX_CYCLES>
       --max-time <MAX_TIME>
       --stop-on-addr <STOP_ON_ADDR>
+  -v, --verbose
   -h, --help                           Print help
   -V, --version                        Print version
 ```
@@ -71,7 +73,7 @@ This is the result of running current version of the emulator:
 
 ## Credits
 
-- [srounce](https://github.com/srounce) - making the environment work with Nix Flake. So cool!
+- [srounce](https://github.com/srounce) - made the environment work with Nix Flakes. So cool!
 
 ## References
 
