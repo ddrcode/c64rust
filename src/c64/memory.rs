@@ -23,8 +23,8 @@ pub struct Memory {
 /// cartridges - it simply overrides ROM for cartridges (TBC whether such simplification
 /// is sufficient).
 impl Memory {
-    pub fn new() -> Self {
-        let size: usize = 1 << 16;
+    pub fn new(size: usize) -> Self {
+        // let size: usize = 1 << 16;
         Memory {
             ram: vec![0u8; size].into_boxed_slice(),
             rom: vec![0u8; size].into_boxed_slice(),

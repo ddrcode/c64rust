@@ -52,10 +52,11 @@ impl RegSetter<Wrapping<u8>> for &mut C64 {
 
 impl C64 {
     pub fn new(config: C64Config) -> Self {
+        let size = config.ram_size.clone();
         C64 {
             config: config,
             cpu: MOS6510::new(),
-            mem: Memory::new(),
+            mem: Memory::new(size),
             gpu: VIC_II {},
         }
     }
@@ -121,18 +122,17 @@ impl C64 {
         // https://stackoverflow.com/questions/18811244/waiting-for-a-change-on-d012-c64-assembler
         // https://codebase64.org/doku.php?id=base:double_irq_explained
         self.mem.set_byte(0xd012, 0b11000001);
+
+        // By default, after start, the PC is set to address from RST vector ($fffc)
+        // http://wilsonminesco.com/6502primer/MemMapReqs.html
+        self.cpu.registers.counter = self.mem.get_word(0xfffc);
     }
 
     pub fn start(&mut self) {
         let mut cycles = 0u64;
-        while true {
+        loop {
             if let Some(max_cycles) = self.config.max_cycles {
                 if cycles > max_cycles {
-                    break;
-                }
-            }
-            if let Some(addr) = self.config.exit_on_addr {
-                if self.PC() == addr {
                     break;
                 }
             }
@@ -141,6 +141,11 @@ impl C64 {
             if !self.next() {
                 break;
             };
+            if let Some(addr) = self.config.exit_on_addr {
+                if self.PC() == addr {
+                    break;
+                }
+            }
             cycles += 1;
         }
     }
@@ -154,10 +159,10 @@ impl C64 {
             None
         };
         let op = Operation::new(def, operand, address);
+        (def.function)(&op, self);
         if self.config.disassemble {
             self.print_op(&op);
         }
-        (def.function)(&op, self);
         Mnemonic::BRK != def.mnemonic
     }
 
@@ -172,7 +177,15 @@ impl C64 {
             ),
             _ => String::from("     "),
         };
-        println!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
+        print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
+        if self.config.verbose {
+            print!(
+                "{}|  {}",
+                " ".repeat(13 - op.to_string().len()),
+                self.cpu.registers
+            );
+        }
+        println!();
     }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {
