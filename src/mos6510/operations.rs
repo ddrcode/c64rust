@@ -2,7 +2,7 @@ use super::{
     AddressMode, AddressMode::*, Mnemonic, Mnemonic::*, OpFn, Operation, OperationDef, OpsMap,
     ProcessorStatus,
 };
-use crate::machine::{RegSetter, Machine};
+use crate::machine::{Machine, RegSetter};
 use std::num::Wrapping;
 
 // sources:
@@ -686,7 +686,8 @@ fn op_rotate(op: &Operation, machine: &mut Machine) -> u8 {
 }
 
 fn op_rts(op: &Operation, machine: &mut Machine) -> u8 {
-    machine.cpu.registers.counter = (machine.pop() as u16 | ((machine.pop() as u16) << 8)).wrapping_add(1);
+    machine.cpu.registers.counter =
+        (machine.pop() as u16 | ((machine.pop() as u16) << 8)).wrapping_add(1);
     op.def.cycles
 }
 

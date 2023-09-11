@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)]
 
 use super::*;
-use colored::*;
 use crate::machine::Memory;
+use colored::*;
 
 /*
  * RGB values of C64 colours

@@ -27,7 +27,7 @@ impl Memory {
         // let size: usize = 1 << 16;
         Memory {
             ram: vec![0u8; size].into_boxed_slice(),
-            rom: vec![0u8; 1+u16::MAX as usize].into_boxed_slice(),
+            rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
         }
     }
 
@@ -90,10 +90,13 @@ impl Memory {
     }
 
     pub fn dump(&self, from: Addr, to: Addr) {
-        let range = std::ops::Range { start: from, end: to };
+        let range = std::ops::Range {
+            start: from,
+            end: to,
+        };
         for i in range {
             print!("{:02x} ", self.get_byte(i));
         }
         println!();
-    } 
+    }
 }

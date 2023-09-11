@@ -4,6 +4,7 @@ This is a simple (and incomplete) CMOS6502 and C64 emulator implemented in Rust.
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
 When built, the project provides two binaries (in `target/debug`)
+
 - `machine`: a generic 6502 emulator (CPU and memory only)
 - `c64`: C64 emulator built on top of the above
 
@@ -36,8 +37,6 @@ Options:
   -h, --help                           Print help
   -V, --version                        Print version
 ```
-
-
 
 ## Current state
 

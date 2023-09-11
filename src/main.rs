@@ -6,14 +6,14 @@ use std::io::Read;
 use std::path::PathBuf;
 
 mod cli_args;
-mod mos6510;
 mod machine;
+mod mos6510;
 
 #[cfg(test)]
 mod tests;
 
-use crate::machine::{MachineConfig, Machine};
 use crate::cli_args::Args;
+use crate::machine::{Machine, MachineConfig};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
     let mut f = File::open(filename).expect("no file found");

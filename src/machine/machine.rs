@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use super::{MachineConfig, Memory };
+use super::{MachineConfig, Memory};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };

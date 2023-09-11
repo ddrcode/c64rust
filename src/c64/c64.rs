@@ -1,17 +1,16 @@
 #![allow(non_snake_case)]
 
-use super::{VIC_II};
+use super::VIC_II;
+use crate::machine::{Machine, MachineConfig, Memory, RegSetter};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
-use crate::machine::{ MachineConfig, Machine, Memory, RegSetter };
 use std::num::Wrapping;
 
 pub struct C64 {
     pub machine: Machine,
     pub gpu: VIC_II,
 }
-
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
@@ -40,7 +39,7 @@ impl C64 {
 
         // Curent I/O device (keyboard/screen)
         self.machine.mem.set_byte(0x0013, 0);
-       
+
         // Pointer to next expression in string stack. Values: $19; $1C; $1F; $22.
         self.machine.mem.set_byte(0x0016, 0x19);
 
@@ -55,7 +54,6 @@ impl C64 {
         // default input and output devices
         self.machine.mem.set_byte(0x0099, 0);
         self.machine.mem.set_byte(0x0099, 3);
-
 
         // Pointer to beginning of BASIC area after memory test.
         self.machine.mem.set_word(0x0281, 0x0800);
@@ -119,4 +117,3 @@ impl C64 {
         self.machine.mem.init_rom_at_addr(0xe000, &data[8192..]);
     }
 }
-
