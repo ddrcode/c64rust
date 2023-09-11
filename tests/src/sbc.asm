@@ -9,6 +9,7 @@ start:
 test1:
         ; $50-$f0=$60
         LDA #$50
+        SEC
         SBC #$f0
         PHP
         JSR bmierr
@@ -21,6 +22,7 @@ test1:
 test2:
         ; $50+$b0=$a0; NV set
         LDA #$50
+        SEC
         SBC #$b0
         PHP
         JSR bplerr
@@ -34,6 +36,7 @@ test2:
 test3:
         ; $50+$70=$e0; N set
         LDA #$50
+        SEC
         SBC #$70
         PHP
         JSR bplerr
@@ -46,6 +49,7 @@ test3:
 test4:
         ; $50+$30=$20; C set
         LDA #$50
+        SEC
         SBC #$30
         PHP
         JSR bmierr
@@ -59,6 +63,7 @@ test4:
 test5:
         ; $d0+$f0=$e0; N set
         LDA #$d0
+        SEC
         SBC #$f0
         PHP
         JSR bplerr
@@ -71,6 +76,7 @@ test5:
 test6:
         ; $d0+$b0=$20; C set
         LDA #$d0
+        SEC
         SBC #$b0
         PHP
         JSR bmierr
@@ -83,6 +89,7 @@ test6:
 test7:
         ; $d0+$70=$60; CV set
         LDA #$d0
+        SEC
         SBC #$70
         PHP
         JSR bmierr
@@ -95,6 +102,7 @@ test7:
 test8:
         ; $d0+$30=$a0; CM set
         LDA #$d0
+        SEC
         SBC #$30
         PHP
         JSR bplerr

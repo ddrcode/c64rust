@@ -64,7 +64,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
     add_group(
         ADC,
-        op_adc,
+        op_arithmetic,
         &[
             (0x69, 2, false, Immediate),
             (0x65, 3, false, ZeroPage),
@@ -285,7 +285,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
     add_group(
         SBC,
-        op_sbc,
+        op_arithmetic,
         &[
             (0xe9, 2, false, Immediate),
             (0xe5, 3, false, ZeroPage),
@@ -489,12 +489,17 @@ fn overflow(in1: u8, in2: u8, result: u8) -> bool {
 // ----------------------------------------------------------------------
 // implementation of operations
 
+// https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+// http://retro.hansotten.nl/uploads/mag6502/sbc_tsx_txs_instructions.pdf
 // TODO compute cycles for page cross
-fn op_adc(op: &Operation, machine: &mut Machine) -> u8 {
+fn op_arithmetic(op: &Operation, machine: &mut Machine) -> u8 {
     let a = machine.A8();
-    let val = get_val(op, machine).unwrap();
-    let carry = u16::from(machine.P().carry);
-    let sum = machine.A16() + val as u16 + carry;
+    let val = match op.def.mnemonic {
+        ADC => get_val(op, machine).unwrap(),
+        SBC => !get_val(op, machine).unwrap(),
+        _ => panic!("{} is not an arithmetic operation", op.def.mnemonic),
+    };
+    let sum = machine.A16() + u16::from(machine.P().carry) + val as u16;
     machine.set_A((sum & 0xff) as u8);
     let res = machine.A8();
     set_flags(
@@ -682,24 +687,6 @@ fn op_rotate(op: &Operation, machine: &mut Machine) -> u8 {
 
 fn op_rts(op: &Operation, machine: &mut Machine) -> u8 {
     machine.cpu.registers.counter = (machine.pop() as u16 | ((machine.pop() as u16) << 8)).wrapping_add(1);
-    op.def.cycles
-}
-
-// https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
-// http://retro.hansotten.nl/uploads/mag6502/sbc_tsx_txs_instructions.pdf
-// TODO compute page crossing cycles
-fn op_sbc(op: &Operation, machine: &mut Machine) -> u8 {
-    let a = machine.A8();
-    let val = get_val(op, machine).unwrap();
-    let carry = u16::from(!machine.P().carry);
-    let sum = machine.A16() + (!val) as u16 + carry;
-    machine.set_A((sum & 0xff) as u8);
-    let res = machine.A8();
-    set_flags(
-        "NZCV",
-        &[neg(res), zero(res), sum > 0xff, overflow(a, !val, res)],
-        machine,
-    );
     op.def.cycles
 }
 

@@ -102,8 +102,6 @@ impl Machine {
         // see https://www.pagetable.com/c64ref/c64mem/
         self.mem.set_byte(0x0000, 0x2f);
         self.mem.set_byte(0x0001, 0x37);
-        self.mem.set_word(0x0003, 0xb1aa);
-        self.mem.set_word(0x0005, 0xb391);
 
         // By default, after start, the PC is set to address from RST vector ($fffc)
         // http://wilsonminesco.com/6502primer/MemMapReqs.html

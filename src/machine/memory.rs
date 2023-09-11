@@ -88,4 +88,12 @@ impl Memory {
             idx += 1;
         }
     }
+
+    pub fn dump(&self, from: Addr, to: Addr) {
+        let range = std::ops::Range { start: from, end: to };
+        for i in range {
+            print!("{:02x} ", self.get_byte(i));
+        }
+        println!();
+    } 
 }
