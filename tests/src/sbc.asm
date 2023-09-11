@@ -1,20 +1,6 @@
         JMP start
 
-; stores number of correctly executed tests
-result  !byte    0 
-last_op !byte    0
-
-
-; SUBROUTINES
-
-; clears registers and C flag after each test 
-next:
-        INC result
-        LDA #0
-        LDX #0
-        LDY #0
-        CLC
-        RTS
+!source "src/common/test_routines.asm"
 
 ; PROGRAM
 
@@ -25,11 +11,11 @@ test1:
         LDA #$50
         SBC #$f0
         PHP
-        BMI err_18
-        BVS err_17
-        BCS err_11
+        JSR bmierr
+        JSR bvserr
+        JSR bcserr
         CMP #$60
-        BNE err_12
+        JSR bneerr
         JSR next
 
 test2:
@@ -37,11 +23,11 @@ test2:
         LDA #$50
         SBC #$b0
         PHP
-        BPL err_18
-        BVC err_17
-        BCS err_11
+        JSR bplerr
+        JSR bvcerr
+        JSR bcserr
         CMP #$a0
-        BNE err_12
+        JSR bneerr
         JSR next
 
 
@@ -50,11 +36,11 @@ test3:
         LDA #$50
         SBC #$70
         PHP
-        BPL err_18
-        BVS err_17
-        BCS err_11
+        JSR bplerr
+        JSR bvserr
+        JSR bcserr
         CMP #$e0
-        BNE err_12
+        JSR bneerr
         JSR next
 
 test4:
@@ -62,35 +48,24 @@ test4:
         LDA #$50
         SBC #$30
         PHP
-        BMI err_18
-        BVS err_17
-        BCC err_11
+        JSR bmierr
+        JSR bvserr
+        JSR bccerr
         CMP #$20
-        BNE err_12
+        JSR bneerr
         JSR next
         JMP test5
-
-err_11: LDY #$11
-        JMP err
-err_12: LDY #$12
-        JMP err
-err_17: LDY #$17
-        JMP err
-err_18: LDY #$18
-        JMP err
-err:
-        JMP end
 
 test5:
         ; $d0+$f0=$e0; N set
         LDA #$d0
         SBC #$f0
         PHP
-        BPL err_18
-        BVS err_17
-        BCS err_11
+        JSR bplerr
+        JSR bvserr
+        JSR bcserr
         CMP #$e0
-        BNE err_12
+        JSR bneerr
         JSR next
 
 test6:
@@ -98,11 +73,11 @@ test6:
         LDA #$d0
         SBC #$b0
         PHP
-        BMI err_18
-        BVS err_17
-        BCC err_11
+        JSR bmierr
+        JSR bvserr
+        JSR bccerr
         CMP #$20
-        BNE err_12
+        JSR bneerr
         JSR next
 
 test7:
@@ -110,11 +85,11 @@ test7:
         LDA #$d0
         SBC #$70
         PHP
-        BMI err_18
-        BVC err_17
-        BCC err_11
+        JSR bmierr
+        JSR bvcerr
+        JSR bccerr
         CMP #$60
-        BNE err_12
+        JSR bneerr
         JSR next
 
 test8:
@@ -122,18 +97,18 @@ test8:
         LDA #$d0
         SBC #$30
         PHP
-        BPL err_18
-        BVS err_17
-        BCC err_11
+        JSR bplerr
+        JSR bvserr
+        JSR bccerr
         CMP #$a0
-        BNE err_12
+        JSR bneerr
         JSR next
 
 ok:
         LDY #0
 
 end:
-        LDA result
+        LDA test_count
         PLP
 
     
