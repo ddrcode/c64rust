@@ -27,18 +27,20 @@ impl Memory {
         // let size: usize = 1 << 16;
         Memory {
             ram: vec![0u8; size].into_boxed_slice(),
-            rom: vec![0u8; size].into_boxed_slice(),
+            rom: vec![0u8; 1+u16::MAX as usize].into_boxed_slice(),
         }
     }
 
     pub fn init_rom(&mut self, data: &[u8]) {
-        let mut idx = 0xa000 as usize;
+        let addr: usize = 0x10000 - data.len();
+        self.init_rom_at_addr(addr as u16, data);
+    }
+
+    pub fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
+        let mut idx = addr as usize;
         for byte in data.iter() {
             self.rom[idx] = *byte;
             idx += 1;
-            if idx == 0xc000 {
-                idx = 0xe000
-            };
         }
     }
 

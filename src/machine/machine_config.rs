@@ -1,6 +1,6 @@
 use crate::mos6510::Mnemonic;
 
-pub struct C64Config {
+pub struct MachineConfig {
     pub ram_size: usize,
     pub rom_size: usize,
     pub max_time: Option<u64>,
@@ -11,9 +11,9 @@ pub struct C64Config {
     pub verbose: bool,
 }
 
-impl C64Config {
+impl MachineConfig {
     pub fn new() -> Self {
-        C64Config {
+        MachineConfig {
             ram_size: 1 << 16,
             rom_size: 1 << 16,
             max_time: None,

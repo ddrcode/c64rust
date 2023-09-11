@@ -1,15 +1,19 @@
 # c64rust
 
-This is a simple (and incomplete) C64 emulator implemented in Rust. The main purpose of this project is to
+This is a simple (and incomplete) CMOS6502 and C64 emulator implemented in Rust. The main purpose of this project is to
 practice my Rust skills and turn into reality my old dream of building an emulator.
+
+When built, the project provides two binaries (in `target/debug`)
+- `machine`: a generic 6502 emulator (CPU and memory only)
+- `c64`: C64 emulator built on top of the above
 
 ## How to run
 
 1. Download ROM file
 2. Execute:
-   `cargo run -- --rom your-rom-file -s -d --stop-on-addr e5d1`
+   `cargo run --bin c64emu  -- --rom path-to-rom -s -d --stop-on-addr e5d1`
 
-The instruction above boots the rom and stops on an infinite loop waiting for
+The instruction above boots from the ROM and stops on an infinite loop waiting for
 user input. Then it prints screen memory.
 
 Running options:
@@ -32,6 +36,8 @@ Options:
   -h, --help                           Print help
   -V, --version                        Print version
 ```
+
+
 
 ## Current state
 
