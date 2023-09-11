@@ -2,6 +2,7 @@
 
 use super::*;
 use colored::*;
+use crate::machine::Memory;
 
 /*
  * RGB values of C64 colours

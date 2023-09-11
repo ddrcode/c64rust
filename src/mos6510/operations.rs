@@ -2,7 +2,7 @@ use super::{
     AddressMode, AddressMode::*, Mnemonic, Mnemonic::*, OpFn, Operation, OperationDef, OpsMap,
     ProcessorStatus,
 };
-use crate::c64::{RegSetter, C64};
+use crate::machine::{RegSetter, Machine};
 use std::num::Wrapping;
 
 // sources:
@@ -423,55 +423,55 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 // ----------------------------------------------------------------------
 // helpers
 
-fn get_val(op: &Operation, c64: &C64) -> Option<u8> {
+fn get_val(op: &Operation, machine: &Machine) -> Option<u8> {
     if let Some(addr) = op.address {
-        Some(c64.mem.get_byte(addr))
+        Some(machine.mem.get_byte(addr))
     } else if op.def.address_mode == Immediate {
         op.operand.as_ref().unwrap().get_byte()
     } else if op.def.address_mode == Accumulator {
-        Some(c64.A8())
+        Some(machine.A8())
     } else {
         None
     }
 }
 
-fn set_val(val: u8, op: &Operation, c64: &mut C64) {
+fn set_val(val: u8, op: &Operation, machine: &mut Machine) {
     if let Some(addr) = op.address {
-        c64.mem.set_byte(addr, val)
+        machine.mem.set_byte(addr, val)
     } else if op.def.address_mode == Accumulator {
-        c64.set_A(val)
+        machine.set_A(val)
     } else {
         panic!("Can't set value for address mode {}", op.def.address_mode)
     };
 }
 
-fn store_byte(val: u8, op: &Operation, c64: &mut C64) -> u8 {
-    c64.mem.set_byte(op.address.unwrap(), val);
+fn store_byte(val: u8, op: &Operation, machine: &mut Machine) -> u8 {
+    machine.mem.set_byte(op.address.unwrap(), val);
     op.def.cycles
 }
 
-fn set_flags(flags: &str, vals: &[bool], c64: &mut C64) {
+fn set_flags(flags: &str, vals: &[bool], machine: &mut Machine) {
     let chars = String::from(flags);
     if chars.len() != vals.len() {
         panic!("Incorrect args length in set_flags")
     };
     for (i, ch) in chars.chars().enumerate() {
         match ch {
-            'C' => c64.cpu.registers.status.carry = vals[i],
-            'Z' => c64.cpu.registers.status.zero = vals[i],
-            'I' => c64.cpu.registers.status.interrupt_disable = vals[i],
-            'D' => c64.cpu.registers.status.decimal_mode = vals[i],
-            'B' => c64.cpu.registers.status.break_command = vals[i],
-            'V' => c64.cpu.registers.status.overflow = vals[i],
-            'N' => c64.cpu.registers.status.negative = vals[i],
+            'C' => machine.cpu.registers.status.carry = vals[i],
+            'Z' => machine.cpu.registers.status.zero = vals[i],
+            'I' => machine.cpu.registers.status.interrupt_disable = vals[i],
+            'D' => machine.cpu.registers.status.decimal_mode = vals[i],
+            'B' => machine.cpu.registers.status.break_command = vals[i],
+            'V' => machine.cpu.registers.status.overflow = vals[i],
+            'N' => machine.cpu.registers.status.negative = vals[i],
             _ => panic!("Unrecognized flag symbol: {}", ch),
         };
     }
 }
 
-fn set_nz_flags(val: u8, c64: &mut C64) {
-    c64.cpu.registers.status.negative = neg(val);
-    c64.cpu.registers.status.zero = zero(val);
+fn set_nz_flags(val: u8, machine: &mut Machine) {
+    machine.cpu.registers.status.negative = neg(val);
+    machine.cpu.registers.status.zero = zero(val);
 }
 
 fn neg(val: u8) -> bool {
@@ -490,253 +490,253 @@ fn overflow(in1: u8, in2: u8, result: u8) -> bool {
 // implementation of operations
 
 // TODO compute cycles for page cross
-fn op_adc(op: &Operation, c64: &mut C64) -> u8 {
-    let a = c64.A8();
-    let val = get_val(op, c64).unwrap();
-    let carry = u16::from(c64.P().carry);
-    let sum = c64.A16() + val as u16 + carry;
-    c64.set_A((sum & 0xff) as u8);
-    let res = c64.A8();
+fn op_adc(op: &Operation, machine: &mut Machine) -> u8 {
+    let a = machine.A8();
+    let val = get_val(op, machine).unwrap();
+    let carry = u16::from(machine.P().carry);
+    let sum = machine.A16() + val as u16 + carry;
+    machine.set_A((sum & 0xff) as u8);
+    let res = machine.A8();
     set_flags(
         "NZCV",
         &[neg(res), zero(res), sum > 0xff, overflow(a, val, res)],
-        c64,
+        machine,
     );
     op.def.cycles
 }
 
-fn op_bit(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
+fn op_bit(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = get_val(op, machine).unwrap();
     set_flags(
         "NZV",
-        &[neg(val), zero(val & c64.A8()), val & 0b01000000 > 0],
-        c64,
+        &[neg(val), zero(val & machine.A8()), val & 0b01000000 > 0],
+        machine,
     );
     op.def.cycles
 }
 
-fn op_branch(op: &Operation, c64: &mut C64) -> u8 {
+fn op_branch(op: &Operation, machine: &mut Machine) -> u8 {
     let branch: bool = match op.def.mnemonic {
-        BCC => !c64.P().carry,
-        BCS => c64.P().carry,
-        BNE => !c64.P().zero,
-        BEQ => c64.P().zero,
-        BPL => !c64.P().negative,
-        BMI => c64.P().negative,
-        BVC => !c64.P().overflow,
-        BVS => c64.P().overflow,
+        BCC => !machine.P().carry,
+        BCS => machine.P().carry,
+        BNE => !machine.P().zero,
+        BEQ => machine.P().zero,
+        BPL => !machine.P().negative,
+        BMI => machine.P().negative,
+        BVC => !machine.P().overflow,
+        BVS => machine.P().overflow,
         _ => panic!("{} is not a branch operation", op.def.mnemonic),
     };
     if branch {
-        c64.cpu.registers.counter = op.address.unwrap();
+        machine.cpu.registers.counter = op.address.unwrap();
         return op.def.cycles + 1; // TODO consider page change
     }
     op.def.cycles
 }
 
-fn op_brk(op: &Operation, c64: &mut C64) -> u8 {
-    set_flags("B", &[true], c64);
+fn op_brk(op: &Operation, machine: &mut Machine) -> u8 {
+    set_flags("B", &[true], machine);
     op.def.cycles
 }
 
 // TODO add cycle for page change
-fn op_compare(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
+fn op_compare(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = get_val(op, machine).unwrap();
     let reg = match op.def.mnemonic {
-        CMP => c64.A8(),
-        CPX => c64.X8(),
-        CPY => c64.Y8(),
+        CMP => machine.A8(),
+        CPX => machine.X8(),
+        CPY => machine.Y8(),
         _ => panic!("{} is not a compare operation", op.def.mnemonic),
     };
     let diff = (Wrapping(reg) - Wrapping(val)).0;
-    set_flags("NZC", &[neg(diff), reg == val, reg >= val], c64);
+    set_flags("NZC", &[neg(diff), reg == val, reg >= val], machine);
     op.def.cycles
 }
 
-fn op_incdec_mem(op: &Operation, c64: &mut C64) -> u8 {
-    let mut val = Wrapping(get_val(op, c64).unwrap());
+fn op_incdec_mem(op: &Operation, machine: &mut Machine) -> u8 {
+    let mut val = Wrapping(get_val(op, machine).unwrap());
     match op.def.mnemonic {
         DEC => val -= 1,
         INC => val += 1,
         _ => panic!("{} is not a inc/dec (mem) operation", op.def.mnemonic),
     };
-    set_val(val.0, op, c64);
-    set_nz_flags(val.0, c64);
+    set_val(val.0, op, machine);
+    set_nz_flags(val.0, machine);
     op.def.cycles
 }
 
-fn op_incdec_reg(op: &Operation, c64: &mut C64) -> u8 {
+fn op_incdec_reg(op: &Operation, machine: &mut Machine) -> u8 {
     match op.def.mnemonic {
-        DEX => c64.cpu.registers.x -= 1,
-        DEY => c64.cpu.registers.y -= 1,
-        INX => c64.cpu.registers.x += 1,
-        INY => c64.cpu.registers.y += 1,
+        DEX => machine.cpu.registers.x -= 1,
+        DEY => machine.cpu.registers.y -= 1,
+        INX => machine.cpu.registers.x += 1,
+        INY => machine.cpu.registers.y += 1,
         _ => panic!("{} is not a inc/dec operation", op.def.mnemonic),
     };
     let val = match op.def.mnemonic {
-        DEX | INX => c64.X8(),
-        DEY | INY => c64.Y8(),
+        DEX | INX => machine.X8(),
+        DEY | INY => machine.Y8(),
         _ => panic!("{} is not a inc/dec operation", op.def.mnemonic),
     };
-    set_nz_flags(val, c64);
+    set_nz_flags(val, machine);
     op.def.cycles
 }
 
 // TODO add cycle for page change
-fn op_bitwise(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
+fn op_bitwise(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = get_val(op, machine).unwrap();
     match op.def.mnemonic {
-        AND => c64.cpu.registers.accumulator &= val,
-        ORA => c64.cpu.registers.accumulator |= val,
-        EOR => c64.cpu.registers.accumulator ^= val,
+        AND => machine.cpu.registers.accumulator &= val,
+        ORA => machine.cpu.registers.accumulator |= val,
+        EOR => machine.cpu.registers.accumulator ^= val,
         _ => panic!("{} is not a bitwise operation", op.def.mnemonic),
     };
-    set_nz_flags(c64.A8(), c64);
+    set_nz_flags(machine.A8(), machine);
     op.def.cycles
 }
 
-fn op_flag(op: &Operation, c64: &mut C64) -> u8 {
+fn op_flag(op: &Operation, machine: &mut Machine) -> u8 {
     match op.def.mnemonic {
-        CLC => c64.cpu.registers.status.carry = false,
-        SEC => c64.cpu.registers.status.carry = true,
-        CLI => c64.cpu.registers.status.interrupt_disable = false,
-        SEI => c64.cpu.registers.status.interrupt_disable = true,
-        CLD => c64.cpu.registers.status.decimal_mode = false,
-        SED => c64.cpu.registers.status.decimal_mode = true,
-        CLV => c64.cpu.registers.status.overflow = false,
+        CLC => machine.cpu.registers.status.carry = false,
+        SEC => machine.cpu.registers.status.carry = true,
+        CLI => machine.cpu.registers.status.interrupt_disable = false,
+        SEI => machine.cpu.registers.status.interrupt_disable = true,
+        CLD => machine.cpu.registers.status.decimal_mode = false,
+        SED => machine.cpu.registers.status.decimal_mode = true,
+        CLV => machine.cpu.registers.status.overflow = false,
         _ => panic!("{} is not a flag set/unset operation", op.def.mnemonic),
     };
     op.def.cycles
 }
 
-fn op_jmp(op: &Operation, c64: &mut C64) -> u8 {
-    c64.cpu.registers.counter = op.address.unwrap();
+fn op_jmp(op: &Operation, machine: &mut Machine) -> u8 {
+    machine.cpu.registers.counter = op.address.unwrap();
     op.def.cycles
 }
 
-fn op_jsr(op: &Operation, c64: &mut C64) -> u8 {
-    let pc = c64.PC().wrapping_sub(1);
-    c64.push((pc >> 8) as u8);
-    c64.push((pc & 0x00ff) as u8);
-    c64.cpu.registers.counter = op.address.unwrap();
+fn op_jsr(op: &Operation, machine: &mut Machine) -> u8 {
+    let pc = machine.PC().wrapping_sub(1);
+    machine.push((pc >> 8) as u8);
+    machine.push((pc & 0x00ff) as u8);
+    machine.cpu.registers.counter = op.address.unwrap();
     op.def.cycles
 }
 
 // FIXME add cycle for crossing page boundary
-fn op_load(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
+fn op_load(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = get_val(op, machine).unwrap();
     match op.def.mnemonic {
-        LDA => c64.set_A(val),
-        LDX => c64.set_X(val),
-        LDY => c64.set_Y(val),
+        LDA => machine.set_A(val),
+        LDX => machine.set_X(val),
+        LDY => machine.set_Y(val),
         _ => panic!("{} is not a load operation", op.def.mnemonic),
     };
-    set_nz_flags(val, c64);
+    set_nz_flags(val, machine);
     op.def.cycles
 }
 
-fn op_nop(op: &Operation, _c64: &mut C64) -> u8 {
+fn op_nop(op: &Operation, _machine: &mut Machine) -> u8 {
     op.def.cycles
 }
 
-fn op_pla(op: &Operation, c64: &mut C64) -> u8 {
-    let val = c64.pop();
-    c64.set_A(val);
-    set_nz_flags(val, c64);
+fn op_pla(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = machine.pop();
+    machine.set_A(val);
+    set_nz_flags(val, machine);
     op.def.cycles
 }
 
-fn op_plp(op: &Operation, c64: &mut C64) -> u8 {
-    let val = c64.pop();
-    c64.cpu.registers.status = ProcessorStatus::from(val);
+fn op_plp(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = machine.pop();
+    machine.cpu.registers.status = ProcessorStatus::from(val);
     op.def.cycles
 }
 
-fn op_push(op: &Operation, c64: &mut C64) -> u8 {
+fn op_push(op: &Operation, machine: &mut Machine) -> u8 {
     let val = match op.def.mnemonic {
-        PHA => c64.A8(),
-        PHP => u8::from(&c64.P()),
+        PHA => machine.A8(),
+        PHP => u8::from(&machine.P()),
         _ => panic!("{} is not a push operation", op.def.mnemonic),
     };
-    c64.mem.set_byte(c64.stack_addr(), val);
-    c64.cpu.registers.stack -= 1;
+    machine.mem.set_byte(machine.stack_addr(), val);
+    machine.cpu.registers.stack -= 1;
     op.def.cycles
 }
 
-fn op_rotate(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
-    let c = if c64.P().carry { 0xff } else { 0 };
+fn op_rotate(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = get_val(op, machine).unwrap();
+    let c = if machine.P().carry { 0xff } else { 0 };
     let (new_val, mask, carry) = match op.def.mnemonic {
         ROL => (val << 1, c & 1, val & 0b10000000 > 0),
         ROR => (val >> 1, c & 0b10000000, val & 1 > 0),
         _ => panic!("{} is not a rotate operation", op.def.mnemonic),
     };
-    set_val(new_val | mask, op, c64);
+    set_val(new_val | mask, op, machine);
     set_flags(
         "NZC",
         &[neg(new_val | mask), zero(new_val | mask), carry],
-        c64,
+        machine,
     );
     op.def.cycles
 }
 
-fn op_rts(op: &Operation, c64: &mut C64) -> u8 {
-    c64.cpu.registers.counter = (c64.pop() as u16 | ((c64.pop() as u16) << 8)).wrapping_add(1);
+fn op_rts(op: &Operation, machine: &mut Machine) -> u8 {
+    machine.cpu.registers.counter = (machine.pop() as u16 | ((machine.pop() as u16) << 8)).wrapping_add(1);
     op.def.cycles
 }
 
 // https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
 // http://retro.hansotten.nl/uploads/mag6502/sbc_tsx_txs_instructions.pdf
 // TODO compute page crossing cycles
-fn op_sbc(op: &Operation, c64: &mut C64) -> u8 {
-    let a = c64.A8();
-    let val = get_val(op, c64).unwrap();
-    let carry = u16::from(!c64.P().carry);
-    let sum = c64.A16() + (!val) as u16 + carry;
-    c64.set_A((sum & 0xff) as u8);
-    let res = c64.A8();
+fn op_sbc(op: &Operation, machine: &mut Machine) -> u8 {
+    let a = machine.A8();
+    let val = get_val(op, machine).unwrap();
+    let carry = u16::from(!machine.P().carry);
+    let sum = machine.A16() + (!val) as u16 + carry;
+    machine.set_A((sum & 0xff) as u8);
+    let res = machine.A8();
     set_flags(
         "NZCV",
         &[neg(res), zero(res), sum > 0xff, overflow(a, !val, res)],
-        c64,
+        machine,
     );
     op.def.cycles
 }
 
-fn op_shift(op: &Operation, c64: &mut C64) -> u8 {
-    let val = get_val(op, c64).unwrap();
+fn op_shift(op: &Operation, machine: &mut Machine) -> u8 {
+    let val = get_val(op, machine).unwrap();
     let (res, carry) = match op.def.mnemonic {
         ASL => ((Wrapping(val) << 1).0, val & 0b10000000 > 0),
         LSR => (val >> 1, val & 1 > 0),
         _ => panic!("{} is not a shift operation", op.def.mnemonic),
     };
-    set_val(res, op, c64);
-    set_flags("NZC", &[neg(res), zero(res), carry], c64);
+    set_val(res, op, machine);
+    set_flags("NZC", &[neg(res), zero(res), carry], machine);
     op.def.cycles
 }
 
-fn op_store(op: &Operation, c64: &mut C64) -> u8 {
+fn op_store(op: &Operation, machine: &mut Machine) -> u8 {
     match op.def.mnemonic {
-        STA => store_byte(c64.A8(), op, c64),
-        STX => store_byte(c64.X8(), op, c64),
-        STY => store_byte(c64.Y8(), op, c64),
+        STA => store_byte(machine.A8(), op, machine),
+        STX => store_byte(machine.X8(), op, machine),
+        STY => store_byte(machine.Y8(), op, machine),
         _ => panic!("{} is not a store operation", op.def.mnemonic),
     }
 }
 
-fn op_transfer(op: &Operation, c64: &mut C64) -> u8 {
+fn op_transfer(op: &Operation, machine: &mut Machine) -> u8 {
     match op.def.mnemonic {
-        TAX => c64.set_X(c64.A()),
-        TAY => c64.set_Y(c64.A()),
-        TXA => c64.set_A(c64.X()),
-        TYA => c64.set_A(c64.Y()),
-        TXS => c64.set_SC(c64.X()),
-        TSX => c64.set_X(c64.SC()),
+        TAX => machine.set_X(machine.A()),
+        TAY => machine.set_Y(machine.A()),
+        TXA => machine.set_A(machine.X()),
+        TYA => machine.set_A(machine.Y()),
+        TXS => machine.set_SC(machine.X()),
+        TSX => machine.set_X(machine.SC()),
         _ => panic!("{} is not a transfer operation", op.def.mnemonic),
     };
     if op.def.mnemonic != TXS {
         // TXS doesn't change any flag
-        set_nz_flags(c64.A8(), c64);
+        set_nz_flags(machine.A8(), machine);
     }
     op.def.cycles
 }

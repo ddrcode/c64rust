@@ -1,4 +1,4 @@
-use crate::c64::C64Config;
+use crate::machine::MachineConfig;
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -13,6 +13,9 @@ pub struct Args {
 
     #[arg(long = "ram-file-addr", default_value_t=String::from("0200"))]
     pub ram_file_addr: String,
+
+    #[arg(long="ram-size", default_value_t=65536)]
+    pub ram_size: usize,
 
     #[arg(short='a', long="start-addr", default_value_t=String::from("fce2"))]
     pub start_addr: String,
@@ -39,10 +42,10 @@ pub struct Args {
     pub verbose: bool,
 }
 
-impl From<&Args> for C64Config {
+impl From<&Args> for MachineConfig {
     fn from(args: &Args) -> Self {
-        C64Config {
-            ram_size: 1 << 16,
+        MachineConfig {
+            ram_size: args.ram_size as usize,
             rom_size: 1 << 16,
             max_time: args.max_time,
             max_cycles: args.max_cycles,

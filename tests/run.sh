@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ASM="./bin/acme"
-EMU="../target/debug/c64emu"
+EMU="../target/debug/machine"
 ADDR="0200"
 
 GREEN='\033[0;32m'
@@ -15,6 +15,9 @@ FAILED_MSG="[ ${RED}Failed${RC} ]"
 
 mkdir -p ./target/
 
+# build app
+RUSTFLAGS="-Awarnings" cargo build --bin machine
+
 # build rom file for tests
 $ASM --cpu 6502 --format plain -o target/rom.p src/roms/tests-rom.asm
 
@@ -23,7 +26,7 @@ run_test() {
     local bin_file="./target/${file}.p"
     local addr_dec=$(echo "ibase=16; $ADDR"|bc)
     $ASM --cpu 6502 -f plain --setpc "$addr_dec" -o "$bin_file" "./src/${file}.asm"
-    local res=$($EMU --rom ./target/rom.p --ram "$bin_file" --ram-file-addr "$ADDR" --show-status | sed 's/\$//g')
+    local res=$($EMU --rom ./target/rom.p --ram "$bin_file" --ram-size 1024 --ram-file-addr "$ADDR" --show-status | sed 's/\$//g')
     printf -- "%s" "$res"
 }
 
