@@ -13,17 +13,17 @@ RC='\033[0m' # Reset Color
 OK_MSG="[   ${GREEN}OK${RC}   ]"
 FAILED_MSG="[ ${RED}Failed${RC} ]"
 
-mkdir -p ./asm-out/
+mkdir -p ./target/
 
 # build rom file for tests
-$ASM --cpu 6502 --format plain -o asm-out/rom.p asm/rom.asm
+$ASM --cpu 6502 --format plain -o target/rom.p src/roms/tests-rom.asm
 
 run_test() {
     local file="$1"
-    local bin_file="./asm-out/${file}.p"
+    local bin_file="./target/${file}.p"
     local addr_dec=$(echo "ibase=16; $ADDR"|bc)
-    $ASM --cpu 6502 -f plain --setpc "$addr_dec" -o "$bin_file" "./asm/${file}.asm"
-    local res=$($EMU --rom ./asm-out/rom.p --ram "$bin_file" --ram-file-addr "$ADDR" --show-status | sed 's/\$//g')
+    $ASM --cpu 6502 -f plain --setpc "$addr_dec" -o "$bin_file" "./src/${file}.asm"
+    local res=$($EMU --rom ./target/rom.p --ram "$bin_file" --ram-file-addr "$ADDR" --show-status | sed 's/\$//g')
     printf -- "%s" "$res"
 }
 
@@ -48,6 +48,8 @@ test() {
     echo "   Reg Y - error code"
     echo "   Reg P - last status before the error"
     echo ""
+
+    exit 1
 }
 
 test "mul1"

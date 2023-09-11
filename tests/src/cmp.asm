@@ -31,28 +31,10 @@
 
         JMP start
 
-; stores number of correctly executed tests
-result  !byte    0 
-last_op !byte    0
-
 
 ; SUBROUTINES
 
-; clears registers and C flag after each test 
-clear:
-        LDA #0
-        LDX #0
-        LDY #0
-        CLC
-        RTS
-
-; increments result variable after each test
-; preserving status flags (as they are needed for following tests)
-inc_score:
-        PHP
-        INC result
-        PLP
-        RTS
+!source "src/common/test_routines.asm"
 
 
 ; PROGRAM
@@ -66,91 +48,64 @@ start:
 ; Tests CMP for immediate address mode
 ; opcode: $C9
 imd:
-        LDA #$c9
-        STA last_op
-
-        JSR clear
-
         LDA #$66
         CMP #$66
+        PHP
         
-        BNE err
-        JSR inc_score      ; result = 1
+        JSR bneerr
+        JSR bmierr
+        JSR bccerr
         
-        BMI err
-        JSR inc_score      ; result = 2
-        
-        BCC err
-        JSR inc_score      ; result = 3
+        JSR next      ; result = 3
 
 
 
 zp:                        ; test for zero-page, equal
-        LDA #$c5
-        STA last_op
-
-        JSR clear
-
         LDA #$80
         CMP $f0
-        
-        BNE err
-        JSR inc_score      ; result = 4
-        
-        BMI err
-        JSR inc_score      ; result = 5
-        
-        BCC err
-        JSR inc_score      ; result = 6
+        PHP
+
+        JSR bneerr
+        JSR bmierr
+        JSR bccerr
+        JSR next      ; result = 6
 
 
 
 zpx:
-        LDA #$d5
-        STA last_op
-
         LDA #$f0
         STA $f0
-        JSR clear
 
         LDA #$01
         LDX #$03
         CMP ($ed,X)
+        PHP
 
-        BEQ err
-        JSR inc_score
-        
-        BMI err
-        JSR inc_score
-        
-        BCS err
-        JSR inc_score
+        JSR beqerr
+        JSR bmierr
+        JSR bcserr
+        JSR next
 
 
 
 aby:
         LDA #$04
         STA $f0
-        JSR clear
         LDA #$95
         LDY #$1
+        
         CMP $ef,Y
-        BEQ err
-        JSR inc_score
-        BPL err
-        JSR inc_score
-        BCC err
-        JSR inc_score
+        PHP
+
+        JSR beqerr
+        JSR bplerr
+        JSR bccerr
+        JSR next
 
 ok:
-        LDA #$42
-        JMP end
-
-err:
-        LDA result
+        LDY #0
 
 end:
-        LDX last_op
-        LDY #0
-        CLC
+        LDA test_count
+        PLP
 
