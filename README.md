@@ -43,21 +43,19 @@ Options:
 - MOS6502 (6510) instruction set fully implemented
 - C64 memory addressing implemented (RAM/ROM switching)
 - The emulator can print out current screen memory (text only)
-- The emulator boots (with some errors, but doesn't break) with provided C64 ROM
+- The emulator boots with provided C64 ROM
 
 This is the result of running current version of the emulator:
 
-<img src="screenshots/first-version-with-bugs.png?raw=true" width="300"/>
+<img src="screenshots/first-version-working.png?raw=true" width="300"/>
 
 ## Features and goals
 
 ### Short-term / realistic goals
 
-- Booting with errors means (most likely) 6502 emulation contains bugs; the primary goal is to find
-  and fix them (tests being actively developed)
-- Ability to boot the emulator with binary kernel and successfully load it
 - Clock emulation (currently it ticks at host speed; it's not an issue as there is no emulation of
   other devices like GPU/VIC II, so sync is not required).
+- Client that refreshes text screen state automatically
 
 ### Ambitions
 
