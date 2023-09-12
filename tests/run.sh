@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ASM="./bin/acme"
+ASM="acme"
 EMU="../target/debug/machine"
 ADDR="0200"
 
