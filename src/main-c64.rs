@@ -41,8 +41,8 @@ fn main() {
         c64.machine.mem.write(addr, &ram[..]);
     }
 
-    // machine.run(u16::from_str_radix(&args.start_addr, 16).unwrap()); // start KERNAL
     c64.start();
+
 
     if args.show_status {
         println!("{}", c64.machine.cpu.registers);

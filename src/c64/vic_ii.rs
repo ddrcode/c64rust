@@ -55,4 +55,9 @@ impl VIC_II {
         println!("{}", " ".repeat(42).on_truecolor(0x6c, 0x5e, 0xb5));
         println!("              ");
     }
+
+    pub fn to_ascii(screen_code: u8) -> char {
+        let chars: Vec<char> = SCREEN_CODES.chars().collect();
+        chars[screen_code as usize]
+    }
 }

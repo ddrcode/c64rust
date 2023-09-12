@@ -9,6 +9,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.2", features = ["derive"] }
 colored = "2"
+cursive = "0.20"
+substring = "1.4.5"
 
 [[bin]]
 name = "machine"
@@ -17,3 +19,7 @@ path = "src/main.rs"
 [[bin]]
 name = "c64"
 path = "src/main-c64.rs"
+
+[[bin]]
+name = "gui"
+path = "src/main-gui.rs"
