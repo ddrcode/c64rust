@@ -1,17 +1,16 @@
 #![allow(non_snake_case)]
 
-use super::{VIC_II};
+use super::VIC_II;
+use crate::machine::{Machine, MachineConfig, Memory, RegSetter};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
-use crate::machine::{ MachineConfig, Machine, Memory, RegSetter };
 use std::num::Wrapping;
 
 pub struct C64 {
     pub machine: Machine,
     pub gpu: VIC_II,
 }
-
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
@@ -25,14 +24,24 @@ impl C64 {
             gpu: VIC_II {},
         }
     }
+    pub fn power_on(&mut self) {
+        self.machine.power_on();
+    }
 
     // boot sequence, etc
-    pub fn power_on(&mut self) {
+    pub fn power_on2(&mut self) {
         // see https://www.pagetable.com/c64ref/c64mem/
+        // https://sta.c64.org/cbm64mem.html
         self.machine.mem.set_byte(0x0000, 0x2f);
         self.machine.mem.set_byte(0x0001, 0x37);
         self.machine.mem.set_word(0x0003, 0xb1aa);
         self.machine.mem.set_word(0x0005, 0xb391);
+
+        // Curent I/O device (keyboard/screen)
+        self.machine.mem.set_byte(0x0013, 0);
+
+        // Pointer to next expression in string stack. Values: $19; $1C; $1F; $22.
+        self.machine.mem.set_byte(0x0016, 0x19);
 
         // Location where BASIC program text is stored
         // https://www.pagetable.com/c64ref/c64mem/#002C
@@ -41,6 +50,22 @@ impl C64 {
         // Highest address available to BASIC
         // see https://www.pagetable.com/c64ref/c64mem/#0037
         self.machine.mem.set_word(0x0037, 0xa000);
+
+        // default input and output devices
+        self.machine.mem.set_byte(0x0099, 0);
+        self.machine.mem.set_byte(0x0099, 3);
+
+        // Pointer to beginning of BASIC area after memory test.
+        self.machine.mem.set_word(0x0281, 0x0800);
+
+        // Pointer to end of BASIC area after memory test.
+        self.machine.mem.set_word(0x0283, 0xa000);
+
+        // High byte of pointer to screen memory for screen input/output.
+        self.machine.mem.set_byte(0x0288, 0x04);
+
+        // PETSCII conversion routine
+        self.machine.mem.set_word(0x028f, 0xeb48);
 
         // graphics register
         // https://www.c64-wiki.com/wiki/53265
@@ -92,4 +117,3 @@ impl C64 {
         self.machine.mem.init_rom_at_addr(0xe000, &data[8192..]);
     }
 }
-

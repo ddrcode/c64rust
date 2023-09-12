@@ -16,7 +16,7 @@ FAILED_MSG="[ ${RED}Failed${RC} ]"
 mkdir -p ./target/
 
 # build app
-RUSTFLAGS="-Awarnings" cargo build --bin machine
+cargo build --bin machine
 
 # build rom file for tests
 $ASM --cpu 6502 --format plain -o target/rom.p src/roms/tests-rom.asm
@@ -60,4 +60,5 @@ test "mul2"
 test "cmp" 
 test "adc" 
 test "sbc" 
+test "add-sub-16bit"
 

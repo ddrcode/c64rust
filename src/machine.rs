@@ -1,9 +1,9 @@
 mod machine;
-mod memory;
 mod machine_config;
+mod memory;
 
 pub use {
-    machine::{ Machine, RegSetter },
-    memory::Memory,
+    machine::{Machine, RegSetter},
     machine_config::MachineConfig,
+    memory::Memory,
 };

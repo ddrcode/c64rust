@@ -14,7 +14,7 @@ pub struct Args {
     #[arg(long = "ram-file-addr", default_value_t=String::from("0200"))]
     pub ram_file_addr: String,
 
-    #[arg(long="ram-size", default_value_t=65536)]
+    #[arg(long = "ram-size", default_value_t = 65536)]
     pub ram_size: usize,
 
     #[arg(short='a', long="start-addr", default_value_t=String::from("fce2"))]
