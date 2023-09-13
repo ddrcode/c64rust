@@ -7,16 +7,15 @@ use crate::mos6510::{
 use std::num::Wrapping;
 
 pub struct MachineEvents {
-    pub on_next: Option<fn(&mut Machine, &u64)>
+    pub on_next: Option<fn(&mut Machine, &u64)>,
 }
 
 pub struct Machine {
     pub config: MachineConfig,
     pub cpu: MOS6510,
     pub mem: Memory,
-    pub events: MachineEvents
+    pub events: MachineEvents,
 }
-
 
 pub fn machine_loop(machine: &mut Machine) {
     let mut cycles = 0u64;
@@ -91,9 +90,7 @@ impl Machine {
             config: config,
             cpu: MOS6510::new(),
             mem: Memory::new(size),
-            events: MachineEvents {
-                on_next: None
-            }
+            events: MachineEvents { on_next: None },
         }
     }
 

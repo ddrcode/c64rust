@@ -2,6 +2,19 @@ use cursive::view::Nameable;
 use cursive::views::{LinearLayout, PaddedView, ResizedView};
 use cursive_tabs::TabPanel;
 
+use super::{ Screen };
+
+pub struct MainScreen {
+    c64_screen: Screen
+}
+
+impl MainScreen {
+    pub new() -> Self {
+        let screen = Screen::new();
+        MainScreen { c64_screen: screen }
+    }
+}
+
 pub fn mainscreen() -> PaddedView<LinearLayout> {
     // let mut tab_panel = TabPanel::new()
     //     .with_tab(ResizedView::with_full_screen(request_panel::panel()).with_name("Request"))

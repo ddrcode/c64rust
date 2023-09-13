@@ -1,24 +1,24 @@
 use cursive::event::Key;
 
+mod c64;
 mod cli_args;
 mod cli_utils;
 mod gui;
 mod machine;
-mod c64;
 mod mos6510;
 
 // mod actions;
 // mod views;
 //
-use std::thread;
-use std::sync::{ Arc, Mutex };
-use std::time;
-use clap::Parser;
-use crate::gui::Screen;
-use crate::c64::{C64, machine_loop};
+use crate::c64::{machine_loop, C64};
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
-use crate::machine::{MachineConfig};
+use crate::gui::Screen;
+use crate::machine::MachineConfig;
+use clap::Parser;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time;
 
 fn main() {
     let args = Args::parse();
@@ -43,20 +43,15 @@ fn main() {
     });
 
     let mut siv = cursive::default();
-    
+
     // siv.add_layer(views::mainscreen());
 
-    let mut screen = Screen::new();
-    let ten_millis = time::Duration::from_millis(20000);
-        thread::sleep(ten_millis);
+    let mut screen = Screen::new(c64);
 
     siv.menubar().add_leaf("Quit", |s| s.quit());
     siv.add_global_callback(Key::Esc, |s| s.select_menubar());
     // siv.add_global_callback(Key::F5, |s| actions::execute_request(s));
-    screen.content = c64.lock().unwrap().get_screen_memory();
     siv.add_layer(screen);
-
 
     siv.run();
 }
-

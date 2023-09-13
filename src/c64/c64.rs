@@ -1,14 +1,14 @@
 #![allow(non_snake_case)]
 
 use super::VIC_II;
-use crate::machine::{Machine, MachineConfig, Memory, RegSetter, MachineEvents};
+use crate::machine::{Machine, MachineConfig, MachineEvents, Memory, RegSetter};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
 use std::num::Wrapping;
-use std::sync::{ Arc, Mutex };
-use std::time;
+use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time;
 
 pub struct C64 {
     pub machine: Machine,
@@ -56,13 +56,13 @@ impl C64 {
                         // it simulates line drawing (to avoid infinite loop waiting for next line)
                         machine.mem.set_byte(0xd012, (*cycles % 255) as u8);
 
-                        if *cycles==600000 {
+                        if *cycles == 600000 {
                             machine.mem.set_byte(0x0277, 65);
                             machine.mem.set_byte(0x00c6, 1); // number of keys in the keyboard buffer
                             machine.mem.set_byte(0xffe4, 22);
                         }
-                    })
-                }
+                    }),
+                },
             },
             gpu: VIC_II {},
         }
@@ -92,6 +92,13 @@ impl C64 {
             chars.push(ch);
         }
         chars
+    }
+
+    pub fn send_key(&mut self, ch: char) {
+        let sc = VIC_II::to_screen_code(ch);
+        self.machine.mem.set_byte(0x0277, u64::from(ch) as u8);
+        self.machine.mem.set_byte(0x00c6, 1); // number of keys in the keyboard buffer
+        self.machine.mem.set_byte(0xffe4, 22);
     }
 }
 

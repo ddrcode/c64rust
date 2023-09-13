@@ -8,10 +8,10 @@ mod mos6510;
 #[cfg(test)]
 mod tests;
 
-use clap::Parser;
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
 use crate::machine::{Machine, MachineConfig};
+use clap::Parser;
 
 fn main() {
     let args = Args::parse();

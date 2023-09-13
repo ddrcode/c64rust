@@ -13,10 +13,10 @@ mod mos6510;
 #[cfg(test)]
 mod tests;
 
-use crate::c64::{ C64, machine_loop };
+use crate::c64::{machine_loop, C64};
 use crate::cli_args::Args;
-use crate::machine::{Machine, MachineConfig };
-use std::sync::{ Arc, Mutex };
+use crate::machine::{Machine, MachineConfig};
+use std::sync::{Arc, Mutex};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
     let mut f = File::open(filename).expect("no file found");
@@ -46,7 +46,6 @@ fn main() {
     // machine_loop(c64.as_mut());
     let arc = Arc::new(Mutex::new(c64));
     machine_loop(arc.clone());
-
 
     // if args.show_status {
     //     println!("{}", c64.machine.cpu.registers);

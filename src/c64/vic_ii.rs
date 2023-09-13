@@ -60,4 +60,8 @@ impl VIC_II {
         let chars: Vec<char> = SCREEN_CODES.chars().collect();
         chars[screen_code as usize]
     }
+
+    pub fn to_screen_code(ch: char) -> u8 {
+        (u64::from(ch) - 64) as u8
+    }
 }

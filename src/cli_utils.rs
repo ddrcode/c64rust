@@ -8,4 +8,3 @@ pub fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
     f.read_to_end(&mut buffer).expect("buffer overflow");
     buffer
 }
-
