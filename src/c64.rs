@@ -1,4 +1,6 @@
 mod c64;
 mod vic_ii;
+mod runtime;
 
-pub use {c64::machine_loop, c64::C64, vic_ii::VIC_II};
+pub use {
+    runtime::*, c64::C64, vic_ii::VIC_II};

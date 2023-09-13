@@ -311,6 +311,18 @@ impl Machine {
     pub fn stack_addr(&self) -> u16 {
         0x0100 | self.SC().0 as u16
     }
+
+    // see https://en.wikipedia.org/wiki/Interrupts_in_65xx_processors
+    pub fn irq(&mut self) {
+        if !self.P().interrupt_disable {
+            let [msb, lsb] = self.PC().to_be_bytes();
+            self.push(msb);
+            self.push(lsb);
+            self.push(u8::from(&self.P()));
+            self.cpu.registers.status.interrupt_disable = false;
+            self.cpu.registers.counter = self.mem.get_word(0xfffe);
+        }
+    }
 }
 
 #[cfg(test)]

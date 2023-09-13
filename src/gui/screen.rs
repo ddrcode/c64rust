@@ -44,7 +44,11 @@ impl View for Screen {
             Event::Char(ch) => {
                 self.c64.lock().unwrap().send_key(ch);
                 EventResult::Consumed(None)
-            },
+            }
+            Event::Key(Key::Enter) => {
+                self.c64.lock().unwrap().send_key(char::from(13));
+                EventResult::Consumed(None)
+            }
             // Event::Char('l') | Event::Key(Key::Left) => self.push(LRUD::Left),
             // Event::Char('r') | Event::Key(Key::Right) => self.push(LRUD::Right),
             // Event::Char('u') | Event::Key(Key::Up) => self.push(LRUD::Up),

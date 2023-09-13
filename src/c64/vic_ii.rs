@@ -62,6 +62,25 @@ impl VIC_II {
     }
 
     pub fn to_screen_code(ch: char) -> u8 {
-        (u64::from(ch) - 64) as u8
+        for (i, c) in SCREEN_CODES.chars().enumerate() {
+            if ch == c {
+                return i as u8;
+            }
+        }
+        0
+    }
+
+    pub fn ascii_to_petscii(ch: char) -> u8 {
+        let c = u64::from(ch) as u8;
+        if c >= 32 && c <= 93 {
+            return c;
+        }
+        if c == 13 || c == 10 {
+            return 13;
+        }
+        if c >= 97 && c <= 122 {
+            return c - 32;
+        }
+        0
     }
 }

@@ -10,7 +10,7 @@ mod mos6510;
 // mod actions;
 // mod views;
 //
-use crate::c64::{machine_loop, C64};
+use crate::c64::{machine_loop, irq_loop,  C64};
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
 use crate::gui::Screen;
@@ -37,9 +37,14 @@ fn main() {
     }
 
     // c64.start();
-    let c64loop = Arc::clone(&c64);
+    let machine_loop_c64 = Arc::clone(&c64);
     thread::spawn(move || {
-        machine_loop(c64loop);
+        machine_loop(machine_loop_c64);
+    });
+
+    let irq_loop_c64 = Arc::clone(&c64);
+    thread::spawn(move || {
+        irq_loop(irq_loop_c64);
     });
 
     let mut siv = cursive::default();

@@ -15,34 +15,6 @@ pub struct C64 {
     pub gpu: VIC_II,
 }
 
-pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
-    let mut cycles = 0u64;
-    let ten_millis = time::Duration::from_nanos(1);
-    loop {
-        {
-            let mut c64 = c64mutex.lock().unwrap();
-            if let Some(max_cycles) = c64.machine.config.max_cycles {
-                if cycles > max_cycles {
-                    break;
-                }
-            }
-            if !c64.machine.next() {
-                break;
-            };
-            if let Some(on_next) = c64.machine.events.on_next {
-                on_next(&mut c64.machine, &cycles);
-            }
-            if let Some(addr) = c64.machine.config.exit_on_addr {
-                if c64.machine.PC() == addr {
-                    break;
-                }
-            }
-        }
-        // thread::sleep(ten_millis);
-        cycles += 1;
-    }
-}
-
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
         let size = config.ram_size.clone();
@@ -57,9 +29,7 @@ impl C64 {
                         machine.mem.set_byte(0xd012, (*cycles % 255) as u8);
 
                         if *cycles == 600000 {
-                            machine.mem.set_byte(0x0277, 65);
-                            machine.mem.set_byte(0x00c6, 1); // number of keys in the keyboard buffer
-                            machine.mem.set_byte(0xffe4, 22);
+                            machine.irq();
                         }
                     }),
                 },
@@ -95,10 +65,12 @@ impl C64 {
     }
 
     pub fn send_key(&mut self, ch: char) {
-        let sc = VIC_II::to_screen_code(ch);
-        self.machine.mem.set_byte(0x0277, u64::from(ch) as u8);
+        let sc = VIC_II::ascii_to_petscii(ch);
+        self.machine.mem.set_byte(0x0277, sc);
         self.machine.mem.set_byte(0x00c6, 1); // number of keys in the keyboard buffer
         self.machine.mem.set_byte(0xffe4, 22);
+        // self.machine.mem.set_byte(0xc5, 2);
+        // self.machine.mem.set_byte(0xcb, 3);
     }
 }
 
