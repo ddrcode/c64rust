@@ -6,10 +6,39 @@ use crate::mos6510::{
 };
 use std::num::Wrapping;
 
+pub struct MachineEvents {
+    pub on_next: Option<fn(&mut Machine, &u64)>
+}
+
 pub struct Machine {
     pub config: MachineConfig,
     pub cpu: MOS6510,
     pub mem: Memory,
+    pub events: MachineEvents
+}
+
+
+pub fn machine_loop(machine: &mut Machine) {
+    let mut cycles = 0u64;
+    loop {
+        if let Some(max_cycles) = machine.config.max_cycles {
+            if cycles > max_cycles {
+                break;
+            }
+        }
+        if !machine.next() {
+            break;
+        };
+        if let Some(on_next) = machine.events.on_next {
+            on_next(machine, &cycles);
+        }
+        if let Some(addr) = machine.config.exit_on_addr {
+            if machine.PC() == addr {
+                break;
+            }
+        }
+        cycles += 1;
+    }
 }
 
 pub trait RegSetter<T> {
@@ -49,6 +78,12 @@ impl RegSetter<Wrapping<u8>> for &mut Machine {
     }
 }
 
+impl AsRef<Machine> for Machine {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl Machine {
     pub fn new(config: MachineConfig) -> Self {
         let size = config.ram_size.clone();
@@ -56,6 +91,9 @@ impl Machine {
             config: config,
             cpu: MOS6510::new(),
             mem: Memory::new(size),
+            events: MachineEvents {
+                on_next: None
+            }
         }
     }
 
@@ -123,6 +161,9 @@ impl Machine {
                 if self.PC() == addr {
                     break;
                 }
+            }
+            if let Some(on_next) = self.events.on_next {
+                on_next(self, &cycles);
             }
             cycles += 1;
         }
