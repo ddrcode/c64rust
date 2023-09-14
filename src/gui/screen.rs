@@ -1,7 +1,7 @@
 use crate::c64::C64;
 use cursive::{
     event::{Callback, Event, EventResult, Key},
-    theme::{BaseColor, Color, ColorStyle, BaseColor::*, Color::*, PaletteColor::* },
+    theme::{BaseColor, BaseColor::*, Color, Color::*, ColorStyle, PaletteColor::*},
     views::Dialog,
     Printer, Vec2, View,
 };
@@ -21,38 +21,20 @@ impl Screen {
             screen_size: Vec2::new(44, 27),
         }
     }
-
-    fn get_theme() -> cursive::theme::Theme {
-        let mut palette = cursive::theme::Palette::default();
-        palette[Background] = Dark(Blue);
-        palette[Shadow] = Dark(Black);
-        palette[View] = Dark(White);
-        palette[Primary] = Dark(Black);
-        palette[Secondary] = Dark(Blue);
-        palette[Tertiary] = Light(White);
-        palette[TitlePrimary] = Dark(Red);
-        palette[TitleSecondary] = Dark(Yellow);
-        palette[Highlight] = Dark(Red);
-        palette[HighlightInactive] = Dark(Blue);
-        palette[HighlightText] = Dark(White);
-        
-
-        palette[Background] = Color::Rgb(0x6c, 0x5e, 0xb5);
-        palette[View] = Color::Rgb(0x6c, 0x5e, 0xb5);
-        palette[Tertiary] = Color::Rgb(0x6c, 0x5e, 0xb5);
-        palette[Shadow] = Color::Rgb(0x6c, 0x5e, 0xb5);
-        
-        cursive::theme::Theme {
-            shadow: true,
-            borders: cursive::theme::BorderStyle::Simple,
-            palette: palette,
-        }
-    }
 }
 
 impl View for Screen {
     fn draw(&self, printer: &Printer) {
-        let color = ColorStyle::new(Color::Rgb(0x6c, 0x5e, 0xb5), Color::Rgb(0x35, 0x28, 0x79));
+        let frame_color =
+            ColorStyle::new(Color::Rgb(0x35, 0x28, 0x79), Color::Rgb(0x6c, 0x5e, 0xb5));
+        let color = ColorStyle::new(Color::Rgb(0x70, 0xa4, 0xb2), Color::Rgb(0x35, 0x28, 0x79));
+
+        printer.with_color(frame_color, |printer| {
+            for i in 0..27 {
+                printer.print((0, i), &" ".repeat(44));
+            }
+        });
+
         let x_padding = 2;
         let y_padding = 1;
         let screen_padding = cursive::Vec2::new(x_padding, y_padding);
@@ -66,7 +48,7 @@ impl View for Screen {
     }
 
     fn required_size(&mut self, _constraint: cursive::Vec2) -> cursive::Vec2 {
-        cursive::Vec2::new(44, 27)
+        self.screen_size
     }
 
     fn on_event(&mut self, event: cursive::event::Event) -> cursive::event::EventResult {

@@ -87,7 +87,6 @@
               rustVersion
 
               pkgs.treefmt
-              pkgs.ncurses
               pkgs.acme
             ];
 

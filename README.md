@@ -41,13 +41,13 @@ Options:
 ## Current state
 
 - MOS6502 (6510) instruction set fully implemented
-- C64 memory addressing implemented (RAM/ROM switching)
-- The emulator can print out current screen memory (text only)
+- C64 memory addressing implemented (RAM/ROM switching, but no CIA)
 - The emulator boots with provided C64 ROM
+- Text client with simple keyboard support - possible to run BASIC commands
 
 This is the result of running current version of the emulator:
 
-<img src="screenshots/first-version-working.png?raw=true" width="300"/>
+<img src="screenshots/hello.png?raw=true" width="300"/>
 
 ## Features and goals
 
@@ -55,11 +55,11 @@ This is the result of running current version of the emulator:
 
 - Clock emulation (currently it ticks at host speed; it's not an issue as there is no emulation of
   other devices like GPU/VIC II, so sync is not required).
-- Client that refreshes text screen state automatically
+- Basic CIA features (at least clock and keyboard)
 
 ### Ambitions
 
-- Keyboard emulation
+- Keyboard emulation (current keyboard featue requires KERNAL as it writes directly to its memory)
 - VIC II graphics (without sprites and smooth scrolling)
 
 ### Long-term goals
