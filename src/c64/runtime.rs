@@ -1,12 +1,11 @@
-use std::sync::{Arc, Mutex};
 use super::C64;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
 
-
 /// Interval between IRQs in [ms]
 /// The value is specific for PAL systems. On NTSC systems the value
-/// was 1/60s. 
+/// was 1/60s.
 /// See:
 /// https://dustlayer.com/c64-coding-tutorials/2013/4/8/episode-2-3-did-i-interrupt-you
 const IRQ_INTERVAL: u32 = 20;
@@ -19,7 +18,6 @@ pub fn irq_loop(c64: C64Arc) {
         c64.lock().unwrap().machine.irq();
     }
 }
-
 
 pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
     let mut cycles = 0u64;

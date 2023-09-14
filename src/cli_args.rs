@@ -38,7 +38,7 @@ pub struct Args {
     #[arg(long = "stop-on-addr")]
     pub stop_on_addr: Option<String>,
 
-    #[arg(long="stop-on-brk")]
+    #[arg(long = "stop-on-brk")]
     pub stop_on_brk: bool,
 
     #[arg(short = 'v', long)]

@@ -11,7 +11,7 @@ mod mos6510;
 // mod actions;
 // mod views;
 //
-use crate::c64::{machine_loop, irq_loop,  C64};
+use crate::c64::{irq_loop, machine_loop, C64};
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
 use crate::gui::Screen;
@@ -25,7 +25,8 @@ fn set_theme(siv: &mut CursiveRunnable) {
     let mut theme = siv.current_theme().clone();
     theme.shadow = false;
     // theme.borders = cursive::theme::BorderStyle::None;
-    theme.palette[cursive::theme::PaletteColor::Background] = cursive::theme::Color::TerminalDefault;
+    theme.palette[cursive::theme::PaletteColor::Background] =
+        cursive::theme::Color::TerminalDefault;
     // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
     siv.set_theme(theme);
 }

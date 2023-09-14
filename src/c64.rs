@@ -1,6 +1,5 @@
 mod c64;
-mod vic_ii;
 mod runtime;
+mod vic_ii;
 
-pub use {
-    runtime::*, c64::C64, vic_ii::VIC_II};
+pub use {c64::C64, runtime::*, vic_ii::VIC_II};

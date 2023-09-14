@@ -2,14 +2,14 @@ use cursive::view::Nameable;
 use cursive::views::{LinearLayout, PaddedView, ResizedView};
 use cursive_tabs::TabPanel;
 
-use super::{ Screen };
+use super::Screen;
 
 pub struct MainScreen {
-    c64_screen: Screen
+    c64_screen: Screen,
 }
 
 impl MainScreen {
-    pub new() -> Self {
+    pub fn new() -> Self {
         let screen = Screen::new();
         MainScreen { c64_screen: screen }
     }
@@ -32,4 +32,3 @@ pub fn mainscreen() -> PaddedView<LinearLayout> {
     //         .child(tab_panel.with_name("tabitens")),
     // )
 }
-
