@@ -3,16 +3,19 @@
 This is a simple (and incomplete) CMOS6502 and C64 emulator implemented in Rust. The main purpose of this project is to
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
-When built, the project provides two binaries (in `target/debug`)
+When built, the project provides three binaries (in `target/debug`)
 
 - `machine`: a generic 6502 emulator (CPU and memory only)
-- `c64`: C64 emulator built on top of the above
+- `c64`: CLI-based C64 emulator built on top of the above - good for testing: it
+  can execute a binary and exit (on BRK or specific address) with processor status
+  (or full disassembly)
+- `gui`: ncurses-based client that allows for interaction with the emulator
 
 ## How to run
 
 1. Download ROM file
 2. Execute:
-   `cargo run --bin c64emu  -- --rom path-to-rom -s -d --stop-on-addr e5d1`
+   `cargo run --bin gui  -- --rom path-to-rom`
 
 The instruction above boots from the ROM and stops on an infinite loop waiting for
 user input. Then it prints screen memory.
@@ -33,6 +36,7 @@ Options:
       --max-cycles <MAX_CYCLES>
       --max-time <MAX_TIME>
       --stop-on-addr <STOP_ON_ADDR>
+      --stop-on-brk
   -v, --verbose
   -h, --help                           Print help
   -V, --version                        Print version
