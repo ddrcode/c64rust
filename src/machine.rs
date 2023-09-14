@@ -5,5 +5,5 @@ mod memory;
 pub use {
     machine::{machine_loop, Machine, MachineEvents, RegSetter},
     machine_config::MachineConfig,
-    memory::Memory,
+    memory::{MOS6502Memory, Memory},
 };

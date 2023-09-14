@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use super::VIC_II;
+use super::{C64Memory, VIC_II};
 use crate::machine::{Machine, MachineConfig, MachineEvents, Memory, RegSetter};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
@@ -22,7 +22,7 @@ impl C64 {
             machine: Machine {
                 config: config,
                 cpu: MOS6510::new(),
-                mem: Memory::new(size),
+                mem: Box::new(C64Memory::new(size)),
                 events: MachineEvents {
                     on_next: Some(|machine, cycle| {
                         // it simulates line drawing (to avoid infinite loop waiting for next line)
@@ -43,11 +43,6 @@ impl C64 {
 
     pub fn print_screen(&self) {
         self.gpu.print_screen(&self.machine.mem);
-    }
-
-    pub fn init_rom(&mut self, data: &[u8]) {
-        self.machine.mem.init_rom_at_addr(0xa000, &data[..8192]);
-        self.machine.mem.init_rom_at_addr(0xe000, &data[8192..]);
     }
 
     pub fn get_screen_memory(&self) -> String {

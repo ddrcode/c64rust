@@ -2,7 +2,7 @@ use super::{
     AddressMode, AddressMode::*, Mnemonic, Mnemonic::*, OpFn, Operation, OperationDef, OpsMap,
     ProcessorStatus,
 };
-use crate::machine::{Machine, RegSetter};
+use crate::machine::{Machine, Memory, RegSetter};
 use std::num::Wrapping;
 
 // sources:

@@ -1,6 +1,6 @@
 type Addr = u16;
 
-pub struct Memory {
+pub struct MOS6502Memory {
     ram: Box<[u8]>,
     rom: Box<[u8]>,
 }
@@ -22,18 +22,14 @@ pub struct Memory {
 /// The emulator provides 64kB of RAM and 64kB of ROM, but no extra memory for
 /// cartridges - it simply overrides ROM for cartridges (TBC whether such simplification
 /// is sufficient).
-impl Memory {
+
+impl MOS6502Memory {
     pub fn new(size: usize) -> Self {
         // let size: usize = 1 << 16;
-        Memory {
+        MOS6502Memory {
             ram: vec![0u8; size].into_boxed_slice(),
             rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
         }
-    }
-
-    pub fn init_rom(&mut self, data: &[u8]) {
-        let addr: usize = 0x10000 - data.len();
-        self.init_rom_at_addr(addr as u16, data);
     }
 
     pub fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
@@ -43,7 +39,9 @@ impl Memory {
             idx += 1;
         }
     }
+}
 
+impl Memory for MOS6502Memory {
     // TODO: Must check whether the three corresponding its at addr 0x00 are 1
     // check https://www.c64-wiki.com/wiki/Bank_Switching for details
     fn mem(&self, addr: Addr) -> &[u8] {
@@ -60,39 +58,54 @@ impl Memory {
         &self.ram
     }
 
-    pub fn get_byte(&self, addr: Addr) -> u8 {
-        self.mem(addr)[addr as usize]
+    fn init_rom(&mut self, data: &[u8]) {
+        let addr: usize = 0x10000 - data.len();
+        self.init_rom_at_addr(addr as u16, data);
     }
 
-    pub fn set_byte(&mut self, addr: Addr, val: u8) {
+    fn set_byte(&mut self, addr: Addr, val: u8) {
         if addr <= 1 {
             // println!("Setting {} to {}", addr, val);
         }
         self.ram[addr as usize] = val;
     }
 
-    pub fn get_word(&self, addr: Addr) -> u16 {
-        let idx = addr as usize;
-        let mem = self.mem(addr);
-        (mem[idx] as u16) | ((mem[idx + 1] as u16) << 8)
-    }
-
-    pub fn set_word(&mut self, addr: Addr, val: u16) {
+    fn set_word(&mut self, addr: Addr, val: u16) {
         let idx = addr as usize;
         let [high, low] = val.to_be_bytes();
         self.ram[idx] = low;
         self.ram[idx + 1] = high; // little endian!
     }
+}
 
-    pub fn write(&mut self, addr: Addr, data: &[u8]) {
-        let mut idx = addr as usize;
+pub trait Memory {
+    // TODO: Must check whether the three corresponding its at addr 0x00 are 1
+    // check https://www.c64-wiki.com/wiki/Bank_Switching for details
+    fn mem(&self, addr: Addr) -> &[u8];
+    fn init_rom(&mut self, data: &[u8]);
+
+    fn get_byte(&self, addr: Addr) -> u8 {
+        self.mem(addr)[addr as usize]
+    }
+
+    fn get_word(&self, addr: Addr) -> u16 {
+        let idx = addr as usize;
+        let mem = self.mem(addr);
+        (mem[idx] as u16) | ((mem[idx + 1] as u16) << 8)
+    }
+
+    fn set_byte(&mut self, addr: Addr, val: u8);
+    fn set_word(&mut self, addr: Addr, val: u16);
+
+    fn write(&mut self, addr: Addr, data: &[u8]) {
+        let mut idx = addr;
         for byte in data.iter() {
-            self.ram[idx] = *byte;
+            self.set_byte(idx, *byte);
             idx += 1;
         }
     }
 
-    pub fn dump(&self, from: Addr, to: Addr) {
+    fn dump(&self, from: Addr, to: Addr) {
         let range = std::ops::Range {
             start: from,
             end: to,

@@ -33,7 +33,7 @@ const SCREEN_CODES: &str = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !\"#$%&'()*+,-
 pub struct VIC_II {}
 
 impl VIC_II {
-    pub fn print_screen(&self, mem: &Memory) {
+    pub fn print_screen(&self, mem: &Box<dyn Memory + Send>) {
         let chars: Vec<char> = SCREEN_CODES.chars().collect();
         let mut n = 0;
         println!();

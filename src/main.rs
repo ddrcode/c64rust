@@ -10,7 +10,7 @@ mod tests;
 
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
-use crate::machine::{Machine, MachineConfig};
+use crate::machine::{Machine, MachineConfig, Memory};
 use clap::Parser;
 
 fn main() {

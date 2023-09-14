@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use super::{MachineConfig, Memory};
+use super::{MOS6502Memory, MachineConfig, Memory};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
@@ -13,7 +13,7 @@ pub struct MachineEvents {
 pub struct Machine {
     pub config: MachineConfig,
     pub cpu: MOS6510,
-    pub mem: Memory,
+    pub mem: Box<dyn Memory + Send>,
     pub events: MachineEvents,
 }
 
@@ -89,7 +89,7 @@ impl Machine {
         Machine {
             config: config,
             cpu: MOS6510::new(),
-            mem: Memory::new(size),
+            mem: Box::new(MOS6502Memory::new(size)),
             events: MachineEvents { on_next: None },
         }
     }

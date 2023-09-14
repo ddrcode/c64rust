@@ -15,7 +15,7 @@ mod tests;
 
 use crate::c64::{machine_loop, C64};
 use crate::cli_args::Args;
-use crate::machine::{Machine, MachineConfig};
+use crate::machine::{Machine, MachineConfig, Memory};
 use std::sync::{Arc, Mutex};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
@@ -31,7 +31,7 @@ fn main() {
 
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
-        c64.init_rom(&rom[..]);
+        c64.machine.mem.init_rom(&rom[..]);
     }
 
     c64.power_on();
