@@ -426,7 +426,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
 
 fn get_val(op: &Operation, machine: &Machine) -> Option<u8> {
     if let Some(addr) = op.address {
-        Some(machine.mem.get_byte(addr))
+        Some(machine.memory().get_byte(addr))
     } else if op.def.address_mode == Immediate {
         op.operand.as_ref().unwrap().get_byte()
     } else if op.def.address_mode == Accumulator {
@@ -438,7 +438,7 @@ fn get_val(op: &Operation, machine: &Machine) -> Option<u8> {
 
 fn set_val(val: u8, op: &Operation, machine: &mut Machine) {
     if let Some(addr) = op.address {
-        machine.mem.set_byte(addr, val)
+        machine.memory_mut().set_byte(addr, val)
     } else if op.def.address_mode == Accumulator {
         machine.set_A(val)
     } else {
@@ -447,7 +447,7 @@ fn set_val(val: u8, op: &Operation, machine: &mut Machine) {
 }
 
 fn store_byte(val: u8, op: &Operation, machine: &mut Machine) -> u8 {
-    machine.mem.set_byte(op.address.unwrap(), val);
+    machine.memory_mut().set_byte(op.address.unwrap(), val);
     op.def.cycles
 }
 
@@ -667,7 +667,8 @@ fn op_push(op: &Operation, machine: &mut Machine) -> u8 {
         PHP => u8::from(&machine.P()),
         _ => panic!("{} is not a push operation", op.def.mnemonic),
     };
-    machine.mem.set_byte(machine.stack_addr(), val);
+    let addr = machine.stack_addr();
+    machine.memory_mut().set_byte(addr, val);
     machine.cpu.registers.stack -= 1;
     op.def.cycles
 }

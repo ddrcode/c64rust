@@ -26,7 +26,7 @@ impl C64 {
                 events: MachineEvents {
                     on_next: Some(|machine, cycle| {
                         // it simulates line drawing (to avoid infinite loop waiting for next line)
-                        machine.mem.set_byte(0xd012, (*cycle % 255) as u8);
+                        machine.memory_mut().set_byte(0xd012, (*cycle % 255) as u8);
                     }),
                 },
             },
@@ -38,17 +38,17 @@ impl C64 {
     }
 
     pub fn load(&mut self, progmem: &[u8], addr: u16) {
-        self.machine.mem.write(addr, progmem);
+        self.machine.memory_mut().write(addr, progmem);
     }
 
     pub fn print_screen(&self) {
-        self.gpu.print_screen(&self.machine.mem);
+        self.gpu.print_screen(&self.machine.memory());
     }
 
     pub fn get_screen_memory(&self) -> String {
         let mut chars = String::new();
         for i in 0x0400..0x07e8 {
-            let sc = self.machine.mem.get_byte(i);
+            let sc = self.machine.memory().get_byte(i);
             let ch = VIC_II::to_ascii(sc);
             chars.push(ch);
         }
@@ -57,11 +57,11 @@ impl C64 {
 
     pub fn send_key(&mut self, ch: char) {
         let sc = VIC_II::ascii_to_petscii(ch);
-        self.machine.mem.set_byte(0x0277, sc);
-        self.machine.mem.set_byte(0x00c6, 1); // number of keys in the keyboard buffer
-        self.machine.mem.set_byte(0xffe4, 22);
-        // self.machine.mem.set_byte(0xc5, 2);
-        // self.machine.mem.set_byte(0xcb, 3);
+        self.machine.memory_mut().set_byte(0x0277, sc);
+        self.machine.memory_mut().set_byte(0x00c6, 1); // number of keys in the keyboard buffer
+        self.machine.memory_mut().set_byte(0xffe4, 22);
+        // self.machine.memory_mut().set_byte(0xc5, 2);
+        // self.machine.memory_mut().set_byte(0xcb, 3);
     }
 }
 

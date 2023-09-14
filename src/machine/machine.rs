@@ -94,6 +94,14 @@ impl Machine {
         }
     }
 
+    pub fn memory(&self) -> &Box<dyn Memory + Send + 'static> {
+        &self.mem
+    }
+
+    pub fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static> {
+        &mut self.mem
+    }
+
     // registry shortcuts
     pub fn A(&self) -> Wrapping<u8> {
         self.cpu.registers.accumulator
@@ -135,12 +143,12 @@ impl Machine {
     // boot sequence, etc
     pub fn power_on(&mut self) {
         // see https://www.pagetable.com/c64ref/c64mem/
-        self.mem.set_byte(0x0000, 0x2f);
-        self.mem.set_byte(0x0001, 0x37);
+        self.memory_mut().set_byte(0x0000, 0x2f);
+        self.memory_mut().set_byte(0x0001, 0x37);
 
         // By default, after start, the PC is set to address from RST vector ($fffc)
         // http://wilsonminesco.com/6502primer/MemMapReqs.html
-        self.cpu.registers.counter = self.mem.get_word(0xfffc);
+        self.cpu.registers.counter = self.memory_mut().get_word(0xfffc);
     }
 
     pub fn start(&mut self) {
@@ -185,11 +193,11 @@ impl Machine {
     fn print_op(&self, op: &Operation) {
         let addr = self.PC() - op.def.len() as u16;
         let val = match op.def.len() {
-            2 => format!("{:02x}   ", self.mem.get_byte(addr + 1)),
+            2 => format!("{:02x}   ", self.memory().get_byte(addr + 1)),
             3 => format!(
                 "{:02x} {:02x}",
-                self.mem.get_byte(addr + 1),
-                self.mem.get_byte(addr + 2)
+                self.memory().get_byte(addr + 1),
+                self.memory().get_byte(addr + 2)
             ),
             _ => String::from("     "),
         };
@@ -205,13 +213,13 @@ impl Machine {
     }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {
-        let val = self.mem.get_byte(self.PC());
+        let val = self.memory().get_byte(self.PC());
         self.inc_counter();
         val
     }
 
     fn get_word_and_inc_pc(&mut self) -> u16 {
-        let val = self.mem.get_word(self.PC());
+        let val = self.memory().get_word(self.PC());
         self.inc_counter();
         self.inc_counter();
         val
@@ -262,19 +270,19 @@ impl Machine {
             AddressMode::Indirect => {
                 let addr = operand.get_word().unwrap();
                 let addr2 = (addr & 0xff00) | ((addr + 1) & 0x00ff); // page change not allowed!
-                let (lo, hi) = to_u16(self.mem.get_byte(addr), self.mem.get_byte(addr2));
+                let (lo, hi) = to_u16(self.memory().get_byte(addr), self.memory().get_byte(addr2));
                 Some(lo | hi << 8)
             }
             AddressMode::IndirectX => {
                 let (o, x) = to_u16(operand.get_byte().unwrap(), self.X8());
-                let lo = self.mem.get_byte((o + x) & 0x00ff) as u16;
-                let hi = u16::from(self.mem.get_byte((o + x + 1) & 0x00ff)) << 8;
+                let lo = self.memory().get_byte((o + x) & 0x00ff) as u16;
+                let hi = u16::from(self.memory().get_byte((o + x + 1) & 0x00ff)) << 8;
                 Some(hi | lo)
             }
             AddressMode::IndirectY => {
                 let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y8());
-                let lo = self.mem.get_byte(o) as u16;
-                let hi = u16::from(self.mem.get_byte((o + 1) & 0x00ff)) << 8;
+                let lo = self.memory().get_byte(o) as u16;
+                let hi = u16::from(self.memory().get_byte((o + 1) & 0x00ff)) << 8;
                 Some((hi | lo) + y)
             }
             AddressMode::Relative => {
@@ -287,17 +295,19 @@ impl Machine {
     }
 
     pub fn push(&mut self, val: u8) {
-        self.mem.set_byte(0x0100 | self.SC().0 as u16, val);
+        let sc = self.SC().0 as u16;
+        self.memory_mut().set_byte(0x0100 | sc, val);
         self.cpu.registers.stack -= 1;
     }
 
     pub fn pop(&mut self) -> u8 {
         self.cpu.registers.stack += 1;
-        self.mem.get_byte(0x0100 | self.SC().0 as u16)
+        let sc = self.SC().0 as u16;
+        self.memory().get_byte(0x0100 | sc)
     }
 
     pub fn load(&mut self, progmem: &[u8], addr: u16) {
-        self.mem.write(addr, progmem);
+        self.memory_mut().write(addr, progmem);
     }
 
     pub fn run(&mut self, addr: u16) {
@@ -319,7 +329,7 @@ impl Machine {
         self.push(lsb);
         self.push(u8::from(&self.P()));
         self.cpu.registers.status.interrupt_disable = true;
-        self.cpu.registers.counter = self.mem.get_word(addr);
+        self.cpu.registers.counter = self.memory().get_word(addr);
     }
 
     pub fn irq(&mut self) {

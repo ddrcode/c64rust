@@ -31,7 +31,7 @@ fn main() {
 
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
-        c64.machine.mem.init_rom(&rom[..]);
+        c64.machine.memory_mut().init_rom(&rom[..]);
     }
 
     c64.power_on();
@@ -39,7 +39,7 @@ fn main() {
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        c64.machine.mem.write(addr, &ram[..]);
+        c64.machine.memory_mut().write(addr, &ram[..]);
     }
 
     // c64.machine.start();

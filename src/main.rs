@@ -19,7 +19,7 @@ fn main() {
 
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
-        machine.mem.init_rom(&rom[..]);
+        machine.memory_mut().init_rom(&rom[..]);
     }
 
     machine.power_on();
@@ -27,17 +27,12 @@ fn main() {
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        machine.mem.write(addr, &ram[..]);
+        machine.memory_mut().write(addr, &ram[..]);
     }
 
-    // machine.run(u16::from_str_radix(&args.start_addr, 16).unwrap()); // start KERNAL
     machine.start();
 
     if args.show_status {
         println!("{}", machine.cpu.registers);
     }
-
-    // if args.show_screen {
-    //     machine.print_screen();
-    // }
 }
