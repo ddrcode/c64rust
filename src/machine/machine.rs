@@ -6,10 +6,38 @@ use crate::mos6510::{
 };
 use std::num::Wrapping;
 
+pub struct MachineEvents {
+    pub on_next: Option<fn(&mut Machine, &u64)>,
+}
+
 pub struct Machine {
     pub config: MachineConfig,
     pub cpu: MOS6510,
     pub mem: Memory,
+    pub events: MachineEvents,
+}
+
+pub fn machine_loop(machine: &mut Machine) {
+    let mut cycles = 0u64;
+    loop {
+        if let Some(max_cycles) = machine.config.max_cycles {
+            if cycles > max_cycles {
+                break;
+            }
+        }
+        if !machine.next() {
+            break;
+        };
+        if let Some(on_next) = machine.events.on_next {
+            on_next(machine, &cycles);
+        }
+        if let Some(addr) = machine.config.exit_on_addr {
+            if machine.PC() == addr {
+                break;
+            }
+        }
+        cycles += 1;
+    }
 }
 
 pub trait RegSetter<T> {
@@ -49,6 +77,12 @@ impl RegSetter<Wrapping<u8>> for &mut Machine {
     }
 }
 
+impl AsRef<Machine> for Machine {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl Machine {
     pub fn new(config: MachineConfig) -> Self {
         let size = config.ram_size.clone();
@@ -56,6 +90,7 @@ impl Machine {
             config: config,
             cpu: MOS6510::new(),
             mem: Memory::new(size),
+            events: MachineEvents { on_next: None },
         }
     }
 
@@ -124,6 +159,9 @@ impl Machine {
                     break;
                 }
             }
+            if let Some(on_next) = self.events.on_next {
+                on_next(self, &cycles);
+            }
             cycles += 1;
         }
     }
@@ -141,7 +179,7 @@ impl Machine {
         if self.config.disassemble {
             self.print_op(&op);
         }
-        Mnemonic::BRK != def.mnemonic
+        !(self.config.exit_on_brk && Mnemonic::BRK == def.mnemonic)
     }
 
     fn print_op(&self, op: &Operation) {
@@ -272,6 +310,26 @@ impl Machine {
     /// Returns current stack memory address
     pub fn stack_addr(&self) -> u16 {
         0x0100 | self.SC().0 as u16
+    }
+
+    // see https://en.wikipedia.org/wiki/Interrupts_in_65xx_processors
+    fn handle_interrupt(&mut self, addr: u16) {
+        let [msb, lsb] = self.PC().to_be_bytes();
+        self.push(msb);
+        self.push(lsb);
+        self.push(u8::from(&self.P()));
+        self.cpu.registers.status.interrupt_disable = true;
+        self.cpu.registers.counter = self.mem.get_word(addr);
+    }
+
+    pub fn irq(&mut self) {
+        if !self.P().interrupt_disable {
+            self.handle_interrupt(0xfffe);
+        }
+    }
+
+    pub fn nmi(&mut self) {
+        self.handle_interrupt(0xfffa);
     }
 }
 

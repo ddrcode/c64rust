@@ -38,6 +38,9 @@ pub struct Args {
     #[arg(long = "stop-on-addr")]
     pub stop_on_addr: Option<String>,
 
+    #[arg(long = "stop-on-brk")]
+    pub stop_on_brk: bool,
+
     #[arg(short = 'v', long)]
     pub verbose: bool,
 }
@@ -54,7 +57,7 @@ impl From<&Args> for MachineConfig {
             } else {
                 None
             },
-            exit_on_op: None,
+            exit_on_brk: args.stop_on_brk,
             disassemble: args.disassemble,
             verbose: args.verbose,
         }

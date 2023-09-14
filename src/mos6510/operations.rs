@@ -409,6 +409,7 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
     add_op(BRK, 0x00, 7, false, Implicit, op_brk);
     add_op(PLA, 0x68, 4, false, Implicit, op_pla);
     add_op(PLP, 0x28, 4, false, Implicit, op_plp);
+    add_op(RTI, 0x40, 6, false, Implicit, op_rti);
 
     for (key, val) in ops3.into_iter() {
         if o.contains_key(&key) {
@@ -539,8 +540,11 @@ fn op_branch(op: &Operation, machine: &mut Machine) -> u8 {
     op.def.cycles
 }
 
+// see https://www.c64-wiki.com/wiki/BRK
 fn op_brk(op: &Operation, machine: &mut Machine) -> u8 {
+    machine.cpu.registers.counter = machine.PC().wrapping_add(2);
     set_flags("B", &[true], machine);
+    machine.irq();
     op.def.cycles
 }
 
@@ -682,6 +686,12 @@ fn op_rotate(op: &Operation, machine: &mut Machine) -> u8 {
         &[neg(new_val | mask), zero(new_val | mask), carry],
         machine,
     );
+    op.def.cycles
+}
+
+fn op_rti(op: &Operation, machine: &mut Machine) -> u8 {
+    machine.cpu.registers.status = ProcessorStatus::from(machine.pop());
+    machine.cpu.registers.counter = machine.pop() as u16 | ((machine.pop() as u16) << 8);
     op.def.cycles
 }
 

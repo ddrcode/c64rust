@@ -87,6 +87,7 @@
               rustVersion
 
               pkgs.treefmt
+              pkgs.acme
             ];
 
           };

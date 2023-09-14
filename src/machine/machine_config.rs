@@ -6,7 +6,7 @@ pub struct MachineConfig {
     pub max_time: Option<u64>,
     pub max_cycles: Option<u64>,
     pub exit_on_addr: Option<u16>,
-    pub exit_on_op: Option<Mnemonic>,
+    pub exit_on_brk: bool,
     pub disassemble: bool,
     pub verbose: bool,
 }
@@ -19,7 +19,7 @@ impl MachineConfig {
             max_time: None,
             max_cycles: None,
             exit_on_addr: None,
-            exit_on_op: None,
+            exit_on_brk: false,
             disassemble: false,
             verbose: false,
         }

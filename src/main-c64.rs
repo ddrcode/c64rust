@@ -13,9 +13,10 @@ mod mos6510;
 #[cfg(test)]
 mod tests;
 
-use crate::c64::C64;
+use crate::c64::{machine_loop, C64};
 use crate::cli_args::Args;
 use crate::machine::{Machine, MachineConfig};
+use std::sync::{Arc, Mutex};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
     let mut f = File::open(filename).expect("no file found");
@@ -41,14 +42,15 @@ fn main() {
         c64.machine.mem.write(addr, &ram[..]);
     }
 
-    // machine.run(u16::from_str_radix(&args.start_addr, 16).unwrap()); // start KERNAL
-    c64.start();
+    // c64.machine.start();
+    let arc = Arc::new(Mutex::new(c64));
+    machine_loop(arc.clone());
 
     if args.show_status {
-        println!("{}", c64.machine.cpu.registers);
+        println!("{}", arc.lock().unwrap().machine.cpu.registers);
     }
 
     if args.show_screen {
-        c64.print_screen();
+        arc.lock().unwrap().print_screen();
     }
 }

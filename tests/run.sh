@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ASM="./bin/acme"
+ASM="acme"
 EMU="../target/debug/machine"
 ADDR="0200"
 
@@ -26,7 +26,7 @@ run_test() {
     local bin_file="./target/${file}.p"
     local addr_dec=$(echo "ibase=16; $ADDR"|bc)
     $ASM --cpu 6502 -f plain --setpc "$addr_dec" -o "$bin_file" "./src/${file}.asm"
-    local res=$($EMU --rom ./target/rom.p --ram "$bin_file" --ram-size 1024 --ram-file-addr "$ADDR" --show-status | sed 's/\$//g')
+    local res=$($EMU --rom ./target/rom.p --ram "$bin_file" --ram-size 1024 --ram-file-addr "$ADDR" --show-status --stop-on-brk | sed 's/\$//g')
     printf -- "%s" "$res"
 }
 

@@ -9,6 +9,9 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.2", features = ["derive"] }
 colored = "2"
+cursive = { version="0.20", default-features=false, features=["termion-backend"] }
+substring = "1.4.5"
+tokio = { version = "1.32.0", features = ["time"] }
 
 [[bin]]
 name = "machine"
@@ -17,3 +20,7 @@ path = "src/main.rs"
 [[bin]]
 name = "c64"
 path = "src/main-c64.rs"
+
+[[bin]]
+name = "gui"
+path = "src/main-gui.rs"

@@ -1,5 +1,9 @@
 # Integration Tests
 
+## Execution
+
+`./run.sh`
+
 ## Test results
 
 Registers:

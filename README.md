@@ -3,16 +3,19 @@
 This is a simple (and incomplete) CMOS6502 and C64 emulator implemented in Rust. The main purpose of this project is to
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
-When built, the project provides two binaries (in `target/debug`)
+When built, the project provides three binaries (in `target/debug`)
 
 - `machine`: a generic 6502 emulator (CPU and memory only)
-- `c64`: C64 emulator built on top of the above
+- `c64`: CLI-based C64 emulator built on top of the above - good for testing: it
+  can execute a binary and exit (on BRK or specific address) with processor status
+  (or full disassembly)
+- `gui`: ncurses-based client that allows for interaction with the emulator
 
 ## How to run
 
 1. Download ROM file
 2. Execute:
-   `cargo run --bin c64emu  -- --rom path-to-rom -s -d --stop-on-addr e5d1`
+   `cargo run --bin gui  -- --rom path-to-rom`
 
 The instruction above boots from the ROM and stops on an infinite loop waiting for
 user input. Then it prints screen memory.
@@ -33,6 +36,7 @@ Options:
       --max-cycles <MAX_CYCLES>
       --max-time <MAX_TIME>
       --stop-on-addr <STOP_ON_ADDR>
+      --stop-on-brk
   -v, --verbose
   -h, --help                           Print help
   -V, --version                        Print version
@@ -41,13 +45,13 @@ Options:
 ## Current state
 
 - MOS6502 (6510) instruction set fully implemented
-- C64 memory addressing implemented (RAM/ROM switching)
-- The emulator can print out current screen memory (text only)
+- C64 memory addressing implemented (RAM/ROM switching, but no CIA)
 - The emulator boots with provided C64 ROM
+- Text client with simple keyboard support - possible to run BASIC commands
 
 This is the result of running current version of the emulator:
 
-<img src="screenshots/first-version-working.png?raw=true" width="300"/>
+<img src="screenshots/hello.png?raw=true" width="300"/>
 
 ## Features and goals
 
@@ -55,11 +59,11 @@ This is the result of running current version of the emulator:
 
 - Clock emulation (currently it ticks at host speed; it's not an issue as there is no emulation of
   other devices like GPU/VIC II, so sync is not required).
-- Client that refreshes text screen state automatically
+- Basic CIA features (at least clock and keyboard)
 
 ### Ambitions
 
-- Keyboard emulation
+- Keyboard emulation (current keyboard featue requires KERNAL as it writes directly to its memory)
 - VIC II graphics (without sprites and smooth scrolling)
 
 ### Long-term goals

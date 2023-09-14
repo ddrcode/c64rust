@@ -65,6 +65,9 @@ impl Memory {
     }
 
     pub fn set_byte(&mut self, addr: Addr, val: u8) {
+        if addr <= 1 {
+            // println!("Setting {} to {}", addr, val);
+        }
         self.ram[addr as usize] = val;
     }
 
