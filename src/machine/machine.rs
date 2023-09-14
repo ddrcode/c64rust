@@ -179,7 +179,7 @@ impl Machine {
         if self.config.disassemble {
             self.print_op(&op);
         }
-        Mnemonic::BRK != def.mnemonic
+        !(self.config.exit_on_brk && Mnemonic::BRK == def.mnemonic)
     }
 
     fn print_op(&self, op: &Operation) {
@@ -313,15 +313,23 @@ impl Machine {
     }
 
     // see https://en.wikipedia.org/wiki/Interrupts_in_65xx_processors
+    fn handle_interrupt(&mut self, addr: u16) {
+        let [msb, lsb] = self.PC().to_be_bytes();
+        self.push(msb);
+        self.push(lsb);
+        self.push(u8::from(&self.P()));
+        self.cpu.registers.status.interrupt_disable = true;
+        self.cpu.registers.counter = self.mem.get_word(addr);
+    }
+
     pub fn irq(&mut self) {
         if !self.P().interrupt_disable {
-            let [msb, lsb] = self.PC().to_be_bytes();
-            self.push(msb);
-            self.push(lsb);
-            self.push(u8::from(&self.P()));
-            self.cpu.registers.status.interrupt_disable = false;
-            self.cpu.registers.counter = self.mem.get_word(0xfffe);
+            self.handle_interrupt(0xfffe);
         }
+    }
+
+    pub fn nmi(&mut self) {
+        self.handle_interrupt(0xfffa);
     }
 }
 

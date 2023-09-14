@@ -24,13 +24,9 @@ impl C64 {
                 cpu: MOS6510::new(),
                 mem: Memory::new(size),
                 events: MachineEvents {
-                    on_next: Some(|machine, cycles| {
+                    on_next: Some(|machine, cycle| {
                         // it simulates line drawing (to avoid infinite loop waiting for next line)
-                        machine.mem.set_byte(0xd012, (*cycles % 255) as u8);
-
-                        if *cycles == 600000 {
-                            machine.irq();
-                        }
+                        machine.mem.set_byte(0xd012, (*cycle % 255) as u8);
                     }),
                 },
             },

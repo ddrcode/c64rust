@@ -43,16 +43,14 @@ fn main() {
     }
 
     // c64.machine.start();
-    // machine_loop(c64.as_mut());
     let arc = Arc::new(Mutex::new(c64));
     machine_loop(arc.clone());
 
-    // if args.show_status {
-    //     println!("{}", c64.machine.cpu.registers);
-    // }
+    if args.show_status {
+        println!("{}", arc.lock().unwrap().machine.cpu.registers);
+    }
 
     if args.show_screen {
-        // c64.print_screen();
         arc.lock().unwrap().print_screen();
     }
 }

@@ -540,8 +540,11 @@ fn op_branch(op: &Operation, machine: &mut Machine) -> u8 {
     op.def.cycles
 }
 
+// see https://www.c64-wiki.com/wiki/BRK
 fn op_brk(op: &Operation, machine: &mut Machine) -> u8 {
+    machine.cpu.registers.counter = machine.PC().wrapping_add(2);
     set_flags("B", &[true], machine);
+    machine.irq();
     op.def.cycles
 }
 

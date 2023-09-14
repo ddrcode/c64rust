@@ -23,7 +23,6 @@ pub fn irq_loop(c64: C64Arc) {
 
 pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
     let mut cycles = 0u64;
-    let sleep_time = time::Duration::from_nanos(1);
     loop {
         {
             let mut c64 = c64mutex.lock().unwrap();
@@ -44,7 +43,6 @@ pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
                 }
             }
         }
-        // thread::sleep(sleep_time);
         cycles += 1;
     }
 }
