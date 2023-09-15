@@ -33,6 +33,6 @@ fn main() {
     machine.start();
 
     if args.show_status {
-        println!("{}", machine.cpu.registers);
+        println!("{}", machine.cpu().registers);
     }
 }

@@ -47,7 +47,7 @@ fn main() {
     machine_loop(arc.clone());
 
     if args.show_status {
-        println!("{}", arc.lock().unwrap().machine.cpu.registers);
+        println!("{}", arc.lock().unwrap().machine.cpu().registers);
     }
 
     if args.show_screen {

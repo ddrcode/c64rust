@@ -458,21 +458,21 @@ fn set_flags(flags: &str, vals: &[bool], machine: &mut Machine) {
     };
     for (i, ch) in chars.chars().enumerate() {
         match ch {
-            'C' => machine.cpu.registers.status.carry = vals[i],
-            'Z' => machine.cpu.registers.status.zero = vals[i],
-            'I' => machine.cpu.registers.status.interrupt_disable = vals[i],
-            'D' => machine.cpu.registers.status.decimal_mode = vals[i],
-            'B' => machine.cpu.registers.status.break_command = vals[i],
-            'V' => machine.cpu.registers.status.overflow = vals[i],
-            'N' => machine.cpu.registers.status.negative = vals[i],
+            'C' => machine.cpu_mut().registers.status.carry = vals[i],
+            'Z' => machine.cpu_mut().registers.status.zero = vals[i],
+            'I' => machine.cpu_mut().registers.status.interrupt_disable = vals[i],
+            'D' => machine.cpu_mut().registers.status.decimal_mode = vals[i],
+            'B' => machine.cpu_mut().registers.status.break_command = vals[i],
+            'V' => machine.cpu_mut().registers.status.overflow = vals[i],
+            'N' => machine.cpu_mut().registers.status.negative = vals[i],
             _ => panic!("Unrecognized flag symbol: {}", ch),
         };
     }
 }
 
 fn set_nz_flags(val: u8, machine: &mut Machine) {
-    machine.cpu.registers.status.negative = neg(val);
-    machine.cpu.registers.status.zero = zero(val);
+    machine.cpu_mut().registers.status.negative = neg(val);
+    machine.cpu_mut().registers.status.zero = zero(val);
 }
 
 fn neg(val: u8) -> bool {
@@ -534,7 +534,7 @@ fn op_branch(op: &Operation, machine: &mut Machine) -> u8 {
         _ => panic!("{} is not a branch operation", op.def.mnemonic),
     };
     if branch {
-        machine.cpu.registers.counter = op.address.unwrap();
+        machine.set_PC(op.address.unwrap());
         return op.def.cycles + 1; // TODO consider page change
     }
     op.def.cycles
@@ -542,7 +542,7 @@ fn op_branch(op: &Operation, machine: &mut Machine) -> u8 {
 
 // see https://www.c64-wiki.com/wiki/BRK
 fn op_brk(op: &Operation, machine: &mut Machine) -> u8 {
-    machine.cpu.registers.counter = machine.PC().wrapping_add(2);
+    machine.set_PC(machine.PC().wrapping_add(2));
     set_flags("B", &[true], machine);
     machine.irq();
     op.def.cycles
@@ -576,10 +576,10 @@ fn op_incdec_mem(op: &Operation, machine: &mut Machine) -> u8 {
 
 fn op_incdec_reg(op: &Operation, machine: &mut Machine) -> u8 {
     match op.def.mnemonic {
-        DEX => machine.cpu.registers.x -= 1,
-        DEY => machine.cpu.registers.y -= 1,
-        INX => machine.cpu.registers.x += 1,
-        INY => machine.cpu.registers.y += 1,
+        DEX => machine.cpu_mut().registers.x -= 1,
+        DEY => machine.cpu_mut().registers.y -= 1,
+        INX => machine.cpu_mut().registers.x += 1,
+        INY => machine.cpu_mut().registers.y += 1,
         _ => panic!("{} is not a inc/dec operation", op.def.mnemonic),
     };
     let val = match op.def.mnemonic {
@@ -595,9 +595,9 @@ fn op_incdec_reg(op: &Operation, machine: &mut Machine) -> u8 {
 fn op_bitwise(op: &Operation, machine: &mut Machine) -> u8 {
     let val = get_val(op, machine).unwrap();
     match op.def.mnemonic {
-        AND => machine.cpu.registers.accumulator &= val,
-        ORA => machine.cpu.registers.accumulator |= val,
-        EOR => machine.cpu.registers.accumulator ^= val,
+        AND => machine.cpu_mut().registers.accumulator &= val,
+        ORA => machine.cpu_mut().registers.accumulator |= val,
+        EOR => machine.cpu_mut().registers.accumulator ^= val,
         _ => panic!("{} is not a bitwise operation", op.def.mnemonic),
     };
     set_nz_flags(machine.A8(), machine);
@@ -606,20 +606,20 @@ fn op_bitwise(op: &Operation, machine: &mut Machine) -> u8 {
 
 fn op_flag(op: &Operation, machine: &mut Machine) -> u8 {
     match op.def.mnemonic {
-        CLC => machine.cpu.registers.status.carry = false,
-        SEC => machine.cpu.registers.status.carry = true,
-        CLI => machine.cpu.registers.status.interrupt_disable = false,
-        SEI => machine.cpu.registers.status.interrupt_disable = true,
-        CLD => machine.cpu.registers.status.decimal_mode = false,
-        SED => machine.cpu.registers.status.decimal_mode = true,
-        CLV => machine.cpu.registers.status.overflow = false,
+        CLC => machine.cpu_mut().registers.status.carry = false,
+        SEC => machine.cpu_mut().registers.status.carry = true,
+        CLI => machine.cpu_mut().registers.status.interrupt_disable = false,
+        SEI => machine.cpu_mut().registers.status.interrupt_disable = true,
+        CLD => machine.cpu_mut().registers.status.decimal_mode = false,
+        SED => machine.cpu_mut().registers.status.decimal_mode = true,
+        CLV => machine.cpu_mut().registers.status.overflow = false,
         _ => panic!("{} is not a flag set/unset operation", op.def.mnemonic),
     };
     op.def.cycles
 }
 
 fn op_jmp(op: &Operation, machine: &mut Machine) -> u8 {
-    machine.cpu.registers.counter = op.address.unwrap();
+    machine.set_PC(op.address.unwrap());
     op.def.cycles
 }
 
@@ -627,7 +627,7 @@ fn op_jsr(op: &Operation, machine: &mut Machine) -> u8 {
     let pc = machine.PC().wrapping_sub(1);
     machine.push((pc >> 8) as u8);
     machine.push((pc & 0x00ff) as u8);
-    machine.cpu.registers.counter = op.address.unwrap();
+    machine.set_PC(op.address.unwrap());
     op.def.cycles
 }
 
@@ -657,7 +657,7 @@ fn op_pla(op: &Operation, machine: &mut Machine) -> u8 {
 
 fn op_plp(op: &Operation, machine: &mut Machine) -> u8 {
     let val = machine.pop();
-    machine.cpu.registers.status = ProcessorStatus::from(val);
+    machine.cpu_mut().registers.status = ProcessorStatus::from(val);
     op.def.cycles
 }
 
@@ -669,7 +669,7 @@ fn op_push(op: &Operation, machine: &mut Machine) -> u8 {
     };
     let addr = machine.stack_addr();
     machine.memory_mut().set_byte(addr, val);
-    machine.cpu.registers.stack -= 1;
+    machine.cpu_mut().registers.stack -= 1;
     op.def.cycles
 }
 
@@ -691,14 +691,15 @@ fn op_rotate(op: &Operation, machine: &mut Machine) -> u8 {
 }
 
 fn op_rti(op: &Operation, machine: &mut Machine) -> u8 {
-    machine.cpu.registers.status = ProcessorStatus::from(machine.pop());
-    machine.cpu.registers.counter = machine.pop() as u16 | ((machine.pop() as u16) << 8);
+    machine.cpu_mut().registers.status = ProcessorStatus::from(machine.pop());
+    machine.cpu_mut().registers.counter = machine.pop() as u16 | ((machine.pop() as u16) << 8);
     op.def.cycles
 }
 
 fn op_rts(op: &Operation, machine: &mut Machine) -> u8 {
-    machine.cpu.registers.counter =
-        (machine.pop() as u16 | ((machine.pop() as u16) << 8)).wrapping_add(1);
+    let lo = machine.pop() as u16;
+    let hi = machine.pop() as u16;
+    machine.set_PC((lo | hi << 8).wrapping_add(1));
     op.def.cycles
 }
 

@@ -21,7 +21,7 @@ impl C64 {
         C64 {
             machine: Machine {
                 config: config,
-                cpu: MOS6510::new(),
+                mos6510: MOS6510::new(),
                 mem: Box::new(C64Memory::new(size)),
                 events: MachineEvents {
                     on_next: Some(|machine, cycle| {
