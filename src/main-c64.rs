@@ -15,7 +15,7 @@ mod tests;
 
 use crate::c64::{machine_loop, C64};
 use crate::cli_args::Args;
-use crate::machine::{Machine, MachineConfig, Memory};
+use crate::machine::{Machine, MachineConfig};
 use std::sync::{Arc, Mutex};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
@@ -31,7 +31,7 @@ fn main() {
 
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
-        c64.machine.memory_mut().init_rom(&rom[..]);
+        c64.memory_mut().init_rom(&rom[..]);
     }
 
     c64.power_on();
@@ -39,15 +39,16 @@ fn main() {
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        c64.machine.memory_mut().write(addr, &ram[..]);
+        c64.memory_mut().write(addr, &ram[..]);
     }
 
     // c64.machine.start();
     let arc = Arc::new(Mutex::new(c64));
-    machine_loop(arc.clone());
+    let arc_loop: Arc<Mutex<dyn Machine>> = arc.clone();
+    machine_loop(arc_loop);
 
     if args.show_status {
-        println!("{}", arc.lock().unwrap().machine.cpu().registers);
+        println!("{}", arc.lock().unwrap().cpu().registers);
     }
 
     if args.show_screen {

@@ -15,7 +15,7 @@ use crate::c64::{irq_loop, machine_loop, C64};
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
 use crate::gui::Screen;
-use crate::machine::{MachineConfig, Memory};
+use crate::machine::{Machine, MachineConfig, Memory};
 use clap::Parser;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -36,7 +36,7 @@ fn main() {
     let c64 = Arc::new(Mutex::new(C64::new(MachineConfig::from(&args))));
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
-        c64.lock().unwrap().machine.mem.init_rom(&rom[..]);
+        c64.lock().unwrap().memory_mut().init_rom(&rom[..]);
     }
 
     c64.lock().unwrap().power_on();
@@ -44,7 +44,7 @@ fn main() {
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        c64.lock().unwrap().machine.mem.write(addr, &ram[..]);
+        c64.lock().unwrap().memory_mut().write(addr, &ram[..]);
     }
 
     // c64.start();

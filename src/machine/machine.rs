@@ -18,9 +18,9 @@ pub fn machine_loop(machine: &mut impl Machine) {
         if !machine.next() {
             break;
         };
-        if let Some(on_next) = machine.get_events().on_next {
-            on_next(machine, &cycles);
-        }
+        // if let Some(on_next) = machine.get_events().on_next {
+        //     on_next(machine, &cycles);
+        // }
         if let Some(addr) = machine.get_config().exit_on_addr {
             if machine.PC() == addr {
                 break;
