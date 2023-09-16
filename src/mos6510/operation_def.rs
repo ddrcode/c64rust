@@ -4,14 +4,15 @@ use crate::machine::{ Machine, RegSetter };
 
 pub type OpFn = fn(&Operation, &mut dyn Machine) -> u8;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct OperationDef {
     pub opcode: u8,
     pub mnemonic: Mnemonic,
     pub cycles: u8,
     pub page_boundary_cycle: bool,
     pub address_mode: AddressMode,
-    pub function: OpFn,
+    pub fn_name: String
+    // pub function: OpFn,
 }
 
 impl OperationDef {

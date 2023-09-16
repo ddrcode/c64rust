@@ -17,7 +17,7 @@ pub use {
     operand::Operand,
     operation::Operation,
     operation_def::{OpFn, OperationDef},
-    operations::define_operations,
+    operations::{define_operations, execute_operation},
     processor_status::ProcessorStatus,
     registers::Registers,
 };

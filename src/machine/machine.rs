@@ -2,7 +2,7 @@
 
 use super::{MOS6502Memory, MachineConfig, Memory};
 use crate::mos6510::{
-    AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
+    AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510, execute_operation
 };
 use std::num::Wrapping;
 
@@ -53,39 +53,39 @@ pub fn machine_loop(machine: &mut impl Machine) {
 }
 
 pub trait RegSetter<T> {
-    fn set_A(self, val: T);
-    fn set_X(self, val: T);
-    fn set_Y(self, val: T);
-    fn set_SC(self, val: T);
+    fn set_A(&mut self, val: T);
+    fn set_X(&mut self, val: T);
+    fn set_Y(&mut self, val: T);
+    fn set_SC(&mut self, val: T);
 }
 
-impl RegSetter<u8> for &mut impl Machine {
-    fn set_A(self, val: u8) {
-        self.cpu().registers.accumulator = Wrapping(val);
+impl RegSetter<u8> for MOS6502Machine {
+    fn set_A(&mut self, val: u8) {
+        self.cpu_mut().registers.accumulator = Wrapping(val);
     }
-    fn set_X(self, val: u8) {
-        self.cpu().registers.x = Wrapping(val);
+    fn set_X(&mut self, val: u8) {
+        self.cpu_mut().registers.x = Wrapping(val);
     }
-    fn set_Y(self, val: u8) {
-        self.cpu().registers.y = Wrapping(val);
+    fn set_Y(&mut self, val: u8) {
+        self.cpu_mut().registers.y = Wrapping(val);
     }
-    fn set_SC(self, val: u8) {
-        self.cpu().registers.stack = Wrapping(val);
+    fn set_SC(&mut self, val: u8) {
+        self.cpu_mut().registers.stack = Wrapping(val);
     }
 }
 
-impl RegSetter<Wrapping<u8>> for &mut impl Machine {
-    fn set_A(self, val: Wrapping<u8>) {
-        self.cpu().registers.accumulator = val;
+impl RegSetter<Wrapping<u8>> for MOS6502Machine {
+    fn set_A(&mut self, val: Wrapping<u8>) {
+        self.cpu_mut().registers.accumulator = val;
     }
-    fn set_X(self, val: Wrapping<u8>) {
-        self.cpu().registers.x = val;
+    fn set_X(&mut self, val: Wrapping<u8>) {
+        self.cpu_mut().registers.x = val;
     }
-    fn set_Y(self, val: Wrapping<u8>) {
-        self.cpu().registers.y = val;
+    fn set_Y(&mut self, val: Wrapping<u8>) {
+        self.cpu_mut().registers.y = val;
     }
-    fn set_SC(self, val: Wrapping<u8>) {
-        self.cpu().registers.stack = val;
+    fn set_SC(&mut self, val: Wrapping<u8>) {
+        self.cpu_mut().registers.stack = val;
     }
 }
 
@@ -177,20 +177,23 @@ pub trait Machine{
         }
     }
 
+    fn execute_operation(&mut self, op: &Operation) -> u8;
+
     fn next(&mut self) -> bool {
-        let def = self.decode_op();
-        let operand = self.decode_operand(&def);
+        let def = { self.decode_op() };
+        let operand = { self.decode_operand(&def) };
         let address = if let Some(o) = &operand {
-            self.decode_address(&def, &o)
+             self.decode_address(&def, &o) 
         } else {
             None
         };
-        let op = Operation::new(def, operand, address);
+        let op = Operation::new(def.clone(), operand, address);
+        self.execute_operation(&op);
         // (def.function)(&op, self);
         if self.get_config().disassemble {
             self.print_op(&op);
         }
-        !(self.get_config().exit_on_brk && Mnemonic::BRK == def.mnemonic)
+        !(self.get_config().exit_on_brk && Mnemonic::BRK == op.def.mnemonic)
     }
 
     fn print_op(&self, op: &Operation) {
@@ -235,7 +238,7 @@ pub trait Machine{
     fn decode_op(&mut self) -> OperationDef {
         let opcode = self.get_byte_and_inc_pc();
         match self.cpu().operations.get(&opcode) {
-            Some(op) => *op,
+            Some(op) => op.clone(),
             None => panic!(
                 "Opcode {:#04x} not found at address {:#06x}",
                 opcode,
@@ -365,6 +368,10 @@ impl Machine for MOS6502Machine {
 
     fn get_config(&self) -> &MachineConfig {
         &self.config
+    }
+
+    fn execute_operation(&mut self, op: &Operation) -> u8 {
+        execute_operation(&op, self)
     }
 }
 
