@@ -34,9 +34,7 @@ pub fn machine_loop(c64mutex: Arc<Mutex<dyn Machine>>) {
                 break;
             };
             if let Some(on_next) = c64.get_events().on_next {
-                // on_next(c64, &cycles);
-                // FIXME - this should be in on_next listener
-                c64.memory_mut().set_byte(0xd012, (cycles % 255) as u8);
+                on_next(&mut *c64, &cycles);
             }
             if let Some(addr) = c64.get_config().exit_on_addr {
                 if c64.PC() == addr {
