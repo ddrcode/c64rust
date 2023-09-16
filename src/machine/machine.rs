@@ -20,7 +20,7 @@ pub struct Machine {
 pub fn machine_loop(machine: &mut Machine) {
     let mut cycles = 0u64;
     loop {
-        if let Some(max_cycles) = machine.config.max_cycles {
+        if let Some(max_cycles) = machine.get_config().max_cycles {
             if cycles > max_cycles {
                 break;
             }
@@ -31,7 +31,7 @@ pub fn machine_loop(machine: &mut Machine) {
         if let Some(on_next) = machine.events.on_next {
             on_next(machine, &cycles);
         }
-        if let Some(addr) = machine.config.exit_on_addr {
+        if let Some(addr) = machine.get_config().exit_on_addr {
             if machine.PC() == addr {
                 break;
             }
@@ -110,6 +110,10 @@ impl Machine {
         &mut self.mos6510
     }
 
+    pub fn get_config(&self) -> &MachineConfig {
+        &self.config
+    }
+
     // registry shortcuts
     pub fn A(&self) -> Wrapping<u8> {
         self.cpu().registers.accumulator
@@ -165,7 +169,7 @@ impl Machine {
     pub fn start(&mut self) {
         let mut cycles = 0u64;
         loop {
-            if let Some(max_cycles) = self.config.max_cycles {
+            if let Some(max_cycles) = self.get_config().max_cycles {
                 if cycles > max_cycles {
                     break;
                 }
@@ -173,7 +177,7 @@ impl Machine {
             if !self.next() {
                 break;
             };
-            if let Some(addr) = self.config.exit_on_addr {
+            if let Some(addr) = self.get_config().exit_on_addr {
                 if self.PC() == addr {
                     break;
                 }
@@ -195,10 +199,10 @@ impl Machine {
         };
         let op = Operation::new(def, operand, address);
         (def.function)(&op, self);
-        if self.config.disassemble {
+        if self.get_config().disassemble {
             self.print_op(&op);
         }
-        !(self.config.exit_on_brk && Mnemonic::BRK == def.mnemonic)
+        !(self.get_config().exit_on_brk && Mnemonic::BRK == def.mnemonic)
     }
 
     fn print_op(&self, op: &Operation) {
@@ -213,7 +217,7 @@ impl Machine {
             _ => String::from("     "),
         };
         print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
-        if self.config.verbose {
+        if self.get_config().verbose {
             print!(
                 "{}|  {}",
                 " ".repeat(13 - op.to_string().len()),

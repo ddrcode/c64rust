@@ -24,7 +24,7 @@ pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
     loop {
         {
             let mut c64 = c64mutex.lock().unwrap();
-            if let Some(max_cycles) = c64.machine.config.max_cycles {
+            if let Some(max_cycles) = c64.machine.get_config().max_cycles {
                 if cycles > max_cycles {
                     break;
                 }
@@ -35,7 +35,7 @@ pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
             if let Some(on_next) = c64.machine.events.on_next {
                 on_next(&mut c64.machine, &cycles);
             }
-            if let Some(addr) = c64.machine.config.exit_on_addr {
+            if let Some(addr) = c64.machine.get_config().exit_on_addr {
                 if c64.machine.PC() == addr {
                     break;
                 }
