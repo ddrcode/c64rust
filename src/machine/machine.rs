@@ -1,33 +1,11 @@
 #![allow(non_snake_case)]
 
-use super::{MOS6502Memory, MachineConfig, Memory};
+use super::{MachineConfig, MachineEvents, Memory};
 use crate::mos6510::{
-    AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510, execute_operation
+    execute_operation, AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus,
+    MOS6510,
 };
 use std::num::Wrapping;
-
-pub struct MachineEvents {
-    pub on_next: Option<fn(&mut MOS6502Machine, &u64)>,
-}
-
-pub struct MOS6502Machine {
-    pub config: MachineConfig,
-    pub mos6510: MOS6510,
-    pub mem: Box<dyn Memory + Send>,
-    pub events: MachineEvents,
-}
-
-impl MOS6502Machine {
-    pub fn new(config: MachineConfig) -> Self {
-        let size = config.ram_size.clone();
-        MOS6502Machine {
-            config: config,
-            mos6510: MOS6510::new(),
-            mem: Box::new(MOS6502Memory::new(size)),
-            events: MachineEvents { on_next: None },
-        }
-    }
-}
 
 pub fn machine_loop(machine: &mut impl Machine) {
     let mut cycles = 0u64;
@@ -40,9 +18,9 @@ pub fn machine_loop(machine: &mut impl Machine) {
         if !machine.next() {
             break;
         };
-        // if let Some(on_next) = machine.events.on_next {
-        //     on_next(machine, &cycles);
-        // }
+        if let Some(on_next) = machine.get_events().on_next {
+            on_next(machine, &cycles);
+        }
         if let Some(addr) = machine.get_config().exit_on_addr {
             if machine.PC() == addr {
                 break;
@@ -59,48 +37,13 @@ pub trait RegSetter<T> {
     fn set_SC(&mut self, val: T);
 }
 
-impl RegSetter<u8> for MOS6502Machine {
-    fn set_A(&mut self, val: u8) {
-        self.cpu_mut().registers.accumulator = Wrapping(val);
-    }
-    fn set_X(&mut self, val: u8) {
-        self.cpu_mut().registers.x = Wrapping(val);
-    }
-    fn set_Y(&mut self, val: u8) {
-        self.cpu_mut().registers.y = Wrapping(val);
-    }
-    fn set_SC(&mut self, val: u8) {
-        self.cpu_mut().registers.stack = Wrapping(val);
-    }
-}
-
-impl RegSetter<Wrapping<u8>> for MOS6502Machine {
-    fn set_A(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.accumulator = val;
-    }
-    fn set_X(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.x = val;
-    }
-    fn set_Y(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.y = val;
-    }
-    fn set_SC(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.stack = val;
-    }
-}
-
-impl AsRef<MOS6502Machine> for MOS6502Machine {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-pub trait Machine{
+pub trait Machine {
     fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
     fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
     fn cpu(&self) -> &MOS6510;
     fn cpu_mut(&mut self) -> &mut MOS6510;
     fn get_config(&self) -> &MachineConfig;
+    fn get_events(&self) -> &MachineEvents;
 
     // registry shortcuts
     fn A(&self) -> Wrapping<u8> {
@@ -183,7 +126,7 @@ pub trait Machine{
         let def = { self.decode_op() };
         let operand = { self.decode_operand(&def) };
         let address = if let Some(o) = &operand {
-             self.decode_address(&def, &o) 
+            self.decode_address(&def, &o)
         } else {
             None
         };
@@ -346,32 +289,6 @@ pub trait Machine{
 
     fn nmi(&mut self) {
         self.handle_interrupt(0xfffa);
-    }
-}
-
-impl Machine for MOS6502Machine {
-    fn memory(&self) -> &Box<dyn Memory + Send + 'static> {
-        &self.mem
-    }
-
-    fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static> {
-        &mut self.mem
-    }
-
-    fn cpu(&self) -> &MOS6510 {
-        &self.mos6510
-    }
-
-    fn cpu_mut(&mut self) -> &mut MOS6510 {
-        &mut self.mos6510
-    }
-
-    fn get_config(&self) -> &MachineConfig {
-        &self.config
-    }
-
-    fn execute_operation(&mut self, op: &Operation) -> u8 {
-        execute_operation(&op, self)
     }
 }
 

@@ -1,6 +1,5 @@
-use std::num::Wrapping;
 use super::{AddressMode, AddressMode::*, Mnemonic, Operation};
-use crate::machine::{ Machine, RegSetter };
+use crate::machine::Machine;
 
 pub type OpFn = fn(&Operation, &mut dyn Machine) -> u8;
 
@@ -11,8 +10,7 @@ pub struct OperationDef {
     pub cycles: u8,
     pub page_boundary_cycle: bool,
     pub address_mode: AddressMode,
-    pub fn_name: String
-    // pub function: OpFn,
+    pub fn_name: String, // pub function: OpFn,
 }
 
 impl OperationDef {
