@@ -7,17 +7,29 @@ use crate::mos6510::{
 use std::num::Wrapping;
 
 pub struct MachineEvents {
-    pub on_next: Option<fn(&mut Machine, &u64)>,
+    pub on_next: Option<fn(&mut MOS6502Machine, &u64)>,
 }
 
-pub struct Machine {
+pub struct MOS6502Machine {
     pub config: MachineConfig,
     pub mos6510: MOS6510,
     pub mem: Box<dyn Memory + Send>,
     pub events: MachineEvents,
 }
 
-pub fn machine_loop(machine: &mut Machine) {
+impl MOS6502Machine {
+    pub fn new(config: MachineConfig) -> Self {
+        let size = config.ram_size.clone();
+        MOS6502Machine {
+            config: config,
+            mos6510: MOS6510::new(),
+            mem: Box::new(MOS6502Memory::new(size)),
+            events: MachineEvents { on_next: None },
+        }
+    }
+}
+
+pub fn machine_loop(machine: &mut impl Machine) {
     let mut cycles = 0u64;
     loop {
         if let Some(max_cycles) = machine.get_config().max_cycles {
@@ -28,9 +40,9 @@ pub fn machine_loop(machine: &mut Machine) {
         if !machine.next() {
             break;
         };
-        if let Some(on_next) = machine.events.on_next {
-            on_next(machine, &cycles);
-        }
+        // if let Some(on_next) = machine.events.on_next {
+        //     on_next(machine, &cycles);
+        // }
         if let Some(addr) = machine.get_config().exit_on_addr {
             if machine.PC() == addr {
                 break;
@@ -47,116 +59,92 @@ pub trait RegSetter<T> {
     fn set_SC(self, val: T);
 }
 
-impl RegSetter<u8> for &mut Machine {
+impl RegSetter<u8> for &mut impl Machine {
     fn set_A(self, val: u8) {
-        self.mos6510.registers.accumulator = Wrapping(val);
+        self.cpu().registers.accumulator = Wrapping(val);
     }
     fn set_X(self, val: u8) {
-        self.mos6510.registers.x = Wrapping(val);
+        self.cpu().registers.x = Wrapping(val);
     }
     fn set_Y(self, val: u8) {
-        self.mos6510.registers.y = Wrapping(val);
+        self.cpu().registers.y = Wrapping(val);
     }
     fn set_SC(self, val: u8) {
-        self.mos6510.registers.stack = Wrapping(val);
+        self.cpu().registers.stack = Wrapping(val);
     }
 }
 
-impl RegSetter<Wrapping<u8>> for &mut Machine {
+impl RegSetter<Wrapping<u8>> for &mut impl Machine {
     fn set_A(self, val: Wrapping<u8>) {
-        self.mos6510.registers.accumulator = val;
+        self.cpu().registers.accumulator = val;
     }
     fn set_X(self, val: Wrapping<u8>) {
-        self.mos6510.registers.x = val;
+        self.cpu().registers.x = val;
     }
     fn set_Y(self, val: Wrapping<u8>) {
-        self.mos6510.registers.y = val;
+        self.cpu().registers.y = val;
     }
     fn set_SC(self, val: Wrapping<u8>) {
-        self.mos6510.registers.stack = val;
+        self.cpu().registers.stack = val;
     }
 }
 
-impl AsRef<Machine> for Machine {
+impl AsRef<MOS6502Machine> for MOS6502Machine {
     fn as_ref(&self) -> &Self {
         self
     }
 }
 
-impl Machine {
-    pub fn new(config: MachineConfig) -> Self {
-        let size = config.ram_size.clone();
-        Machine {
-            config: config,
-            mos6510: MOS6510::new(),
-            mem: Box::new(MOS6502Memory::new(size)),
-            events: MachineEvents { on_next: None },
-        }
-    }
-
-    pub fn memory(&self) -> &Box<dyn Memory + Send + 'static> {
-        &self.mem
-    }
-
-    pub fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static> {
-        &mut self.mem
-    }
-
-    pub fn cpu(&self) -> &MOS6510 {
-        &self.mos6510
-    }
-
-    pub fn cpu_mut(&mut self) -> &mut MOS6510 {
-        &mut self.mos6510
-    }
-
-    pub fn get_config(&self) -> &MachineConfig {
-        &self.config
-    }
+pub trait Machine{
+    fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
+    fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
+    fn cpu(&self) -> &MOS6510;
+    fn cpu_mut(&mut self) -> &mut MOS6510;
+    fn get_config(&self) -> &MachineConfig;
 
     // registry shortcuts
-    pub fn A(&self) -> Wrapping<u8> {
+    fn A(&self) -> Wrapping<u8> {
         self.cpu().registers.accumulator
     }
-    pub fn X(&self) -> Wrapping<u8> {
+    fn X(&self) -> Wrapping<u8> {
         self.cpu().registers.x
     }
-    pub fn Y(&self) -> Wrapping<u8> {
+    fn Y(&self) -> Wrapping<u8> {
         self.cpu().registers.y
     }
-    pub fn A8(&self) -> u8 {
+    fn A8(&self) -> u8 {
         self.cpu().registers.accumulator.0
     }
-    pub fn X8(&self) -> u8 {
+    fn X8(&self) -> u8 {
         self.cpu().registers.x.0
     }
-    pub fn Y8(&self) -> u8 {
+    fn Y8(&self) -> u8 {
         self.cpu().registers.y.0
     }
-    pub fn A16(&self) -> u16 {
+    fn A16(&self) -> u16 {
         self.cpu().registers.accumulator.0 as u16
     }
-    pub fn X16(&self) -> u16 {
+    fn X16(&self) -> u16 {
         self.cpu().registers.x.0 as u16
     }
-    pub fn Y16(&self) -> u16 {
+    fn Y16(&self) -> u16 {
         self.cpu().registers.y.0 as u16
     }
-    pub fn P(&self) -> ProcessorStatus {
+    fn P(&self) -> ProcessorStatus {
         self.cpu().registers.status
     }
-    pub fn PC(&self) -> u16 {
+    fn PC(&self) -> u16 {
         self.cpu().registers.counter
     }
-    pub fn SC(&self) -> Wrapping<u8> {
+    fn SC(&self) -> Wrapping<u8> {
         self.cpu().registers.stack
     }
-    pub fn set_PC(&mut self, addr: u16) {
-        self.mos6510.registers.counter = addr;
+    fn set_PC(&mut self, addr: u16) {
+        self.cpu_mut().registers.counter = addr;
     }
 
     // boot sequence, etc
-    pub fn power_on(&mut self) {
+    fn power_on(&mut self) {
         // see https://www.pagetable.com/c64ref/c64mem/
         self.memory_mut().set_byte(0x0000, 0x2f);
         self.memory_mut().set_byte(0x0001, 0x37);
@@ -166,7 +154,7 @@ impl Machine {
         self.set_PC(self.memory().get_word(0xfffc));
     }
 
-    pub fn start(&mut self) {
+    fn start(&mut self) {
         let mut cycles = 0u64;
         loop {
             if let Some(max_cycles) = self.get_config().max_cycles {
@@ -182,14 +170,14 @@ impl Machine {
                     break;
                 }
             }
-            if let Some(on_next) = self.events.on_next {
-                on_next(self, &cycles);
-            }
+            // if let Some(on_next) = self.events.on_next {
+            //     on_next(self, &cycles);
+            // }
             cycles += 1;
         }
     }
 
-    pub fn next(&mut self) -> bool {
+    fn next(&mut self) -> bool {
         let def = self.decode_op();
         let operand = self.decode_operand(&def);
         let address = if let Some(o) = &operand {
@@ -198,7 +186,7 @@ impl Machine {
             None
         };
         let op = Operation::new(def, operand, address);
-        (def.function)(&op, self);
+        // (def.function)(&op, self);
         if self.get_config().disassemble {
             self.print_op(&op);
         }
@@ -309,23 +297,23 @@ impl Machine {
         }
     }
 
-    pub fn push(&mut self, val: u8) {
+    fn push(&mut self, val: u8) {
         let sc = self.SC().0 as u16;
         self.memory_mut().set_byte(0x0100 | sc, val);
         self.cpu_mut().registers.stack -= 1;
     }
 
-    pub fn pop(&mut self) -> u8 {
+    fn pop(&mut self) -> u8 {
         self.cpu_mut().registers.stack += 1;
         let sc = self.SC().0 as u16;
         self.memory().get_byte(0x0100 | sc)
     }
 
-    pub fn load(&mut self, progmem: &[u8], addr: u16) {
+    fn load(&mut self, progmem: &[u8], addr: u16) {
         self.memory_mut().write(addr, progmem);
     }
 
-    pub fn run(&mut self, addr: u16) {
+    fn run(&mut self, addr: u16) {
         self.cpu_mut().registers.counter = addr;
         self.start();
     }
@@ -333,7 +321,7 @@ impl Machine {
     // utility functions
 
     /// Returns current stack memory address
-    pub fn stack_addr(&self) -> u16 {
+    fn stack_addr(&self) -> u16 {
         0x0100 | self.SC().0 as u16
     }
 
@@ -347,14 +335,36 @@ impl Machine {
         self.set_PC(self.memory().get_word(addr));
     }
 
-    pub fn irq(&mut self) {
+    fn irq(&mut self) {
         if !self.P().interrupt_disable {
             self.handle_interrupt(0xfffe);
         }
     }
 
-    pub fn nmi(&mut self) {
+    fn nmi(&mut self) {
         self.handle_interrupt(0xfffa);
+    }
+}
+
+impl Machine for MOS6502Machine {
+    fn memory(&self) -> &Box<dyn Memory + Send + 'static> {
+        &self.mem
+    }
+
+    fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static> {
+        &mut self.mem
+    }
+
+    fn cpu(&self) -> &MOS6510 {
+        &self.mos6510
+    }
+
+    fn cpu_mut(&mut self) -> &mut MOS6510 {
+        &mut self.mos6510
+    }
+
+    fn get_config(&self) -> &MachineConfig {
+        &self.config
     }
 }
 

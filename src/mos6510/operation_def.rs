@@ -1,7 +1,8 @@
+use std::num::Wrapping;
 use super::{AddressMode, AddressMode::*, Mnemonic, Operation};
-use crate::machine::Machine;
+use crate::machine::{ Machine, RegSetter };
 
-pub type OpFn = fn(&Operation, &mut Machine) -> u8;
+pub type OpFn = fn(&Operation, &mut dyn Machine) -> u8;
 
 #[derive(Copy, Clone)]
 pub struct OperationDef {

@@ -10,12 +10,12 @@ mod tests;
 
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
-use crate::machine::{Machine, MachineConfig, Memory};
+use crate::machine::{Machine, MOS6502Machine, MachineConfig, Memory};
 use clap::Parser;
 
 fn main() {
     let args = Args::parse();
-    let mut machine = Machine::new(MachineConfig::from(&args));
+    let mut machine = MOS6502Machine::new(MachineConfig::from(&args));
 
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
