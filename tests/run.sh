@@ -61,4 +61,5 @@ test "cmp"
 test "adc" 
 test "sbc" 
 test "add-sub-16bit"
+test "shift"
 

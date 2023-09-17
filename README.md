@@ -17,8 +17,12 @@ When built, the project provides three binaries (in `target/debug`)
 2. Execute:
    `cargo run --bin gui  -- --rom path-to-rom`
 
-The instruction above boots from the ROM and stops on an infinite loop waiting for
-user input. Then it prints screen memory.
+If you don't have any ROM file, don't worry - I've created a test ROM from scratch!
+It doesn't do much, but at least it displays a welcome message and a cursor.
+You are welcome to contribute and help to make it an alternative C64 OS :-)
+(the source is [here](https://github.com/ddrcode/c64rust/blob/main/rom/src/hello-c64.asm))
+But for now, just hit:
+`cargo run --bin gui -- --rom rom/hello-rom.p`
 
 Running options:
 

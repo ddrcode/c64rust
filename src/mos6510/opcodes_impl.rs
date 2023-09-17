@@ -147,7 +147,9 @@ fn op_branch(op: &Operation, machine: &mut impl Machine) -> u8 {
         machine.set_PC(op.address.unwrap());
         return op.def.cycles + 1; // TODO consider page change
     }
-    op.def.cycles
+
+    // BVC always takes 3 cycles (see https://c64os.com/post/6502instructions)
+    op.def.cycles + if op.def.mnemonic == BVC { 1 } else { 0 }
 }
 
 // see https://www.c64-wiki.com/wiki/BRK
