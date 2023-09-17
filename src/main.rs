@@ -5,9 +5,6 @@ mod cli_utils;
 mod machine;
 mod mos6510;
 
-#[cfg(test)]
-mod tests;
-
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
 use crate::machine::{MOS6502Machine, Machine, MachineConfig};

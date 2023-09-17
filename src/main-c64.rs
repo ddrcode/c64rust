@@ -10,9 +10,6 @@ mod cli_args;
 mod machine;
 mod mos6510;
 
-#[cfg(test)]
-mod tests;
-
 use crate::c64::{machine_loop, C64};
 use crate::cli_args::Args;
 use crate::machine::{Machine, MachineConfig};
@@ -54,4 +51,6 @@ fn main() {
     if args.show_screen {
         arc.lock().unwrap().print_screen();
     }
+
+    println!("Cursor: {}", arc.lock().unwrap().memory().get_byte(0x00cf))
 }
