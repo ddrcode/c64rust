@@ -1,16 +1,13 @@
-use super::{AddressMode, AddressMode::*, Mnemonic, Operation};
-use crate::machine::Machine;
+use super::{AddressMode, AddressMode::*, Mnemonic};
 
-pub type OpFn = fn(&Operation, &mut Machine) -> u8;
-
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct OperationDef {
     pub opcode: u8,
     pub mnemonic: Mnemonic,
     pub cycles: u8,
     pub page_boundary_cycle: bool,
     pub address_mode: AddressMode,
-    pub function: OpFn,
+    pub fn_name: String, // pub function: OpFn,
 }
 
 impl OperationDef {

@@ -1,5 +1,3 @@
-use crate::mos6510::Mnemonic;
-
 pub struct MachineConfig {
     pub ram_size: usize,
     pub rom_size: usize,
