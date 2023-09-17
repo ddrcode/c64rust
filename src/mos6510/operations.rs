@@ -6,11 +6,7 @@ use crate::machine::{Machine, RegSetter};
 use std::num::Wrapping;
 
 // OMG this is so terribly ugly!
-// pub fn execute_operation<T: Machine+RegSetter<u8>+RegSetter<Wrapping<u8>>>(op: &Operation, machine: &mut T) -> u8 {
-pub fn execute_operation<T: Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>>(
-    op: &Operation,
-    machine: &mut T,
-) -> u8 {
+pub fn execute_operation<T: Machine>(op: &Operation, machine: &mut T) -> u8 {
     match &*op.def.fn_name {
         "op_arithmetic" => op_arithmetic(op, machine),
         "op_bit" => op_bit(op, machine),
@@ -469,11 +465,7 @@ fn get_val(op: &Operation, machine: &impl Machine) -> Option<u8> {
     }
 }
 
-fn set_val(
-    val: u8,
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) {
+fn set_val(val: u8, op: &Operation, machine: &mut impl Machine) {
     if let Some(addr) = op.address {
         machine.memory_mut().set_byte(addr, val)
     } else if op.def.address_mode == Accumulator {
@@ -483,20 +475,12 @@ fn set_val(
     };
 }
 
-fn store_byte(
-    val: u8,
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn store_byte(val: u8, op: &Operation, machine: &mut impl Machine) -> u8 {
     machine.memory_mut().set_byte(op.address.unwrap(), val);
     op.def.cycles
 }
 
-fn set_flags(
-    flags: &str,
-    vals: &[bool],
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) {
+fn set_flags(flags: &str, vals: &[bool], machine: &mut impl Machine) {
     let chars = String::from(flags);
     if chars.len() != vals.len() {
         panic!("Incorrect args length in set_flags")
@@ -515,7 +499,7 @@ fn set_flags(
     }
 }
 
-fn set_nz_flags(val: u8, machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>)) {
+fn set_nz_flags(val: u8, machine: &mut impl Machine) {
     machine.cpu_mut().registers.status.negative = neg(val);
     machine.cpu_mut().registers.status.zero = zero(val);
 }
@@ -538,10 +522,7 @@ fn overflow(in1: u8, in2: u8, result: u8) -> bool {
 // https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
 // http://retro.hansotten.nl/uploads/mag6502/sbc_tsx_txs_instructions.pdf
 // TODO compute cycles for page cross
-fn op_arithmetic(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_arithmetic(op: &Operation, machine: &mut impl Machine) -> u8 {
     let a = machine.A8();
     let val = match op.def.mnemonic {
         ADC => get_val(op, machine).unwrap(),
@@ -559,10 +540,7 @@ fn op_arithmetic(
     op.def.cycles
 }
 
-fn op_bit(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_bit(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = get_val(op, machine).unwrap();
     set_flags(
         "NZV",
@@ -572,10 +550,7 @@ fn op_bit(
     op.def.cycles
 }
 
-fn op_branch(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_branch(op: &Operation, machine: &mut impl Machine) -> u8 {
     let branch: bool = match op.def.mnemonic {
         BCC => !machine.P().carry,
         BCS => machine.P().carry,
@@ -595,10 +570,7 @@ fn op_branch(
 }
 
 // see https://www.c64-wiki.com/wiki/BRK
-fn op_brk(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_brk(op: &Operation, machine: &mut impl Machine) -> u8 {
     machine.set_PC(machine.PC().wrapping_add(2));
     set_flags("B", &[true], machine);
     machine.irq();
@@ -606,10 +578,7 @@ fn op_brk(
 }
 
 // TODO add cycle for page change
-fn op_compare(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_compare(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = get_val(op, machine).unwrap();
     let reg = match op.def.mnemonic {
         CMP => machine.A8(),
@@ -622,10 +591,7 @@ fn op_compare(
     op.def.cycles
 }
 
-fn op_incdec_mem(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_incdec_mem(op: &Operation, machine: &mut impl Machine) -> u8 {
     let mut val = Wrapping(get_val(op, machine).unwrap());
     match op.def.mnemonic {
         DEC => val -= 1,
@@ -637,10 +603,7 @@ fn op_incdec_mem(
     op.def.cycles
 }
 
-fn op_incdec_reg(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_incdec_reg(op: &Operation, machine: &mut impl Machine) -> u8 {
     match op.def.mnemonic {
         DEX => machine.cpu_mut().registers.x -= 1,
         DEY => machine.cpu_mut().registers.y -= 1,
@@ -658,10 +621,7 @@ fn op_incdec_reg(
 }
 
 // TODO add cycle for page change
-fn op_bitwise(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_bitwise(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = get_val(op, machine).unwrap();
     match op.def.mnemonic {
         AND => machine.cpu_mut().registers.accumulator &= val,
@@ -673,10 +633,7 @@ fn op_bitwise(
     op.def.cycles
 }
 
-fn op_flag(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_flag(op: &Operation, machine: &mut impl Machine) -> u8 {
     match op.def.mnemonic {
         CLC => machine.cpu_mut().registers.status.carry = false,
         SEC => machine.cpu_mut().registers.status.carry = true,
@@ -690,18 +647,12 @@ fn op_flag(
     op.def.cycles
 }
 
-fn op_jmp(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_jmp(op: &Operation, machine: &mut impl Machine) -> u8 {
     machine.set_PC(op.address.unwrap());
     op.def.cycles
 }
 
-fn op_jsr(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_jsr(op: &Operation, machine: &mut impl Machine) -> u8 {
     let pc = machine.PC().wrapping_sub(1);
     machine.push((pc >> 8) as u8);
     machine.push((pc & 0x00ff) as u8);
@@ -710,10 +661,7 @@ fn op_jsr(
 }
 
 // FIXME add cycle for crossing page boundary
-fn op_load(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_load(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = get_val(op, machine).unwrap();
     match op.def.mnemonic {
         LDA => machine.set_A(val),
@@ -725,36 +673,24 @@ fn op_load(
     op.def.cycles
 }
 
-fn op_nop(
-    op: &Operation,
-    _machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_nop(op: &Operation, _machine: &mut impl Machine) -> u8 {
     op.def.cycles
 }
 
-fn op_pla(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_pla(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = machine.pop();
     machine.set_A(val);
     set_nz_flags(val, machine);
     op.def.cycles
 }
 
-fn op_plp(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_plp(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = machine.pop();
     machine.cpu_mut().registers.status = ProcessorStatus::from(val);
     op.def.cycles
 }
 
-fn op_push(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_push(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = match op.def.mnemonic {
         PHA => machine.A8(),
         PHP => u8::from(&machine.P()),
@@ -766,10 +702,7 @@ fn op_push(
     op.def.cycles
 }
 
-fn op_rotate(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_rotate(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = get_val(op, machine).unwrap();
     let c = if machine.P().carry { 0xff } else { 0 };
     let (new_val, mask, carry) = match op.def.mnemonic {
@@ -786,29 +719,20 @@ fn op_rotate(
     op.def.cycles
 }
 
-fn op_rti(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_rti(op: &Operation, machine: &mut impl Machine) -> u8 {
     machine.cpu_mut().registers.status = ProcessorStatus::from(machine.pop());
     machine.cpu_mut().registers.counter = machine.pop() as u16 | ((machine.pop() as u16) << 8);
     op.def.cycles
 }
 
-fn op_rts(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_rts(op: &Operation, machine: &mut impl Machine) -> u8 {
     let lo = machine.pop() as u16;
     let hi = machine.pop() as u16;
     machine.set_PC((lo | hi << 8).wrapping_add(1));
     op.def.cycles
 }
 
-fn op_shift(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_shift(op: &Operation, machine: &mut impl Machine) -> u8 {
     let val = get_val(op, machine).unwrap();
     let (res, carry) = match op.def.mnemonic {
         ASL => ((Wrapping(val) << 1).0, val & 0b10000000 > 0),
@@ -820,10 +744,7 @@ fn op_shift(
     op.def.cycles
 }
 
-fn op_store(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_store(op: &Operation, machine: &mut impl Machine) -> u8 {
     match op.def.mnemonic {
         STA => store_byte(machine.A8(), op, machine),
         STX => store_byte(machine.X8(), op, machine),
@@ -832,10 +753,7 @@ fn op_store(
     }
 }
 
-fn op_transfer(
-    op: &Operation,
-    machine: &mut (impl Machine + RegSetter<u8> + RegSetter<Wrapping<u8>>),
-) -> u8 {
+fn op_transfer(op: &Operation, machine: &mut impl Machine) -> u8 {
     match op.def.mnemonic {
         TAX => machine.set_X(machine.A()),
         TAY => machine.set_Y(machine.A()),

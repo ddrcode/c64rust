@@ -37,7 +37,7 @@ pub trait RegSetter<T> {
     fn set_SC(&mut self, val: T);
 }
 
-pub trait Machine {
+pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
     fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
     fn cpu(&self) -> &MOS6510;
