@@ -26,9 +26,9 @@ use colored::*;
 
 // see https://c64os.com/post/c64screencodes
 const SCREEN_CODES: &str = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-                            -·······························································\
+                            -abcdefghijklmnopqrstuvwxyz[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
                             @abcdefghijklmnopqrstuvwxyz[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-                            -ABCDEFGHIJKLMNOPQRSTUVWXYZ·····································";
+                            -ABCDEFGHIJKLMNOPQRSTUVWXYZ····································_";
 
 pub struct VIC_II {}
 

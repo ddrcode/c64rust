@@ -51,6 +51,4 @@ fn main() {
     if args.show_screen {
         arc.lock().unwrap().print_screen();
     }
-
-    println!("Cursor: {}", arc.lock().unwrap().memory().get_byte(0x00cf))
 }

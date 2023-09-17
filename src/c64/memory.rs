@@ -58,8 +58,16 @@ impl Memory for C64Memory {
     }
 
     fn init_rom(&mut self, data: &[u8]) {
-        self.init_rom_at_addr(0xa000, &data[..8192]);
-        self.init_rom_at_addr(0xe000, &data[8192..]);
+        let len = data.len();
+        if len == 16384 {
+            // the size of original rom
+            self.init_rom_at_addr(0xa000, &data[..8192]);
+            self.init_rom_at_addr(0xe000, &data[8192..]);
+        } else {
+            // custom rom
+            let addr: usize = 0x10000 - len;
+            self.init_rom_at_addr(addr as u16, data);
+        }
     }
 
     fn set_byte(&mut self, addr: Addr, val: u8) {

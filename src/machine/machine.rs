@@ -139,7 +139,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     }
 
     fn print_op(&self, op: &Operation) {
-        let addr = self.PC() - op.def.len() as u16;
+        let addr = self.PC().wrapping_sub(op.def.len() as u16);
         let val = match op.def.len() {
             2 => format!("{:02x}   ", self.memory().get_byte(addr + 1)),
             3 => format!(

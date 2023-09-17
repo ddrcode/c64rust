@@ -1,5 +1,6 @@
 /target
-/rom
 .direnv/
 tests/target
 tests/bin
+rom/*.bin
+
