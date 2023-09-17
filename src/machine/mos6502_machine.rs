@@ -1,4 +1,6 @@
-use super::{MOS6502Memory, Machine, MachineConfig, MachineEvents, Memory, RegSetter};
+use super::{
+    impl_reg_setter, MOS6502Memory, Machine, MachineConfig, MachineEvents, Memory, RegSetter,
+};
 use crate::mos6510::{execute_operation, Operation, MOS6510};
 use std::num::Wrapping;
 
@@ -21,35 +23,7 @@ impl MOS6502Machine {
     }
 }
 
-impl RegSetter<u8> for MOS6502Machine {
-    fn set_A(&mut self, val: u8) {
-        self.cpu_mut().registers.accumulator = Wrapping(val);
-    }
-    fn set_X(&mut self, val: u8) {
-        self.cpu_mut().registers.x = Wrapping(val);
-    }
-    fn set_Y(&mut self, val: u8) {
-        self.cpu_mut().registers.y = Wrapping(val);
-    }
-    fn set_SC(&mut self, val: u8) {
-        self.cpu_mut().registers.stack = Wrapping(val);
-    }
-}
-
-impl RegSetter<Wrapping<u8>> for MOS6502Machine {
-    fn set_A(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.accumulator = val;
-    }
-    fn set_X(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.x = val;
-    }
-    fn set_Y(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.y = val;
-    }
-    fn set_SC(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.stack = val;
-    }
-}
+impl_reg_setter!(MOS6502Machine);
 
 impl Machine for MOS6502Machine {
     fn memory(&self) -> &Box<dyn Memory + Send + 'static> {

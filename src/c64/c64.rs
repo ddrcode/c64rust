@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use super::{C64Memory, VIC_II};
-use crate::machine::{Machine, MachineConfig, MachineEvents, Memory, RegSetter};
+use crate::machine::{impl_reg_setter, Machine, MachineConfig, MachineEvents, Memory, RegSetter};
 use crate::mos6510::{execute_operation, Operation, MOS6510};
 use std::num::Wrapping;
 use std::sync::{Arc, Mutex};
@@ -61,35 +61,7 @@ impl C64 {
     }
 }
 
-impl RegSetter<u8> for C64 {
-    fn set_A(&mut self, val: u8) {
-        self.cpu_mut().registers.accumulator = Wrapping(val);
-    }
-    fn set_X(&mut self, val: u8) {
-        self.cpu_mut().registers.x = Wrapping(val);
-    }
-    fn set_Y(&mut self, val: u8) {
-        self.cpu_mut().registers.y = Wrapping(val);
-    }
-    fn set_SC(&mut self, val: u8) {
-        self.cpu_mut().registers.stack = Wrapping(val);
-    }
-}
-
-impl RegSetter<Wrapping<u8>> for C64 {
-    fn set_A(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.accumulator = val;
-    }
-    fn set_X(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.x = val;
-    }
-    fn set_Y(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.y = val;
-    }
-    fn set_SC(&mut self, val: Wrapping<u8>) {
-        self.cpu_mut().registers.stack = val;
-    }
-}
+impl_reg_setter!(C64);
 
 impl Machine for C64 {
     fn memory(&self) -> &Box<dyn Memory + Send + 'static> {
