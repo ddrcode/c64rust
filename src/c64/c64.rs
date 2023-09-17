@@ -2,10 +2,7 @@
 
 use super::{C64Memory, VIC_II};
 use crate::machine::{Machine, MachineConfig, MachineEvents, Memory, RegSetter};
-use crate::mos6510::{
-    execute_operation, AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus,
-    MOS6510,
-};
+use crate::mos6510::{execute_operation, Operation, MOS6510};
 use std::num::Wrapping;
 use std::sync::{Arc, Mutex};
 use std::thread;

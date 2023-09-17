@@ -15,7 +15,7 @@ use crate::c64::{irq_loop, machine_loop, C64};
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
 use crate::gui::Screen;
-use crate::machine::{Machine, MachineConfig, Memory};
+use crate::machine::{Machine, MachineConfig};
 use clap::Parser;
 use std::sync::{Arc, Mutex};
 use std::thread;

@@ -2,8 +2,7 @@
 
 use super::{MachineConfig, MachineEvents, Memory};
 use crate::mos6510::{
-    execute_operation, AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus,
-    MOS6510,
+    AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
 use std::num::Wrapping;
 

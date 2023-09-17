@@ -1,7 +1,4 @@
-use super::{AddressMode, AddressMode::*, Mnemonic, Operation};
-use crate::machine::Machine;
-
-pub type OpFn = fn(&Operation, &mut dyn Machine) -> u8;
+use super::{AddressMode, AddressMode::*, Mnemonic};
 
 #[derive(Clone)]
 pub struct OperationDef {
