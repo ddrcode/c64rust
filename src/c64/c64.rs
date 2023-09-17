@@ -9,11 +9,11 @@ use std::thread;
 use std::time;
 
 pub struct C64 {
-    pub config: MachineConfig,
-    pub mos6510: MOS6510,
-    pub mem: Box<dyn Memory + Send>,
-    pub events: MachineEvents,
-    pub gpu: VIC_II,
+    config: MachineConfig,
+    mos6510: MOS6510,
+    mem: Box<dyn Memory + Send>,
+    events: MachineEvents,
+    gpu: VIC_II,
 }
 
 impl C64 {

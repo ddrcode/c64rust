@@ -5,10 +5,10 @@ use crate::mos6510::{execute_operation, Operation, MOS6510};
 use std::num::Wrapping;
 
 pub struct MOS6502Machine {
-    pub config: MachineConfig,
-    pub mos6510: MOS6510,
-    pub mem: Box<dyn Memory + Send>,
-    pub events: MachineEvents,
+    config: MachineConfig,
+    mos6510: MOS6510,
+    mem: Box<dyn Memory + Send>,
+    events: MachineEvents,
 }
 
 impl MOS6502Machine {
