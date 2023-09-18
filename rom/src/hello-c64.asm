@@ -17,8 +17,8 @@ screen_end = $07e8
 !addr var_b = $12                             ; addr of 16-bit general purpose variable (var B)
 !addr var_c = $14                             ; addr of 16-bit general purpose variable (var B)
 !addr irq_cnt = $16                           ; counts 0-50: IRQ cycles pers second
-!addr curr_line = $20                         ; current text line (cursor line)
-!addr curr_column = $21                       ; cursor-Y (0-39)
+!addr cursor_y = $20                         ; current text line (cursor line)
+!addr cursor_x = $21                       ; cursor-Y (0-39)
 
 ; --------------------------------------------------------------------
 ; ROM DATA
@@ -34,6 +34,13 @@ default_cursor  !scr "A", 1, 0
     STA .addr
     LDA #.hi
     STA .addr+1
+}
+
+!macro set_cursor .x, .y {
+    LDA #.x
+    STA cursor_x
+    LDA #.y
+    STA cursor_y
 }
 
 ; --------------------------------------------------------------------
@@ -91,20 +98,16 @@ hide_cursor:
 cursor_addr:
         +set_word var_a, $00, $04
         +set_word var_b, $00, $00
-        LDY curr_line                   ; set reg Y to cursor Y
+        LDY cursor_y                   ; set reg Y to cursor Y
 .loop                                   ; and loop until Y is zero
         CPY #0                          ; if Y is 0 go to done 
         BEQ .done
         +set_word var_b, $28, $00       ; set var_b to $0028 (40 - line's lenght)
         JSR add                         ; add var_a and var_b
-        LDA var_c                       ; copy var_c to var_a 
-        STA var_a
-        LDA var_c+1
-        STA var_a+1
         DEY                             ; decrement Y
         JMP .loop
 .done
-        LDA curr_column                 ; set reg A to cursor x
+        LDA cursor_x                 ; set reg A to cursor x
         STA var_b                       ; set var_b to $00cur_y
         LDA #0
         STA var_b+1
@@ -113,30 +116,34 @@ cursor_addr:
 
 !zone sub_print_text
 print:
-        ; JSR cursor_addr
+        JSR cursor_addr
         LDY #$0
 
 .loop:
-        LDA (var_a), Y
+        LDA (var_c), Y
         CMP #0
         BEQ .done
-        STA (var_c), Y 
+        STA (var_a), Y 
         INY
         JMP .loop
 .done:
-        INC curr_line
+        INC cursor_y
         RTS
 
 
 !zone sub_add
-add:    CLC				        ; clear carry
+;; Adds var_a to var_b and stores the result in var_a
+add:    CLC
         LDA var_a
         ADC var_b
-        STA var_c			    ; store sum of lo-bytes
+        PHA
         LDA var_a+1
-        ADC var_b+1	    		; add the hi-byes using carry from
-        STA var_c+1	    	; the previous calculation
+        ADC var_b+1	
+        STA var_a+1
+        PLA
+        STA var_a
         RTS
+
 
 ; --------------------------------------------------------------------
 ; INIT
@@ -145,31 +152,27 @@ add:    CLC				        ; clear carry
 
 ; $fce2 is a starting procedure address of C64 official Kernal, so we use the same adress 
 ; to initialize the system (there is no particular reason for it other than fun or consistency)
+
 * = reset_vector
 
 init:
-        LDA #0                          ; Set cursor line and column to 0
-        STA curr_line           
-        LDA #0                          ; Set cursor line and column to 0
-        STA curr_column           
         JSR cls                         ; Clear screen
         LDX #$0
 
-        JSR cursor_addr
-        +set_word var_a, < welcome_msg, > welcome_msg
+        +set_cursor 0, 0                ; Print welcome msg at 0,0
+        +set_word var_c, < welcome_msg, > welcome_msg
         JSR print
 
-.loop:
-;         LDA irq_cnt
-;         BNE .cont
-;         JSR show_cursor
-; .cont
-;         LDA #$19
-;         CMP irq_cnt
-;         BNE .loop
-;         JSR hide_cursor
-;
-        NOP
+.loop:                                  ; Cursor blinking loop
+        LDA irq_cnt                     ; Show cursor on irq_cnt=0
+        BNE .cont
+        JSR show_cursor
+.cont
+        LDA #$19                        ; Hide cursor on irq_cnt=25
+        CMP irq_cnt
+        BNE .loop
+        JSR hide_cursor
+
         JMP .loop
 
 ; * = reset_vector
@@ -195,6 +198,7 @@ init:
 !zone nmi_handler
 * = nmi_vector
     RTI
+
 
 ; --------------------------------------------------------------------
 
