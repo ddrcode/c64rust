@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
-
 use super::{MachineConfig, MachineEvents, Memory};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
+use std::fmt::Write;
 use std::num::Wrapping;
 
 pub fn machine_loop(machine: &mut impl Machine) {
@@ -135,7 +135,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         if self.get_config().disassemble {
             self.print_op(&op);
         }
-        !(self.get_config().exit_on_brk && Mnemonic::BRK == op.def.mnemonic)
+        !(self.get_config().exit_on_brk && Mnemonic::NOP == op.def.mnemonic)
     }
 
     fn print_op(&self, op: &Operation) {
@@ -152,12 +152,22 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
         if self.get_config().verbose {
             print!(
-                "{}|  {}",
+                "{}|  {} | {}",
                 " ".repeat(13 - op.to_string().len()),
-                self.cpu().registers
+                self.cpu().registers,
+                self.get_vars()
             );
         }
         println!();
+    }
+
+    fn get_vars(&self) -> String {
+        let a = self.memory().get_word(0x0010);
+        let b = self.memory().get_word(0x0012);
+        let c = self.memory().get_word(0x0014);
+        let mut s = String::new();
+        write!(&mut s, "a={:04x}, b={:04x}, c={:04x}", a, b, c);
+        s
     }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {

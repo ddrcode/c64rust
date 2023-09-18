@@ -51,4 +51,6 @@ fn main() {
     if args.show_screen {
         arc.lock().unwrap().print_screen();
     }
+
+    arc.lock().unwrap().memory().dump(0, 0x30);
 }

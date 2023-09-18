@@ -16,7 +16,7 @@ type C64Arc = Arc<Mutex<dyn Machine>>;
 pub fn irq_loop(c64: C64Arc) {
     loop {
         thread::sleep_ms(IRQ_INTERVAL);
-        c64.lock().unwrap().irq();
+        // c64.lock().unwrap().irq();
     }
 }
 
