@@ -1,5 +1,8 @@
 * = $e000
 
+!raw "HelloOS by DDRcode"
+!skip $ff
+
 ; --------------------------------------------------------------------
 ; GLOBAL ADDRESSESS 
 
@@ -17,14 +20,14 @@ screen_end = $07e8
 !addr var_b = $12                             ; addr of 16-bit general purpose variable (var B)
 !addr var_c = $14                             ; addr of 16-bit general purpose variable (var B)
 !addr irq_cnt = $16                           ; counts 0-50: IRQ cycles pers second
-!addr cursor_y = $20                         ; current text line (cursor line)
-!addr cursor_x = $21                       ; cursor-Y (0-39)
+!addr cursor_y = $20                          ; current text line (cursor line)
+!addr cursor_x = $21                          ; cursor-Y (0-39)
+!addr cursor_line_addr = $22                  ; computed cursor address (0, y)
 
 ; --------------------------------------------------------------------
 ; ROM DATA
 
 welcome_msg     !pet "Hello C64Rust!", 0
-default_cursor  !scr "A", 1, 0
 
 ; --------------------------------------------------------------------
 ; MACROS
@@ -36,11 +39,34 @@ default_cursor  !scr "A", 1, 0
     STA .addr+1
 }
 
+!macro copy_word .from, .to {
+    LDA .from
+    STA .to
+    LDA .from+1
+    STA .to+1
+}
+
 !macro set_cursor .x, .y {
     LDA #.x
     STA cursor_x
     LDA #.y
     STA cursor_y
+    JSR compute_cursor_line_addr
+}
+
+!macro zero .addr {
+    LDA #0
+    STA .addr
+}
+
+!macro println .txt {
+    +set_word var_c, < .txt, > .txt
+    JSR println
+}
+
+!macro println_at .txt, .x, .y {
+    +set_cursor .x, .y
+    +println .txt
 }
 
 ; --------------------------------------------------------------------
@@ -82,23 +108,22 @@ cls:
 !zone sub_show_cursor
 show_cursor:
         LDA #$ff
-        STA screen_start+40             ; fixed position at this stage :-)
+        LDY cursor_x
+        STA (cursor_line_addr), Y
         RTS
 
 !zone sub_hide_cursor
 hide_cursor:
         LDA #$20
-        STA screen_start+40
+        LDY cursor_x
+        STA (cursor_line_addr), Y
         RTS
 
-!zone get_cursor_addr
-;; Computes an address of screen memory at cursor position
-;; Inputs: none
-;; Outputs: var_c
-cursor_addr:
+!zone 
+compute_cursor_line_addr:
         +set_word var_a, $00, $04
         +set_word var_b, $00, $00
-        LDY cursor_y                   ; set reg Y to cursor Y
+        LDY cursor_y                    ; set reg Y to cursor Y
 .loop                                   ; and loop until Y is zero
         CPY #0                          ; if Y is 0 go to done 
         BEQ .done
@@ -107,27 +132,24 @@ cursor_addr:
         DEY                             ; decrement Y
         JMP .loop
 .done
-        LDA cursor_x                 ; set reg A to cursor x
-        STA var_b                       ; set var_b to $00cur_y
-        LDA #0
-        STA var_b+1
-        JSR add                         ; add cur_x to result   
+        +copy_word var_a, cursor_line_addr
         RTS
 
-!zone sub_print_text
-print:
-        JSR cursor_addr
+!zone sub_print_text 
+;; print text at cursor position
+println:
         LDY #$0
-
 .loop:
         LDA (var_c), Y
         CMP #0
         BEQ .done
-        STA (var_a), Y 
+        STA (cursor_line_addr), Y 
         INY
         JMP .loop
 .done:
         INC cursor_y
+        +zero cursor_x
+        JSR compute_cursor_line_addr
         RTS
 
 
@@ -156,12 +178,10 @@ add:    CLC
 * = reset_vector
 
 init:
+        SEI                             ; disable interrupts for init
         JSR cls                         ; Clear screen
-        LDX #$0
-
-        +set_cursor 0, 0                ; Print welcome msg at 0,0
-        +set_word var_c, < welcome_msg, > welcome_msg
-        JSR print
+        +println_at welcome_msg, 0, 0   ; print welcome message
+        CLI                             ; enable interrupts
 
 .loop:                                  ; Cursor blinking loop
         LDA irq_cnt                     ; Show cursor on irq_cnt=0
@@ -174,8 +194,6 @@ init:
         JSR hide_cursor
 
         JMP .loop
-
-; * = reset_vector
 
 
 ; --------------------------------------------------------------------
