@@ -1,9 +1,12 @@
 #![allow(non_snake_case)]
 
-use super::{C64Memory, VIC_II};
-use crate::machine::{impl_reg_setter, Machine, MachineConfig, MachineEvents, Memory, RegSetter};
+use super::{C64KeyCode, C64Memory, CIA1, CIA6526, VIC_II};
+use crate::machine::{
+    impl_reg_setter, Addr, Machine, MachineConfig, MachineEvents, MachineStatus, Memory, RegSetter,
+};
 use crate::mos6510::{execute_operation, Operation, MOS6510};
 use std::num::Wrapping;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
@@ -14,6 +17,8 @@ pub struct C64 {
     mem: Box<dyn Memory + Send>,
     events: MachineEvents,
     gpu: VIC_II,
+    pub cia1: CIA1,
+    status: MachineStatus,
 }
 
 impl C64 {
@@ -26,10 +31,12 @@ impl C64 {
             events: MachineEvents {
                 on_next: Some(|machine, cycle| {
                     // it simulates line drawing (to avoid infinite loop waiting for next line)
-                    machine.memory_mut().set_byte(0xd012, (*cycle % 255) as u8);
+                    machine.set_byte(0xd012, (*cycle % 255) as u8);
                 }),
             },
             gpu: VIC_II {},
+            cia1: CIA1::new(0xdc00),
+            status: MachineStatus::Stopped,
         }
     }
 
@@ -44,20 +51,33 @@ impl C64 {
     pub fn get_screen_memory(&self) -> String {
         let mut chars = String::new();
         for i in 0x0400..0x07e8 {
-            let sc = self.memory().get_byte(i);
+            let sc = self.get_byte(i);
             let ch = VIC_II::to_ascii(sc);
             chars.push(ch);
         }
         chars
     }
 
-    pub fn send_key(&mut self, ch: char) {
-        let sc = VIC_II::ascii_to_petscii(ch);
-        self.memory_mut().set_byte(0x0277, sc);
-        self.memory_mut().set_byte(0x00c6, 1); // number of keys in the keyboard buffer
-        self.memory_mut().set_byte(0xffe4, 22);
+    pub fn send_key(&mut self, ck: C64KeyCode) {
+        self.cia1.keyboard.key_down(ck as u8);
+
+        // let sc = VIC_II::ascii_to_petscii(ch);
+        // self.memory_mut().set_byte(0x0277, sc);
+        // self.memory_mut().set_byte(0x00c6, 1); // number of keys in the keyboard buffer
+        // self.memory_mut().set_byte(0xffe4, 22);
+
         // self.machine.memory_mut().set_byte(0xc5, 2);
         // self.machine.memory_mut().set_byte(0xcb, 3);
+    }
+
+    pub fn send_key_with_modifier(&mut self, ck: C64KeyCode, modifier: C64KeyCode) {
+        self.cia1.keyboard.key_down(modifier as u8);
+        self.cia1.keyboard.key_down(ck as u8);
+    }
+
+    pub fn is_io(&self, addr: Addr) -> bool {
+        let flag = self.memory().get_byte(1) & 0b00000111;
+        flag & 0b100 > 0 && flag & 11 > 0 && addr >= 0xdc00 && addr <= 0xdc0f
     }
 }
 
@@ -88,7 +108,31 @@ impl Machine for C64 {
         &self.events
     }
 
+    fn get_status(&self) -> &MachineStatus {
+        &self.status
+    }
+
+    fn set_status(&mut self, status: MachineStatus) {
+        self.status = status;
+    }
+
     fn execute_operation(&mut self, op: &Operation) -> u8 {
         execute_operation(&op, self)
+    }
+
+    fn get_byte(&self, addr: Addr) -> u8 {
+        if self.is_io(addr) {
+            self.cia1.get_byte(addr)
+        } else {
+            self.memory().get_byte(addr)
+        }
+    }
+
+    fn set_byte(&mut self, addr: Addr, val: u8) {
+        if self.is_io(addr) {
+            self.cia1.set_byte(addr, val)
+        } else {
+            self.memory_mut().set_byte(addr, val)
+        }
     }
 }

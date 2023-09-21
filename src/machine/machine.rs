@@ -1,10 +1,16 @@
 #![allow(non_snake_case)]
-use super::{MachineConfig, MachineEvents, Memory};
+use super::{Addr, MachineConfig, MachineEvents, Memory};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
 use std::fmt::Write;
 use std::num::Wrapping;
+
+#[derive(PartialEq)]
+pub enum MachineStatus {
+    Stopped,
+    Running,
+}
 
 pub fn machine_loop(machine: &mut impl Machine) {
     let mut cycles = 0u64;
@@ -43,6 +49,8 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn cpu_mut(&mut self) -> &mut MOS6510;
     fn get_config(&self) -> &MachineConfig;
     fn get_events(&self) -> &MachineEvents;
+    fn get_status(&self) -> &MachineStatus;
+    fn set_status(&mut self, status: MachineStatus);
 
     // registry shortcuts
     fn A(&self) -> Wrapping<u8> {
@@ -85,11 +93,19 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.cpu_mut().registers.counter = addr;
     }
 
+    fn get_byte(&self, addr: Addr) -> u8 {
+        self.memory().get_byte(addr)
+    }
+
+    fn set_byte(&mut self, addr: Addr, val: u8) {
+        self.memory_mut().set_byte(addr, val);
+    }
+
     // boot sequence, etc
     fn power_on(&mut self) {
         // see https://www.pagetable.com/c64ref/c64mem/
-        self.memory_mut().set_byte(0x0000, 0x2f);
-        self.memory_mut().set_byte(0x0001, 0x37);
+        self.set_byte(0x0000, 0x2f);
+        self.set_byte(0x0001, 0x37);
 
         // By default, after start, the PC is set to address from RST vector ($fffc)
         // http://wilsonminesco.com/6502primer/MemMapReqs.html
@@ -98,18 +114,18 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
     fn start(&mut self) {
         let mut cycles = 0u64;
-        loop {
+        while *self.get_status() == MachineStatus::Running {
             if let Some(max_cycles) = self.get_config().max_cycles {
                 if cycles > max_cycles {
-                    break;
+                    self.stop();
                 }
             }
             if !self.next() {
-                break;
+                self.stop();
             };
             if let Some(addr) = self.get_config().exit_on_addr {
                 if self.PC() == addr {
-                    break;
+                    self.stop();
                 }
             }
             // if let Some(on_next) = self.events.on_next {
@@ -117,6 +133,10 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             // }
             cycles += 1;
         }
+    }
+
+    fn stop(&mut self) {
+        self.set_status(MachineStatus::Stopped);
     }
 
     fn execute_operation(&mut self, op: &Operation) -> u8;
@@ -131,47 +151,46 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         };
         let op = Operation::new(def.clone(), operand, address);
         self.execute_operation(&op);
-        // (def.function)(&op, self);
         if self.get_config().disassemble {
             self.print_op(&op);
         }
-        !(self.get_config().exit_on_brk && Mnemonic::NOP == op.def.mnemonic)
+        !(self.get_config().exit_on_brk && Mnemonic::RTI == op.def.mnemonic)
     }
 
     fn print_op(&self, op: &Operation) {
         let addr = self.PC().wrapping_sub(op.def.len() as u16);
         let val = match op.def.len() {
-            2 => format!("{:02x}   ", self.memory().get_byte(addr + 1)),
+            2 => format!("{:02x}   ", self.get_byte(addr + 1)),
             3 => format!(
                 "{:02x} {:02x}",
-                self.memory().get_byte(addr + 1),
-                self.memory().get_byte(addr + 2)
+                self.get_byte(addr + 1),
+                self.get_byte(addr + 2)
             ),
             _ => String::from("     "),
         };
         print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
         if self.get_config().verbose {
             print!(
-                "{}|  {} | {}",
+                "{}|  {}",
                 " ".repeat(13 - op.to_string().len()),
                 self.cpu().registers,
-                self.get_vars()
+                // self.get_vars()
             );
         }
         println!();
     }
 
-    fn get_vars(&self) -> String {
-        let a = self.memory().get_word(0x0010);
-        let b = self.memory().get_word(0x0012);
-        let c = self.memory().get_word(0x0014);
-        let mut s = String::new();
-        write!(&mut s, "a={:04x}, b={:04x}, c={:04x}", a, b, c);
-        s
-    }
+    // fn get_vars(&self) -> String {
+    //     let a = self.memory().get_word(0x0010);
+    //     let b = self.memory().get_word(0x0012);
+    //     let c = self.memory().get_word(0x0014);
+    //     let mut s = String::new();
+    //     write!(&mut s, "a={:04x}, b={:04x}, c={:04x}", a, b, c);
+    //     s
+    // }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {
-        let val = self.memory().get_byte(self.PC());
+        let val = self.get_byte(self.PC());
         self.inc_counter();
         val
     }
@@ -228,19 +247,19 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             AddressMode::Indirect => {
                 let addr = operand.get_word().unwrap();
                 let addr2 = (addr & 0xff00) | ((addr + 1) & 0x00ff); // page change not allowed!
-                let (lo, hi) = to_u16(self.memory().get_byte(addr), self.memory().get_byte(addr2));
+                let (lo, hi) = to_u16(self.get_byte(addr), self.get_byte(addr2));
                 Some(lo | hi << 8)
             }
             AddressMode::IndirectX => {
                 let (o, x) = to_u16(operand.get_byte().unwrap(), self.X8());
-                let lo = self.memory().get_byte((o + x) & 0x00ff) as u16;
-                let hi = u16::from(self.memory().get_byte((o + x + 1) & 0x00ff)) << 8;
+                let lo = self.get_byte((o + x) & 0x00ff) as u16;
+                let hi = u16::from(self.get_byte((o + x + 1) & 0x00ff)) << 8;
                 Some(hi | lo)
             }
             AddressMode::IndirectY => {
                 let (o, y) = to_u16(operand.get_byte().unwrap(), self.Y8());
-                let lo = self.memory().get_byte(o) as u16;
-                let hi = u16::from(self.memory().get_byte((o + 1) & 0x00ff)) << 8;
+                let lo = self.get_byte(o) as u16;
+                let hi = u16::from(self.get_byte((o + 1) & 0x00ff)) << 8;
                 Some((hi | lo) + y)
             }
             AddressMode::Relative => {
@@ -254,14 +273,14 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
     fn push(&mut self, val: u8) {
         let sc = self.SC().0 as u16;
-        self.memory_mut().set_byte(0x0100 | sc, val);
+        self.set_byte(0x0100 | sc, val);
         self.cpu_mut().registers.stack -= 1;
     }
 
     fn pop(&mut self) -> u8 {
         self.cpu_mut().registers.stack += 1;
         let sc = self.SC().0 as u16;
-        self.memory().get_byte(0x0100 | sc)
+        self.get_byte(0x0100 | sc)
     }
 
     fn load(&mut self, progmem: &[u8], addr: u16) {

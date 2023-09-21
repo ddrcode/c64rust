@@ -1,4 +1,6 @@
-use crate::c64::C64;
+#![allow(non_camel_case_types)]
+
+use crate::c64::{C64KeyCode, C64};
 use cursive::{
     event::{Callback, Event, EventResult, Key},
     theme::{BaseColor, BaseColor::*, Color, Color::*, ColorStyle, PaletteColor::*},
@@ -54,11 +56,23 @@ impl View for Screen {
     fn on_event(&mut self, event: cursive::event::Event) -> cursive::event::EventResult {
         match event {
             Event::Char(ch) => {
-                self.c64.lock().unwrap().send_key(ch);
+                if !ch.is_ascii() { return EventResult::Ignored };
+                let mut c64 = self.c64.lock().unwrap();
+                if ch.is_ascii_uppercase() {
+                    c64.send_key_with_modifier(C64KeyCode::from(ch.to_ascii_lowercase()), C64KeyCode::RShift);
+                } else {
+                    c64.send_key(C64KeyCode::from(ch));
+                }
                 EventResult::Consumed(None)
             }
-            Event::Key(Key::Enter) => {
-                self.c64.lock().unwrap().send_key(char::from(13));
+            Event::Key(key) => {
+                use C64KeyCode::*;
+                let kc = match key {
+                    Key::Enter => Return,
+                    Key::Backspace => Delete,
+                    _ => return EventResult::Ignored,
+                };
+                self.c64.lock().unwrap().send_key(kc);
                 EventResult::Consumed(None)
             }
             // Event::Char('l') | Event::Key(Key::Left) => self.push(LRUD::Left),

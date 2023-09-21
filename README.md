@@ -20,19 +20,18 @@ When built, the project provides three binaries (in `target/debug`)
 If you don't have any ROM file, don't worry - I've created a test ROM from scratch!
 It doesn't do much, but at least it displays a welcome message and a cursor.
 You are welcome to contribute and help to make it an alternative C64 OS :-)
-(the source is [here](https://github.com/ddrcode/c64rust/blob/main/rom/src/hello-c64.asm))
+(the source is [here](https://github.com/ddrcode/c64rust/tree/main/rom))
 But for now, just hit:
-`cargo run --bin gui -- --rom rom/hello-rom.p`
+`cargo run --bin gui -- --rom rom/hello.rom`
 
 Running options:
 
 ```
-Usage: c64emu [OPTIONS]
-
 Options:
   -r, --rom <ROM>
       --ram <RAM>
       --ram-file-addr <RAM_FILE_ADDR>  [default: 0200]
+      --ram-size <RAM_SIZE>            [default: 65536]
   -a, --start-addr <START_ADDR>        [default: fce2]
   -s, --show-screen
       --show-status
@@ -48,10 +47,10 @@ Options:
 
 ## Current state
 
-- MOS6502 (6510) instruction set fully implemented
-- C64 memory addressing implemented (RAM/ROM switching, but no CIA)
+- MOS6502 (6510) instruction set fully implemented (no illegal opcodes)
+- C64 memory addressing implemented (RAM/ROM switching, with partial CIA)
 - The emulator boots with provided C64 ROM
-- Text client with simple keyboard support - possible to run BASIC commands
+- Text client with keyboard emulation - possible to run BASIC commands
 
 This is the result of running current version of the emulator:
 
@@ -63,11 +62,10 @@ This is the result of running current version of the emulator:
 
 - Clock emulation (currently it ticks at host speed; it's not an issue as there is no emulation of
   other devices like GPU/VIC II, so sync is not required).
-- Basic CIA features (at least clock and keyboard)
+- Basic CIA features (other than the keyboard)
 
 ### Ambitions
 
-- Keyboard emulation (current keyboard featue requires KERNAL as it writes directly to its memory)
 - VIC II graphics (without sprites and smooth scrolling)
 
 ### Long-term goals

@@ -1,4 +1,5 @@
 use crate::machine::{Addr, Memory};
+use std::rc::Rc;
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
@@ -37,6 +38,11 @@ impl C64Memory {
             self.rom[idx] = *byte;
             idx += 1;
         }
+    }
+
+    fn is_io(&self, addr: Addr) -> bool {
+        let r1 = self.ram[1];
+        r1 & 100 > 1 && r1 & 11 > 1 && addr >= 0xd000 && addr <= 0xdfff
     }
 }
 
