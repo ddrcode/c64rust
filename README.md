@@ -24,6 +24,7 @@ You are welcome to contribute and help to make it an alternative C64 OS :-)
 But for now, just hit:
 `cargo run --bin gui -- --rom rom/hello.rom`
 
+
 Running options:
 
 ```

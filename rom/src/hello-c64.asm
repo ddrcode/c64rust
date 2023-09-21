@@ -263,5 +263,3 @@ init:
 nmi !word nmi_vector
 rst !word reset_vector
 irq !word irq_vector
-
-
