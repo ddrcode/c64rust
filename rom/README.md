@@ -10,7 +10,7 @@ so you could use the emulator straight away, without any external dependencies.
 If you have the official ROM (or its alternatives) you would rather prefer to
 use it than this toy.
 
-<img src="../screenshots/hello.png?raw=true" width="300"/>
+<img src="../screenshots/hello-os.png?raw=true" width="320"/>
 
 ## Why not official ROM?
 
