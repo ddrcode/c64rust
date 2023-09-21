@@ -1,5 +1,5 @@
 use cursive::event::Key;
-use cursive::CursiveRunnable;
+use cursive::{Cursive, CursiveRunnable};
 
 mod c64;
 mod cli_args;
@@ -49,12 +49,12 @@ fn main() {
 
     // c64.start();
     let machine_loop_c64 = Arc::clone(&c64);
-    thread::spawn(move || {
+    let machine_thread = thread::spawn(move || {
         machine_loop(machine_loop_c64);
     });
 
     let irq_loop_c64 = Arc::clone(&c64);
-    thread::spawn(move || {
+    let irq_thread = thread::spawn(move || {
         irq_loop(irq_loop_c64);
     });
 
@@ -65,13 +65,21 @@ fn main() {
 
     // siv.add_layer(views::mainscreen());
 
+    let quit_arc = Arc::clone(&c64);
+    let quit_handler = move |s: &mut Cursive| {
+        s.quit();
+        quit_arc.lock().unwrap().stop();
+    };
+
     let mut screen = Screen::new(c64);
 
-    siv.menubar().add_leaf("Quit", |s| s.quit());
+    siv.menubar().add_leaf("Quit", quit_handler.clone());
     siv.add_global_callback(Key::Esc, |s| s.select_menubar());
-    siv.add_global_callback(Key::F10, |s| s.quit());
+    siv.add_global_callback(Key::F10, quit_handler);
     // siv.add_global_callback(Key::F5, |s| actions::execute_request(s));
     siv.add_layer(screen);
 
     siv.run();
+    let _ = machine_thread.join();
+    let _ = irq_thread.join();
 }

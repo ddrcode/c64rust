@@ -33,7 +33,8 @@ pub trait Memory {
             end: to,
         };
         for i in range {
-            print!("{:02x} ", self.get_byte(i));
+            print!("{}", char::from(self.get_byte(i)));
+            // print!("{:04x}: {:02x} ", i, self.get_byte(i));
         }
         println!();
     }
