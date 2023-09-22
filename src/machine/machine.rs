@@ -3,36 +3,12 @@ use super::{Addr, MachineConfig, MachineEvents, Memory};
 use crate::mos6510::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
 };
-use std::fmt::Write;
 use std::num::Wrapping;
 
 #[derive(PartialEq)]
 pub enum MachineStatus {
     Stopped,
     Running,
-}
-
-pub fn machine_loop(machine: &mut impl Machine) {
-    let mut cycles = 0u64;
-    loop {
-        if let Some(max_cycles) = machine.get_config().max_cycles {
-            if cycles > max_cycles {
-                break;
-            }
-        }
-        if !machine.next() {
-            break;
-        };
-        // if let Some(on_next) = machine.get_events().on_next {
-        //     on_next(machine, &cycles);
-        // }
-        if let Some(addr) = machine.get_config().exit_on_addr {
-            if machine.PC() == addr {
-                break;
-            }
-        }
-        cycles += 1;
-    }
 }
 
 pub trait RegSetter<T> {

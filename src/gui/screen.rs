@@ -2,9 +2,8 @@
 
 use crate::c64::{C64KeyCode, C64};
 use cursive::{
-    event::{Callback, Event, EventResult, Key},
-    theme::{BaseColor, BaseColor::*, Color, Color::*, ColorStyle, PaletteColor::*},
-    views::Dialog,
+    event::{Event, EventResult, Key},
+    theme::{Color, ColorStyle },
     Printer, Vec2, View,
 };
 
@@ -56,10 +55,15 @@ impl View for Screen {
     fn on_event(&mut self, event: cursive::event::Event) -> cursive::event::EventResult {
         match event {
             Event::Char(ch) => {
-                if !ch.is_ascii() { return EventResult::Ignored };
+                if !ch.is_ascii() {
+                    return EventResult::Ignored;
+                };
                 let mut c64 = self.c64.lock().unwrap();
                 if ch.is_ascii_uppercase() {
-                    c64.send_key_with_modifier(C64KeyCode::from(ch.to_ascii_lowercase()), C64KeyCode::RShift);
+                    c64.send_key_with_modifier(
+                        C64KeyCode::from(ch.to_ascii_lowercase()),
+                        C64KeyCode::RShift,
+                    );
                 } else {
                     c64.send_key(C64KeyCode::from(ch));
                 }

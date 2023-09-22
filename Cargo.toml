@@ -9,8 +9,11 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.2", features = ["derive"] }
 colored = "2"
-cursive = { version="0.20", default-features=false, features=["termion-backend"] }
+cursive = { version="0.20", default-features=false, features=["ncurses-backend"] }
+cursive_hexview = "0.7"
 substring = "1.4.5"
+log = "0.4.20"
+env_logger = "0.10.0"
 
 [[bin]]
 name = "machine"

@@ -24,7 +24,6 @@ You are welcome to contribute and help to make it an alternative C64 OS :-)
 But for now, just hit:
 `cargo run --bin gui -- --rom rom/hello.rom`
 
-
 Running options:
 
 ```
@@ -87,66 +86,26 @@ This is the result of running current version of the emulator:
 
 ## References
 
-Below there is a list of posts that helped me to gain actual knowledge about C64/MOS6510 architecture
-and answered many of my questions.
+I've compiled much longer list of topic-specific links in a separate
+[references document](docs/references.md), but here I'd like to mention a few sites
+I was returning to constantly in order to gain my knowledge about 6502 and C64 internals.
 
-### CPU
-
-- [The 6502 Architecture (by prof William T. Verts)](https://people.cs.umass.edu/~verts/cmpsci201/spr_2004/Lecture_02_2004-01-30_The_6502_processor.pdf)
-
-#### Instruction set
-
-- [6502 / 6510 Instruction Set](https://c64os.com/post/6502instructions)
-- [6502 Instruction Set](https://www.masswerk.at/6502/6502_instruction_set.html#LSR)
-
-#### Memory access modes
-
-- [Writing your own NES emulator Part 3 - the 6502 CPU](https://yizhang82.dev/nes-emu-cpu)
-
-#### Status register
-
-- [The 6502 Status Register: a Guide to Black Magic at 6502.org](http://forum.6502.org/viewtopic.php?f=2&t=6099)
-- [The 6502 overflow flag explained mathematically](https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html)
-- [The Overflow (V) Flag Explained by Bruce Clark](http://www.6502.org/tutorials/vflag.html)
-
-#### BCD (Binary code decimal)
-
-- [Decimal Mode by Bruce Clark (at 6502.org)](http://6502.org/tutorials/decimal_mode.html)
-
-#### Signed/unsigned numbers
-
-- [More about binary numbers](http://www.emulator101.com/more-about-binary-numbers.html)
-- [Beyond 8-bit Unsigned Comparisons by Bruce Clark](http://www.6502.org/tutorials/compare_beyond.html)
-
-### Memory
-
-#### Memory map
-
-- [Commodore 64 memory map](https://sta.c64.org/cbm64mem.html)
-- [C64 Memory Map](https://www.pagetable.com/c64ref/c64mem/)
-
-#### Bank switching
-
-- [Bank switching on C64 wiki](https://www.c64-wiki.com/wiki/Bank_Switching)
-
-### Reset / Boot sequence
-
-- [Reset (process) on C64 Wiki](https://www.c64-wiki.com/wiki/Reset_%28Process%29)
-- [Internals of BRK/IRQ/NMI/RESET on a MOS 6502 by Michael Steil](https://www.pagetable.com/?p=410)
-
-### Page boundaries
-
-- [Page Boundaries](http://forum.6502.org/viewtopic.php?t=469)
-
-### VIC II and graphics
-
-- [Double IRQ Explained](https://codebase64.org/doku.php?id=base:double_irq_explained)
-
-### Keyboard
-
-- [How the C64 Keyboard Works](https://www.c64os.com/post/howthekeyboardworks)
-
-### Online emulators (for testing instructions behaviour)
-
-- [Easy 6502](https://skilldrick.github.io/easy6502/)
-- [Visual 6502](http://visual6502.org/JSSim/expert.html)
+- [6502.org](http://6502.org/)
+  An absolute must-visit page for all 6502 enthusiasts: documents, active forum and plenty
+  of links to existing projects, tools, assemblers, etc.
+- [C64 Wiki](https://www.c64-wiki.com/wiki/Main_Page)
+  Another very detailed knowledge base site, but focused on C64.
+  Lot of information about C64-specific chips, Kernal functions, graphics
+  and C64 software.
+- [Codebase 64](https://codebase64.org/)
+  This is a deep-dive into C64 world. Lot of ASM examples, advanced topics
+  and many how-to guides.
+- [C64OS](https://c64os.com/)
+  C64OS is a name of a modern operating system for C64, but the site
+  provides much more than that. The author invested a lot of time in understanding
+  and explaining the details of how C64/6510 functions and has a great talent
+  in presenting that knowledge in digestible form.
+- [pagetable.com](https://www.pagetable.com/)
+  Great blog and reference docs about 6502, C64 and many other topics.
+  It provides super detailed C64 [Memory Map](https://www.pagetable.com/c64ref/c64mem) and
+  [ROM Disassembly](https://www.pagetable.com/c64ref/c64disasm/)

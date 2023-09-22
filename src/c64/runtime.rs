@@ -2,20 +2,18 @@ use super::C64;
 use crate::machine::{Machine, MachineStatus};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time;
+use std::time::Duration;
 
 /// Interval between IRQs in [ms]
 /// The value is specific for PAL systems. On NTSC systems the value
 /// was 1/60s.
 /// See:
 /// https://dustlayer.com/c64-coding-tutorials/2013/4/8/episode-2-3-did-i-interrupt-you
-const IRQ_INTERVAL: u32 = 20;
+const IRQ_INTERVAL: Duration = Duration::from_millis(20);
 
-type C64Arc = Arc<Mutex<C64>>;
-
-pub fn irq_loop(c64mutex: C64Arc) {
+pub fn irq_loop(c64mutex: Arc<Mutex<C64>>) {
     loop {
-        thread::sleep_ms(IRQ_INTERVAL);
+        thread::sleep(IRQ_INTERVAL);
         {
             let mut c64 = c64mutex.lock().unwrap();
             if *c64.get_status() == MachineStatus::Stopped {

@@ -7,6 +7,7 @@ pub struct Keyboard {
 }
 
 // https://www.c64-wiki.com/wiki/Keyboard_code
+#[allow(non_camel_case_types, dead_code)]
 pub enum C64KeyCode {
     Delete = 0x00,
     Return = 0x01,
@@ -128,7 +129,7 @@ impl From<char> for C64KeyCode {
             '-' => Minus,
             '=' => Equal,
             ' ' => Space,
-            _ => panic!("Uknown character: {}", ch)
+            _ => panic!("Uknown character: {}", ch),
         }
     }
 }
@@ -243,15 +244,23 @@ impl Keyboard {
     }
 
     pub fn scan(&self, dc00: u8, dc01: u8) -> u8 {
-        if self.last_keys.is_empty() { return 0xff };
-        if dc00 == 0  { return 0 };
+        if self.last_keys.is_empty() {
+            return 0xff;
+        };
+        if dc00 == 0 {
+            return 0;
+        };
         if !self.is_column_scan(dc00) {
             return dc01;
         };
         if self.last_keys.len() < 2 {
             self.get_row_code(self.last_keys[0], dc00)
         } else {
-            self.last_keys.iter().map(|x|{ self.get_row_code(*x, dc00) }).reduce(|x,y|{x&y}).unwrap()
+            self.last_keys
+                .iter()
+                .map(|x| self.get_row_code(*x, dc00))
+                .reduce(|x, y| x & y)
+                .unwrap()
         }
     }
 }

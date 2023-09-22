@@ -6,6 +6,8 @@ pub struct MOS6502Memory {
 }
 
 impl MOS6502Memory {
+
+    #[allow(dead_code)]
     pub fn new(size: usize) -> Self {
         // let size: usize = 1 << 16;
         MOS6502Memory {
@@ -26,6 +28,7 @@ impl MOS6502Memory {
 impl Memory for MOS6502Memory {
     // TODO: Must check whether the three corresponding its at addr 0x00 are 1
     // check https://www.c64-wiki.com/wiki/Bank_Switching for details
+    #[allow(unused_comparisons)]
     fn mem(&self, addr: Addr) -> &[u8] {
         let flag = self.ram[1] & 0b00000111;
         if flag & 1 > 0 && addr >= 0xa000 && addr <= 0xbfff {

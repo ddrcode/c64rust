@@ -15,10 +15,6 @@ impl CIA1 {
             keyboard: Keyboard::new(),
         }
     }
-
-    pub fn scan_keyboard(&self) -> u8 {
-        0xff
-    }
 }
 
 pub trait CIA6526 {
@@ -73,5 +69,4 @@ impl CIA6526 for CIA1 {
         }
         self.mem_mut()[address] = val;
     }
-
 }

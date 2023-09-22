@@ -6,10 +6,6 @@ use crate::machine::{
 };
 use crate::mos6510::{execute_operation, Operation, MOS6510};
 use std::num::Wrapping;
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time;
 
 pub struct C64 {
     config: MachineConfig,

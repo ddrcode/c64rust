@@ -10,7 +10,7 @@ mod macros;
 
 pub use {
     impl_reg_setter,
-    machine::{machine_loop, Machine, MachineStatus, RegSetter},
+    machine::{Machine, MachineStatus, RegSetter},
     machine_config::MachineConfig,
     machine_events::MachineEvents,
     memory::{Addr, Memory},
