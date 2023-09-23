@@ -234,11 +234,6 @@ init:
         BNE .loop
         JSR hide_cursor
 
-.show_digit
-        LDA $58
-        ADC #$2f
-        STA screen_start
-
         JMP .loop
 
 

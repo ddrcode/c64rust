@@ -179,7 +179,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     }
 
     fn inc_counter(&mut self) {
-        self.cpu_mut().registers.counter += 1;
+        self.set_PC(self.PC().wrapping_add(1));
     }
 
     fn decode_op(&mut self) -> OperationDef {
@@ -189,7 +189,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             None => panic!(
                 "Opcode {:#04x} not found at address {:#06x}",
                 opcode,
-                self.PC() - 1
+                self.PC().wrapping_sub(1)
             ),
         }
     }
