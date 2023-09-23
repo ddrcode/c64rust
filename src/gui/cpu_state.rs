@@ -1,9 +1,7 @@
 use cursive::{
-    event::Key,
     theme::*,
-    view::{Nameable, Resizable},
+    view::{Nameable},
     views::*,
-    Cursive,
 };
 
 pub struct CpuState {
@@ -14,7 +12,7 @@ pub fn cpu_state(state: String) -> NamedView<Canvas<CpuState>> {
     Canvas::new(CpuState { state: state })
         .with_draw(|state: &CpuState, printer| {
             let color =
-                ColorStyle::new(Color::Dark(BaseColor::Black), Color::Dark(BaseColor::Cyan));
+                ColorStyle::new(Color::Light(BaseColor::White), Color::Dark(BaseColor::Blue));
 
             printer.with_color(color, |printer| {
                 printer.print(

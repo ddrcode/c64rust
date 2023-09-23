@@ -11,24 +11,24 @@ use cursive::{
 use std::sync::{Arc, Mutex};
 use substring::Substring;
 
-pub struct Screen {
+pub struct MachineScreen {
     screen_size: Vec2,
     c64: Arc<Mutex<C64>>,
 }
 
-impl Screen {
+impl MachineScreen {
     pub fn new(c64: Arc<Mutex<C64>>) -> Self {
-        Screen {
+        MachineScreen {
             c64: c64,
             screen_size: Vec2::new(44, 27),
         }
     }
 }
 
-impl View for Screen {
+impl View for MachineScreen {
     fn draw(&self, printer: &Printer) {
         let frame_color =
-            ColorStyle::new(Color::Rgb(0x35, 0x28, 0x79), Color::Rgb(0x6c, 0x5e, 0xb5));
+            ColorStyle::new(Color::Rgb(0x35, 0x28, 0x79), Color::Rgb(0x70, 0xa4, 0xb2));
         let color = ColorStyle::new(Color::Rgb(0x70, 0xa4, 0xb2), Color::Rgb(0x35, 0x28, 0x79));
 
         printer.with_color(frame_color, |printer| {
@@ -49,11 +49,11 @@ impl View for Screen {
         });
     }
 
-    fn required_size(&mut self, _constraint: cursive::Vec2) -> cursive::Vec2 {
+    fn required_size(&mut self, _constraint: Vec2) -> Vec2 {
         self.screen_size
     }
 
-    fn on_event(&mut self, event: cursive::event::Event) -> cursive::event::EventResult {
+    fn on_event(&mut self, event: Event) -> EventResult {
         match event {
             Event::Char(ch) => {
                 if !ch.is_ascii() {
@@ -66,7 +66,18 @@ impl View for Screen {
                         C64KeyCode::RShift,
                     );
                 } else {
-                    c64.send_key(C64KeyCode::from(ch));
+                    if ch=='"' {
+                        c64.send_key_with_modifier(
+                            C64KeyCode::from('2'),
+                            C64KeyCode::RShift,
+                        );
+                    } else if ch=='$' {
+                        c64.send_key_with_modifier(
+                            C64KeyCode::from('4'),
+                            C64KeyCode::RShift,
+                        );
+                    } else {
+                    c64.send_key(C64KeyCode::from(ch));}
                 }
                 EventResult::Consumed(None)
             }

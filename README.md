@@ -51,10 +51,11 @@ Options:
 - C64 memory addressing implemented (RAM/ROM switching, with partial CIA)
 - The emulator boots with provided C64 ROM
 - Text client with keyboard emulation - possible to run BASIC commands
+- The client has integrated simple debugging features: memory view and processor state
 
 This is the result of running current version of the emulator:
 
-<img src="screenshots/hello.png?raw=true" width="300"/>
+<img src="screenshots/debugger.png?raw=true" width="800"/>
 
 ## Features and goals
 

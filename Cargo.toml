@@ -9,8 +9,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.2", features = ["derive"] }
 colored = "2"
-cursive = { version="0.20", default-features=false, features=["ncurses-backend"] }
-cursive_hexview = { path="../../github/cursive_hexview" }
+cursive = { version="0.20", default-features=false, features=["termion-backend"] }
+cursive_hexview = { git="https://github.com/ddrcode/cursive_hexview.git", branch="start-addr" }
 # cursive_hexview = "0.7"
 substring = "1.4.5"
 log = "0.4.20"

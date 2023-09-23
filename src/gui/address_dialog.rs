@@ -2,7 +2,7 @@ use super::UIState;
 use cursive::{
     event::Key,
     view::{Nameable, Resizable},
-    views::{Dialog, EditView, NamedView, OnEventView, PaddedView, ResizedView},
+    views::{Dialog, EditView, OnEventView },
     Cursive,
 };
 

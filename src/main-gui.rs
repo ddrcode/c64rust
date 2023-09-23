@@ -18,7 +18,7 @@ use crate::gui::*;
 use crate::machine::{Machine, MachineConfig};
 use clap::Parser;
 use cursive::{event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable};
-use cursive_hexview::{HexView, HexViewConfig};
+use cursive_hexview::{HexView};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -63,7 +63,7 @@ fn main() {
     siv.run();
     IS_RUNNING.store(false, Ordering::Relaxed);
 
-    threads.into_iter().for_each(|t|{
+    threads.into_iter().for_each(|t| {
         t.join().expect("Thread failed!");
     });
 }
@@ -90,9 +90,8 @@ fn init_c64() -> C64 {
 fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     let mut siv = cursive::default();
     set_theme(&mut siv);
-    // siv.set_autorefresh(true);
+    siv.set_autorefresh(false);
     siv.set_autohide_menu(false);
-    siv.set_fps(15);
 
     let quit_handler = {
         let arc = Arc::clone(&c64);
@@ -146,11 +145,10 @@ fn set_theme(siv: &mut CursiveRunnable) {
     use cursive::theme::*;
     let mut theme = siv.current_theme().clone();
     theme.shadow = true;
-    theme.borders = cursive::theme::BorderStyle::None;
-    theme.palette[cursive::theme::PaletteColor::Background] =
-        cursive::theme::Color::TerminalDefault;
-    theme.palette[cursive::theme::PaletteColor::View] =
-        cursive::theme::Color::Dark(BaseColor::White);
+    theme.borders = BorderStyle::None;
+    theme.palette[PaletteColor::Background] = Color::TerminalDefault;
+    theme.palette[PaletteColor::View] = Color::Dark(BaseColor::White);
+    theme.palette[PaletteColor::View] = Color::Rgb(0x9c, 0xa5, 0xb5);
     // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
     siv.set_theme(theme);
 }
@@ -161,11 +159,13 @@ fn update_ui(s: &mut Cursive, c64: Arc<Mutex<C64>>) {
     } else {
         0
     };
+
     s.call_on_name("memory", |view: &mut HexView| {
         let data = lock(&c64).memory().fragment(addr, addr + 200);
         view.set_start_addr(addr as usize);
         view.set_data(data.iter());
     });
+
     s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
         view.state_mut().state = lock(&c64).cpu().registers.to_string();
     });

@@ -129,7 +129,7 @@ impl From<char> for C64KeyCode {
             '-' => Minus,
             '=' => Equal,
             ' ' => Space,
-            _ => panic!("Uknown character: {}", ch),
+            _ => Pound // :-)
         }
     }
 }
