@@ -1,7 +1,7 @@
 #![allow(non_camel_case_types)]
 
-use crate::c64::{C64KeyCode, C64};
-use crate::utils::lock;
+use c64::{C64KeyCode, C64};
+use machine::utils::lock;
 use cursive::{
     event::{Event, EventResult, Key},
     theme::{Color, ColorStyle},

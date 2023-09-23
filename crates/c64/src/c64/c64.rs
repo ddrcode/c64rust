@@ -1,10 +1,9 @@
 #![allow(non_snake_case)]
 
 use super::{C64KeyCode, C64Memory, CIA1, CIA6526, VIC_II};
-use crate::machine::{
+use machine::{
     impl_reg_setter, Addr, Machine, MachineConfig, MachineEvents, MachineStatus, Memory, RegSetter,
-};
-use crate::mos6510::{execute_operation, Operation, MOS6510};
+mos6510::{execute_operation, Operation, MOS6510}};
 use std::num::Wrapping;
 
 pub struct C64 {

@@ -1,4 +1,4 @@
-use crate::machine::{Addr, Memory};
+use machine::{Addr, Memory};
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
