@@ -129,7 +129,7 @@ impl From<char> for C64KeyCode {
             '-' => Minus,
             '=' => Equal,
             ' ' => Space,
-            _ => Pound // :-)
+            _ => Pound, // :-)
         }
     }
 }

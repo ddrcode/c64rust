@@ -1,5 +1,5 @@
 use super::Keyboard;
-use crate::machine::Addr;
+use machine::Addr;
 
 pub struct CIA1 {
     address: Addr,

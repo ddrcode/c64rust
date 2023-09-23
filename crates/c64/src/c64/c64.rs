@@ -1,15 +1,16 @@
 #![allow(non_snake_case)]
 
 use super::{C64KeyCode, C64Memory, CIA1, CIA6526, VIC_II};
-use crate::machine::{
-    impl_reg_setter, Addr, Machine, MachineConfig, MachineEvents, MachineStatus, Memory, RegSetter,
+use machine::{
+    impl_reg_setter,
+    mos6502::{execute_operation, Operation, MOS6502},
+    Addr, Machine, MachineConfig, MachineEvents, MachineStatus, Memory, RegSetter,
 };
-use crate::mos6510::{execute_operation, Operation, MOS6510};
 use std::num::Wrapping;
 
 pub struct C64 {
     config: MachineConfig,
-    mos6510: MOS6510,
+    mos6510: MOS6502,
     mem: Box<dyn Memory + Send>,
     events: MachineEvents,
     gpu: VIC_II,
@@ -22,7 +23,7 @@ impl C64 {
         let size = config.ram_size.clone();
         C64 {
             config: config,
-            mos6510: MOS6510::new(),
+            mos6510: MOS6502::new(),
             mem: Box::new(C64Memory::new(size)),
             events: MachineEvents {
                 on_next: Some(|machine, cycle| {
@@ -88,11 +89,11 @@ impl Machine for C64 {
         &mut self.mem
     }
 
-    fn cpu(&self) -> &MOS6510 {
+    fn cpu(&self) -> &MOS6502 {
         &self.mos6510
     }
 
-    fn cpu_mut(&mut self) -> &mut MOS6510 {
+    fn cpu_mut(&mut self) -> &mut MOS6502 {
         &mut self.mos6510
     }
 

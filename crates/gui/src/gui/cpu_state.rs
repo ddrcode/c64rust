@@ -1,8 +1,4 @@
-use cursive::{
-    theme::*,
-    view::{Nameable},
-    views::*,
-};
+use cursive::{theme::*, view::Nameable, views::*};
 
 pub struct CpuState {
     pub state: String,

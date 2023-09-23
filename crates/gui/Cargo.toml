@@ -1,0 +1,25 @@
+[package]
+name = "gui"
+authors = ["ddrcode"]
+description = "DDR's Commodore 64 emulator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+machine = { path="../mos6502/" }
+c64 = { path="../c64/" }
+clap = { version = "4.4.2", features = ["derive"] }
+colored = "2"
+cursive = { version="0.20", default-features=false, features=["termion-backend"] }
+cursive_hexview = { git="https://github.com/ddrcode/cursive_hexview.git", branch="start-addr" }
+# cursive_hexview = "0.7"
+substring = "1.4.5"
+log = "0.4.20"
+env_logger = "0.10.0"
+
+[[bin]]
+name = "gui"
+path = "src/main.rs"
+

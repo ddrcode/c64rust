@@ -101,15 +101,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635"
 
 [[package]]
-name = "c64emu"
+name = "c64"
 version = "0.1.0"
 dependencies = [
  "clap",
  "colored",
- "cursive 0.20.0",
- "cursive_hexview",
  "env_logger",
- "log",
+ "machine",
  "substring",
 ]
 
@@ -409,6 +407,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "gui"
+version = "0.1.0"
+dependencies = [
+ "c64",
+ "clap",
+ "colored",
+ "cursive 0.20.0",
+ "cursive_hexview",
+ "env_logger",
+ "log",
+ "machine",
+ "substring",
+]
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -481,6 +494,16 @@ name = "log"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
+
+[[package]]
+name = "machine"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "colored",
+ "env_logger",
+ "substring",
+]
 
 [[package]]
 name = "memchr"

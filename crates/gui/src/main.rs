@@ -3,27 +3,18 @@ extern crate colored;
 extern crate cursive_hexview;
 extern crate log;
 
-mod c64;
-mod cli_args;
-mod cli_utils;
 mod gui;
-mod machine;
-mod mos6510;
-mod utils;
 
-use crate::c64::{irq_loop, machine_loop, C64};
-use crate::cli_args::Args;
-use crate::cli_utils::get_file_as_byte_vec;
 use crate::gui::*;
-use crate::machine::{Machine, MachineConfig};
+use c64::{irq_loop, machine_loop, C64};
 use clap::Parser;
 use cursive::{event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable};
-use cursive_hexview::{HexView};
+use cursive_hexview::HexView;
+use machine::{cli::*, utils::lock, Machine, MachineConfig};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use utils::lock;
 
 static IS_RUNNING: AtomicBool = AtomicBool::new(true);
 const GUI_REFRESH: Duration = Duration::from_millis(500);

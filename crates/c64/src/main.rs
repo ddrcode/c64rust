@@ -6,15 +6,9 @@ use std::io::Read;
 use std::path::PathBuf;
 
 mod c64;
-mod cli_args;
-mod machine;
-mod mos6510;
-mod utils;
 
 use crate::c64::{machine_loop, C64};
-use crate::cli_args::Args;
-use crate::machine::{Machine, MachineConfig};
-use crate::utils::lock;
+use machine::{cli::Args, utils::lock, Machine, MachineConfig};
 use std::sync::{Arc, Mutex};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
