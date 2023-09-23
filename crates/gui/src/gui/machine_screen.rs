@@ -1,12 +1,12 @@
 #![allow(non_camel_case_types)]
 
 use c64::{C64KeyCode, C64};
-use machine::utils::lock;
 use cursive::{
     event::{Event, EventResult, Key},
     theme::{Color, ColorStyle},
     Printer, Vec2, View,
 };
+use machine::utils::lock;
 
 use std::sync::{Arc, Mutex};
 use substring::Substring;
@@ -66,18 +66,13 @@ impl View for MachineScreen {
                         C64KeyCode::RShift,
                     );
                 } else {
-                    if ch=='"' {
-                        c64.send_key_with_modifier(
-                            C64KeyCode::from('2'),
-                            C64KeyCode::RShift,
-                        );
-                    } else if ch=='$' {
-                        c64.send_key_with_modifier(
-                            C64KeyCode::from('4'),
-                            C64KeyCode::RShift,
-                        );
+                    if ch == '"' {
+                        c64.send_key_with_modifier(C64KeyCode::from('2'), C64KeyCode::RShift);
+                    } else if ch == '$' {
+                        c64.send_key_with_modifier(C64KeyCode::from('4'), C64KeyCode::RShift);
                     } else {
-                    c64.send_key(C64KeyCode::from(ch));}
+                        c64.send_key(C64KeyCode::from(ch));
+                    }
                 }
                 EventResult::Consumed(None)
             }

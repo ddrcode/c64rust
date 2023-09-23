@@ -1,5 +1,5 @@
 use super::C64;
-use machine::{Machine, MachineStatus, utils::lock};
+use machine::{utils::lock, Machine, MachineStatus};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;

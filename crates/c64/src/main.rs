@@ -8,7 +8,7 @@ use std::path::PathBuf;
 mod c64;
 
 use crate::c64::{machine_loop, C64};
-use machine::{Machine, MachineConfig, utils::lock, cli::Args};
+use machine::{cli::Args, utils::lock, Machine, MachineConfig};
 use std::sync::{Arc, Mutex};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {

@@ -12,7 +12,7 @@ mod registers;
 use std::collections::HashMap;
 
 pub use {
-    address_mode::AddressMode, cpu::MOS6510, mnemonic::Mnemonic, opcodes_def::define_operations,
+    address_mode::AddressMode, cpu::MOS6502, mnemonic::Mnemonic, opcodes_def::define_operations,
     opcodes_impl::execute_operation, operand::Operand, operation::Operation,
     operation_def::OperationDef, processor_status::ProcessorStatus, registers::Registers,
 };

@@ -1,7 +1,6 @@
-mod machine;
-pub mod utils;
 pub mod cli;
-pub mod mos6510;
+mod machine;
+pub mod mos6502;
+pub mod utils;
 
 pub use machine::*;
-

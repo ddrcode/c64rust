@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use super::{Addr, MachineConfig, MachineEvents, Memory};
-use crate::mos6510::{
-    AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6510,
+use crate::mos6502::{
+    AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6502,
 };
 use std::num::Wrapping;
 
@@ -21,8 +21,8 @@ pub trait RegSetter<T> {
 pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
     fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
-    fn cpu(&self) -> &MOS6510;
-    fn cpu_mut(&mut self) -> &mut MOS6510;
+    fn cpu(&self) -> &MOS6502;
+    fn cpu_mut(&mut self) -> &mut MOS6502;
     fn get_config(&self) -> &MachineConfig;
     fn get_events(&self) -> &MachineEvents;
     fn get_status(&self) -> &MachineStatus;

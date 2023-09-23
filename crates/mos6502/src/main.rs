@@ -2,9 +2,9 @@ extern crate colored;
 
 mod cli;
 mod machine;
-mod mos6510;
+mod mos6502;
 
-use crate::cli::{ Args, get_file_as_byte_vec };
+use crate::cli::{get_file_as_byte_vec, Args};
 use crate::machine::{MOS6502Machine, Machine, MachineConfig};
 use clap::Parser;
 

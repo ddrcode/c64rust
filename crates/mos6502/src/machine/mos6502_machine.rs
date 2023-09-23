@@ -2,12 +2,12 @@ use super::{
     impl_reg_setter, MOS6502Memory, Machine, MachineConfig, MachineEvents, MachineStatus, Memory,
     RegSetter,
 };
-use crate::mos6510::{execute_operation, Operation, MOS6510};
+use crate::mos6502::{execute_operation, Operation, MOS6502};
 use std::num::Wrapping;
 
 pub struct MOS6502Machine {
     config: MachineConfig,
-    mos6510: MOS6510,
+    mos6502: MOS6502,
     mem: Box<dyn Memory + Send>,
     events: MachineEvents,
     status: MachineStatus,
@@ -19,7 +19,7 @@ impl MOS6502Machine {
         let size = config.ram_size.clone();
         MOS6502Machine {
             config: config,
-            mos6510: MOS6510::new(),
+            mos6502: MOS6502::new(),
             mem: Box::new(MOS6502Memory::new(size)),
             events: MachineEvents { on_next: None },
             status: MachineStatus::Stopped,
@@ -38,12 +38,12 @@ impl Machine for MOS6502Machine {
         &mut self.mem
     }
 
-    fn cpu(&self) -> &MOS6510 {
-        &self.mos6510
+    fn cpu(&self) -> &MOS6502 {
+        &self.mos6502
     }
 
-    fn cpu_mut(&mut self) -> &mut MOS6510 {
-        &mut self.mos6510
+    fn cpu_mut(&mut self) -> &mut MOS6502 {
+        &mut self.mos6502
     }
 
     fn get_config(&self) -> &MachineConfig {

@@ -1,8 +1,8 @@
-use cursive::views::{LinearLayout};
+use cursive::views::LinearLayout;
 
 use super::{cpu_state, memory_view, MachineScreen};
 use c64::C64;
-use machine::{Machine, utils::lock};
+use machine::{utils::lock, Machine};
 use std::sync::{Arc, Mutex};
 
 pub fn main_screen(c64: Arc<Mutex<C64>>) -> LinearLayout {

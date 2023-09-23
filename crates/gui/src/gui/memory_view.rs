@@ -25,4 +25,3 @@ pub fn memory_view() -> impl View {
 
     hex_pane
 }
-

@@ -1,7 +1,7 @@
 #![allow(non_camel_case_types)]
 
-use machine::Memory;
 use colored::*;
+use machine::Memory;
 
 /*
  * RGB values of C64 colours

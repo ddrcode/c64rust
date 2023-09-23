@@ -5,12 +5,12 @@ extern crate log;
 
 mod gui;
 
-use c64::{irq_loop, machine_loop, C64};
-use machine::{cli::*, utils::lock, Machine, MachineConfig};
 use crate::gui::*;
+use c64::{irq_loop, machine_loop, C64};
 use clap::Parser;
 use cursive::{event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable};
-use cursive_hexview::{HexView};
+use cursive_hexview::HexView;
+use machine::{cli::*, utils::lock, Machine, MachineConfig};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
