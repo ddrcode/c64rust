@@ -5,10 +5,11 @@ use crate::mos6502::{
 };
 use std::num::Wrapping;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum MachineStatus {
     Stopped,
     Running,
+    Debug,
 }
 
 pub trait RegSetter<T> {
@@ -115,6 +116,10 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.set_status(MachineStatus::Stopped);
     }
 
+    fn debug(&mut self) {
+        self.set_status(MachineStatus::Debug);
+    }
+
     fn execute_operation(&mut self, op: &Operation) -> u8;
 
     fn next(&mut self) -> bool {
@@ -130,7 +135,11 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         if self.get_config().disassemble {
             self.print_op(&op);
         }
-        !(self.get_config().exit_on_brk && Mnemonic::RTI == op.def.mnemonic)
+        let result = !(self.get_config().exit_on_brk && Mnemonic::RTI == op.def.mnemonic);
+        if !result {
+            self.stop();
+        }
+        result
     }
 
     fn print_op(&self, op: &Operation) {

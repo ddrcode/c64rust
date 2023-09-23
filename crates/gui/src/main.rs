@@ -101,6 +101,26 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         }
     };
 
+    let debug_handler = {
+        use machine::MachineStatus::*;
+        let arc = Arc::clone(&c64);
+        move |s: &mut Cursive| {
+            let mut c64 = lock(&arc);
+            match c64.get_status() {
+                Running => c64.set_status(Debug),
+                Debug => c64.set_status(Running),
+                _ => (),
+            };
+        }
+    };
+
+    let next_handler = {
+        let arc = Arc::clone(&c64);
+        move |_s: &mut Cursive| {
+            lock(&arc).next();
+        }
+    };
+
     let screen = main_screen(c64);
 
     siv.menubar()
@@ -125,6 +145,8 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     siv.add_global_callback(Key::F10, quit_handler);
     siv.add_global_callback(Key::F5, refresh_mem_handler);
     siv.add_global_callback(Key::F6, |s| s.add_layer(address_dialog()));
+    siv.add_global_callback(Key::F7, debug_handler);
+    siv.add_global_callback(Key::F8, next_handler);
 
     siv.add_layer(screen);
     siv.set_user_data(UIState::default());

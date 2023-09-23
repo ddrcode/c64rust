@@ -87,12 +87,12 @@ This is the result of running current version of the emulator:
 
 [The Dead Test cartridge](http://blog.worldofjani.com/?p=164) image executed quite fine, but the two timers
 at the bottom-right of the scrren show zeros, which - according to the documentation - means
-"Possible 6526 CIA Failure".  Well, it's quite right as CIA is not implemented at this stage
+"Possible 6526 CIA Failure". Well, it's quite right as CIA is not implemented at this stage
 at all (apart keyboard support).
 
 <img src="screenshots/hello-os.png?raw=true" width="300"/>
 
-And here is [HelloOS](rom/): my beloved, work-in-progress, doing-absolutely-nothing, operating system for C64. 
+And here is [HelloOS](rom/): my beloved, work-in-progress, doing-absolutely-nothing, operating system for C64.
 
 ## Credits
 

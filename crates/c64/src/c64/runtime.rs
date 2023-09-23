@@ -16,9 +16,11 @@ pub fn irq_loop(c64mutex: Arc<Mutex<C64>>) {
         thread::sleep(IRQ_INTERVAL);
         {
             let mut c64 = lock(&c64mutex);
-            if *c64.get_status() == MachineStatus::Stopped {
-                break;
-            }
+            match c64.get_status() {
+                MachineStatus::Stopped => break,
+                MachineStatus::Debug => break,
+                _ => {}
+            };
             c64.cia1.keyboard.cycle();
             c64.irq();
         }
@@ -27,19 +29,21 @@ pub fn irq_loop(c64mutex: Arc<Mutex<C64>>) {
 
 pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
     let mut cycles = 0u64;
-    let mut cont = true;
+    let mut status = MachineStatus::Running;
     lock(&c64mutex).set_status(MachineStatus::Running);
-    while cont {
+    while status != MachineStatus::Stopped {
         {
             let mut c64 = lock(&c64mutex);
+            status = *c64.get_status();
+            if status == MachineStatus::Debug {
+                continue;
+            }
             if let Some(max_cycles) = c64.get_config().max_cycles {
                 if cycles > max_cycles {
                     c64.stop();
                 }
             }
-            if !c64.next() {
-                c64.stop();
-            };
+            c64.next();
             if let Some(on_next) = c64.get_events().on_next {
                 on_next(&mut *c64, &cycles);
             }
@@ -48,7 +52,6 @@ pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
                     c64.stop();
                 }
             }
-            cont = *c64.get_status() == MachineStatus::Running;
         }
         cycles += 1;
     }
