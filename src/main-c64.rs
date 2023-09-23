@@ -9,10 +9,12 @@ mod c64;
 mod cli_args;
 mod machine;
 mod mos6510;
+mod utils;
 
 use crate::c64::{machine_loop, C64};
 use crate::cli_args::Args;
 use crate::machine::{Machine, MachineConfig};
+use crate::utils::lock;
 use std::sync::{Arc, Mutex};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
@@ -39,16 +41,14 @@ fn main() {
         c64.memory_mut().write(addr, &ram[..]);
     }
 
-    // c64.machine.start();
     let arc = Arc::new(Mutex::new(c64));
-    let arc_loop: Arc<Mutex<dyn Machine>> = arc.clone();
-    machine_loop(arc_loop);
+    machine_loop(arc.clone());
 
     if args.show_status {
-        println!("{}", arc.lock().unwrap().cpu().registers);
+        println!("{}", lock(&arc).cpu().registers);
     }
 
     if args.show_screen {
-        arc.lock().unwrap().print_screen();
+        lock(&arc).print_screen();
     }
 }

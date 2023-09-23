@@ -14,6 +14,7 @@ pub struct MOS6502Machine {
 }
 
 impl MOS6502Machine {
+    #[allow(dead_code)]
     pub fn new(config: MachineConfig) -> Self {
         let size = config.ram_size.clone();
         MOS6502Machine {

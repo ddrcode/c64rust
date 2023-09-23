@@ -16,7 +16,7 @@ impl fmt::Display for Registers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{}:${:04x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:${:08b}",
+            "{}:${:04x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:${:02x}  {}:%{:08b}",
             "PC".bold(),
             self.counter,
             "A".bold(),

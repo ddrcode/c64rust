@@ -1,5 +1,4 @@
 use crate::machine::{Addr, Memory};
-use std::rc::Rc;
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
@@ -39,16 +38,12 @@ impl C64Memory {
             idx += 1;
         }
     }
-
-    fn is_io(&self, addr: Addr) -> bool {
-        let r1 = self.ram[1];
-        r1 & 100 > 1 && r1 & 11 > 1 && addr >= 0xd000 && addr <= 0xdfff
-    }
 }
 
 impl Memory for C64Memory {
     // TODO: Must check whether the three corresponding its at addr 0x00 are 1
     // check https://www.c64-wiki.com/wiki/Bank_Switching for details
+    #[allow(unused_comparisons)]
     fn mem(&self, addr: Addr) -> &[u8] {
         let flag = self.ram[1] & 0b00000111;
         if flag & 1 > 0 && addr >= 0xa000 && addr <= 0xbfff {

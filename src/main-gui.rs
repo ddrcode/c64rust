@@ -1,5 +1,7 @@
-use cursive::event::Key;
-use cursive::{Cursive, CursiveRunnable};
+// #[macro_use]
+extern crate colored;
+extern crate cursive_hexview;
+extern crate log;
 
 mod c64;
 mod cli_args;
@@ -7,79 +9,164 @@ mod cli_utils;
 mod gui;
 mod machine;
 mod mos6510;
+mod utils;
 
-// mod actions;
-// mod views;
-//
 use crate::c64::{irq_loop, machine_loop, C64};
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
-use crate::gui::Screen;
+use crate::gui::*;
 use crate::machine::{Machine, MachineConfig};
 use clap::Parser;
+use cursive::{event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable};
+use cursive_hexview::{HexView};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time;
+use std::time::Duration;
+use utils::lock;
 
-fn set_theme(siv: &mut CursiveRunnable) {
-    let mut theme = siv.current_theme().clone();
-    theme.shadow = false;
-    // theme.borders = cursive::theme::BorderStyle::None;
-    theme.palette[cursive::theme::PaletteColor::Background] =
-        cursive::theme::Color::TerminalDefault;
-    // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
-    siv.set_theme(theme);
-}
+static IS_RUNNING: AtomicBool = AtomicBool::new(true);
+const GUI_REFRESH: Duration = Duration::from_millis(500);
 
 fn main() {
+    // logger::set_internal_filter_level(LevelFilter::Warn);
+    // logger::set_external_filter_level(LevelFilter::Debug);
+    // set_filter_levels_from_env(LevelFilter::Debug);
+    logger::init();
+    colored::control::set_override(false);
+
+    let c64 = Arc::new(Mutex::new(init_c64()));
+    let c64_arc = Arc::clone(&c64);
+    let mut siv = init_ui(c64);
+    let mut threads = Vec::new();
+
+    let mut start_thread = |cb: fn(c64: Arc<Mutex<C64>>, sink: CbSink, b: Arc<&AtomicBool>)| {
+        let c64_t = c64_arc.clone();
+        let sink_t = siv.cb_sink().clone();
+        let b_t = Arc::new(&IS_RUNNING);
+        let handle = thread::spawn(move || {
+            cb(c64_t, sink_t, b_t);
+        });
+        threads.push(handle);
+    };
+
+    start_thread(|c64, _, _| machine_loop(c64));
+    start_thread(|c64, _, _| irq_loop(c64));
+    start_thread(|c64, sink, do_loop| {
+        while do_loop.load(Ordering::Relaxed) {
+            thread::sleep(GUI_REFRESH);
+            let c = Arc::clone(&c64);
+            sink.send(Box::new(|s| update_ui(s, c))).unwrap();
+        }
+    });
+
+    siv.run();
+    IS_RUNNING.store(false, Ordering::Relaxed);
+
+    threads.into_iter().for_each(|t| {
+        t.join().expect("Thread failed!");
+    });
+}
+
+fn init_c64() -> C64 {
     let args = Args::parse();
-    let c64 = Arc::new(Mutex::new(C64::new(MachineConfig::from(&args))));
+    let mut c64 = C64::new(MachineConfig::from(&args));
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
-        c64.lock().unwrap().memory_mut().init_rom(&rom[..]);
+        c64.memory_mut().init_rom(&rom[..]);
     }
 
-    c64.lock().unwrap().power_on();
+    c64.power_on();
 
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        c64.lock().unwrap().memory_mut().write(addr, &ram[..]);
+        c64.memory_mut().write(addr, &ram[..]);
     }
 
-    // c64.start();
-    let machine_loop_c64 = Arc::clone(&c64);
-    let machine_thread = thread::spawn(move || {
-        machine_loop(machine_loop_c64);
-    });
+    c64
+}
 
-    let irq_loop_c64 = Arc::clone(&c64);
-    let irq_thread = thread::spawn(move || {
-        irq_loop(irq_loop_c64);
-    });
-
+fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     let mut siv = cursive::default();
     set_theme(&mut siv);
+    siv.set_autorefresh(false);
+    siv.set_autohide_menu(false);
 
-    siv.set_autorefresh(true);
-
-    // siv.add_layer(views::mainscreen());
-
-    let quit_arc = Arc::clone(&c64);
-    let quit_handler = move |s: &mut Cursive| {
-        s.quit();
-        quit_arc.lock().unwrap().stop();
+    let quit_handler = {
+        let arc = Arc::clone(&c64);
+        move |s: &mut Cursive| {
+            s.quit();
+            lock(&arc).stop();
+        }
     };
 
-    let mut screen = Screen::new(c64);
+    let refresh_mem_handler = {
+        let arc = Arc::clone(&c64);
+        move |s: &mut Cursive| {
+            s.call_on_name("memory", |view: &mut HexView| {
+                view.set_data(lock(&arc).memory().mem(0).iter());
+            });
+        }
+    };
 
-    siv.menubar().add_leaf("Quit", quit_handler.clone());
+    let screen = main_screen(c64);
+
+    siv.menubar()
+        .add_subtree(
+            "Machine",
+            menu::Tree::new()
+                .leaf("Pause", |_s| {})
+                .leaf("Restart", |_s| {})
+                .leaf("Stop interrupts", |_s| {}),
+        )
+        .add_subtree(
+            "Monitor",
+            menu::Tree::new()
+                .leaf("Refresh [F5]", refresh_mem_handler.clone())
+                .leaf("Go to address [F6]", |s| s.add_layer(address_dialog()))
+                .delimiter()
+                .leaf("Autorefresh: on", |_s| {}),
+        )
+        .add_leaf("Quit", quit_handler.clone());
+
     siv.add_global_callback(Key::Esc, |s| s.select_menubar());
     siv.add_global_callback(Key::F10, quit_handler);
-    // siv.add_global_callback(Key::F5, |s| actions::execute_request(s));
-    siv.add_layer(screen);
+    siv.add_global_callback(Key::F5, refresh_mem_handler);
+    siv.add_global_callback(Key::F6, |s| s.add_layer(address_dialog()));
 
-    siv.run();
-    let _ = machine_thread.join();
-    let _ = irq_thread.join();
+    siv.add_layer(screen);
+    siv.set_user_data(UIState::default());
+
+    siv
+}
+
+fn set_theme(siv: &mut CursiveRunnable) {
+    use cursive::theme::*;
+    let mut theme = siv.current_theme().clone();
+    theme.shadow = true;
+    theme.borders = BorderStyle::None;
+    theme.palette[PaletteColor::Background] = Color::TerminalDefault;
+    theme.palette[PaletteColor::View] = Color::Dark(BaseColor::White);
+    theme.palette[PaletteColor::View] = Color::Rgb(0x9c, 0xa5, 0xb5);
+    // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
+    siv.set_theme(theme);
+}
+
+fn update_ui(s: &mut Cursive, c64: Arc<Mutex<C64>>) {
+    let addr = if let Some(d) = s.user_data::<UIState>() {
+        d.addr_from
+    } else {
+        0
+    };
+
+    s.call_on_name("memory", |view: &mut HexView| {
+        let data = lock(&c64).memory().fragment(addr, addr + 200);
+        view.set_start_addr(addr as usize);
+        view.set_data(data.iter());
+    });
+
+    s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
+        view.state_mut().state = lock(&c64).cpu().registers.to_string();
+    });
 }

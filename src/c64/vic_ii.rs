@@ -1,6 +1,5 @@
 #![allow(non_camel_case_types)]
 
-use super::*;
 use crate::machine::Memory;
 use colored::*;
 

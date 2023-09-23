@@ -10,6 +10,7 @@ pub struct MachineConfig {
 }
 
 impl MachineConfig {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         MachineConfig {
             ram_size: 1 << 16,

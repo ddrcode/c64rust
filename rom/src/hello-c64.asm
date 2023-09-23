@@ -1,3 +1,18 @@
+;; -------------------------------------------------------------------
+;; HELLO OS
+;; 
+;; A fun "operating system" for C64
+;; created by DDRcode
+;;
+;; Features
+;; 1. Can boot
+;; 2. Displays welcome message
+;; 3. Runs IRQ loop to handle cursor blinking
+;;
+;; Assembler: ACME 0.97
+;; acme -f plain --cpu 6502 -o rom/hello.rom rom/src/hello-c64.asm
+;; -------------------------------------------------------------------
+
 * = $e000
 
 !raw "HelloOS by DDRcode"
@@ -6,10 +21,12 @@
 ; --------------------------------------------------------------------
 ; GLOBAL ADDRESSESS 
 
-reset_vector = $fce2
-irq_vector = $ffb0
-nmi_vector = $ffe0
+; hardware vectors
+reset_vector = $fce2                          ; For consistency (and fun) I use  
+irq_vector = $ff48                            ; the same addresses as the original ROM
+nmi_vector = $fe43
 
+; screen
 screen_start = $0400
 screen_end = $07e8
 
@@ -18,7 +35,7 @@ screen_end = $07e8
 
 !addr var_a = $10                             ; addr of 16-bit general purpose variable (var A)
 !addr var_b = $12                             ; addr of 16-bit general purpose variable (var B)
-!addr var_c = $14                             ; addr of 16-bit general purpose variable (var B)
+!addr var_c = $14                             ; addr of 16-bit general purpose variable (var C)
 !addr irq_cnt = $16                           ; counts 0-50: IRQ cycles pers second
 !addr cursor_y = $20                          ; current text line (cursor line)
 !addr cursor_x = $21                          ; cursor-Y (0-39)
@@ -31,6 +48,12 @@ welcome_msg_line_0     !pet    "Welcome to HelloOS v0.1", 0
 welcome_msg_line_1     !pet    "============================", 0
 welcome_msg_line_2     !pet    "(proudly doing nothing, but the cursor", 0
 welcome_msg_line_3     !pet    "should be blinking cheerfully)", 0
+
+; --------------------------------------------------------------------
+; LIBRARIES
+
+!source "rom/src/keyboard.asm"
+
 
 ; --------------------------------------------------------------------
 ; MACROS
@@ -211,6 +234,11 @@ init:
         BNE .loop
         JSR hide_cursor
 
+.show_digit
+        LDA $58
+        ADC #$2f
+        STA screen_start
+
         JMP .loop
 
 
@@ -224,34 +252,41 @@ init:
 ;; for PAL / NTSC systems)
 
 * = irq_vector
-    PHA                                 ; Push A
-    TXA                                 ; Copy X to A and push
-    PHA
-    TYA                                 ; Copy Y to A and push
-    PHA
-    TSX                                 ; Copy stack pointer
-    LDA $0104,X                         ; Load stacked status register
-    AND #$10                            ; Mask BRK flag
-    BEQ +                               ; Branch if not BRK
-    JMP .end                            ; Else do this (BRK case)
 
-+   INC irq_cnt
-    LDA #$32
-    CMP irq_cnt
-    BNE .end
-    LDA #$0
-    STA irq_cnt
-.end
-    PLA                                 ; Pull and copy to Y
-    TAY
-    PLA                                 ; Pull and copy to X
-    TAX
-    PLA                                 ; Pull A
-    RTI                                 ; Resume program execution
+.init
+        PHA                             ; Push A
+        TXA                             ; Copy X to A and push
+        PHA
+        TYA                             ; Copy Y to A and push
+        PHA
+        TSX                             ; Copy stack pointer
+        LDA $0104,X                     ; Load stacked status register
+        AND #$10                        ; Mask BRK flag
+        BEQ +                           ; Branch if not BRK
+        JMP .end                        ; Else do this (BRK case)
+
++       INC irq_cnt                     ; increment irq_cnt variable
+        LDA #$32                        ; in the range of 0-50
+        CMP irq_cnt
+        BNE .end
+        LDA #$0
+        STA irq_cnt
+
+        JSR keyboard_scan
+
+.end                                    ; Wrapping up IRQ
+        PLA                             ; Pull and copy to Y
+        TAY
+        PLA                             ; Pull and copy to X
+        TAX
+        PLA                             ; Pull A
+        RTI                             ; Resume program execution
+
 
 !zone nmi_handler
 * = nmi_vector
-    RTI
+
+        RTI
 
 
 ; --------------------------------------------------------------------
@@ -260,6 +295,6 @@ init:
 
 * = $fffa
 
-nmi !word nmi_vector
-rst !word reset_vector
-irq !word irq_vector
+.nmi !word nmi_vector
+.rst !word reset_vector
+.irq !word irq_vector
