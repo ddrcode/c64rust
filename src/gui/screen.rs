@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::c64::{C64KeyCode, C64};
+use crate::utils::lock;
 use cursive::{
     event::{Event, EventResult, Key},
     theme::{Color, ColorStyle},
@@ -39,7 +40,7 @@ impl View for Screen {
         let x_padding = 2;
         let y_padding = 1;
         let screen_padding = cursive::Vec2::new(x_padding, y_padding);
-        let txt = self.c64.lock().unwrap().get_screen_memory();
+        let txt = lock(&self.c64).get_screen_memory();
         let screen_printer = printer.offset(screen_padding);
         screen_printer.with_color(color, |printer| {
             for i in 0..25 {
@@ -58,7 +59,7 @@ impl View for Screen {
                 if !ch.is_ascii() {
                     return EventResult::Ignored;
                 };
-                let mut c64 = self.c64.lock().unwrap();
+                let mut c64 = lock(&self.c64);
                 if ch.is_ascii_uppercase() {
                     c64.send_key_with_modifier(
                         C64KeyCode::from(ch.to_ascii_lowercase()),
@@ -76,17 +77,9 @@ impl View for Screen {
                     Key::Backspace => Delete,
                     _ => return EventResult::Ignored,
                 };
-                self.c64.lock().unwrap().send_key(kc);
+                lock(&self.c64).send_key(kc);
                 EventResult::Consumed(None)
             }
-            // Event::Char('l') | Event::Key(Key::Left) => self.push(LRUD::Left),
-            // Event::Char('r') | Event::Key(Key::Right) => self.push(LRUD::Right),
-            // Event::Char('u') | Event::Key(Key::Up) => self.push(LRUD::Up),
-            // Event::Char('d') | Event::Key(Key::Down) => self.push(LRUD::Down),
-            // Event::Char('n') => {
-            //     self.new_game();
-            //     EventResult::Consumed(None)
-            // }
             _ => EventResult::Ignored,
         }
     }

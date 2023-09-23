@@ -4,6 +4,7 @@ use cursive::views::{LinearLayout, NamedView, PaddedView, ResizedView};
 use super::{cpu_state, Screen};
 use crate::c64::C64;
 use crate::machine::Machine;
+use crate::utils::lock;
 use cursive_hexview::{DisplayState, HexView, HexViewConfig};
 use std::sync::{Arc, Mutex};
 
@@ -20,7 +21,7 @@ pub fn main_screen(c64: Arc<Mutex<C64>>) -> LinearLayout {
 
     let (memory, cpu) = {
         let arc = Arc::clone(&c64);
-        let c64 = arc.lock().unwrap();
+        let c64 = lock(&arc);
         (
             c64.memory().fragment(0, 200),
             c64.cpu().registers.to_string(),
@@ -43,21 +44,3 @@ pub fn main_screen(c64: Arc<Mutex<C64>>) -> LinearLayout {
 
     LinearLayout::vertical().child(line).child(cpu_state(cpu))
 }
-
-// pub fn mainscreen() -> PaddedView<LinearLayout> {
-//     let mut tab_panel = TabPanel::new()
-//         .with_tab(ResizedView::with_full_screen(request_panel::panel()).with_name("Request"))
-//         .with_tab(result_panel::panel().with_name("Response"));
-//
-//     tab_panel.set_active_tab("Request").unwrap();
-//
-//     PaddedView::lrtb(
-//         3,
-//         3,
-//         1,
-//         1,
-//         LinearLayout::vertical()
-//             .child(ResizedView::with_full_width(url_panel::panel()))
-//             .child(tab_panel.with_name("tabitens")),
-//     )
-// }

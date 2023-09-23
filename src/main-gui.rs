@@ -9,6 +9,7 @@ mod cli_utils;
 mod gui;
 mod machine;
 mod mos6510;
+mod utils;
 
 use crate::c64::{irq_loop, machine_loop, C64};
 use crate::cli_args::Args;
@@ -22,6 +23,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+use utils::lock;
 
 static IS_RUNNING: AtomicBool = AtomicBool::new(true);
 const GUI_REFRESH: Duration = Duration::from_millis(500);
@@ -36,51 +38,34 @@ fn main() {
     let c64 = Arc::new(Mutex::new(init_c64()));
     let c64_arc = Arc::clone(&c64);
     let mut siv = init_ui(c64);
+    let mut threads = Vec::new();
 
-    let start_thread = |cb: fn(c64: Arc<Mutex<C64>>, sink: CbSink, b: Arc<&AtomicBool>)| {
+    let mut start_thread = |cb: fn(c64: Arc<Mutex<C64>>, sink: CbSink, b: Arc<&AtomicBool>)| {
         let c64_t = c64_arc.clone();
         let sink_t = siv.cb_sink().clone();
         let b_t = Arc::new(&IS_RUNNING);
-        thread::spawn(move || {
+        let handle = thread::spawn(move || {
             cb(c64_t, sink_t, b_t);
-        })
+        });
+        threads.push(handle);
     };
 
-    let machine_thread = start_thread(|c64, _, _| machine_loop(c64));
-    let irq_thread = start_thread(|c64, _, _| irq_loop(c64));
-    let siv_thread = start_thread(|c64, sink, do_loop| {
-        let clj = move |s: &mut Cursive| {
-            let addr = if let Some(d) = s.user_data::<UIState>() {
-                d.addr_from
-            } else {
-                0
-            };
-            s.call_on_name("memory", |view: &mut HexView| {
-                view.set_start_addr(addr as usize);
-                view.set_data(
-                    c64.lock()
-                        .unwrap()
-                        .memory()
-                        .fragment(addr, addr + 200)
-                        .iter(),
-                );
-            });
-            s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
-                view.state_mut().state = c64.lock().unwrap().cpu().registers.to_string();
-            });
-        };
+    start_thread(|c64, _, _| machine_loop(c64));
+    start_thread(|c64, _, _| irq_loop(c64));
+    start_thread(|c64, sink, do_loop| {
         while do_loop.load(Ordering::Relaxed) {
             thread::sleep(GUI_REFRESH);
-            sink.send(Box::new(clj.clone())).unwrap();
+            let c = Arc::clone(&c64);
+            sink.send(Box::new(|s| update_ui(s, c))).unwrap();
         }
     });
 
     siv.run();
     IS_RUNNING.store(false, Ordering::Relaxed);
 
-    let _ = machine_thread.join();
-    let _ = irq_thread.join();
-    let _ = siv_thread.join();
+    threads.into_iter().for_each(|t|{
+        t.join().expect("Thread failed!");
+    });
 }
 
 fn init_c64() -> C64 {
@@ -113,7 +98,7 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         let arc = Arc::clone(&c64);
         move |s: &mut Cursive| {
             s.quit();
-            arc.lock().unwrap().stop();
+            lock(&arc).stop();
         }
     };
 
@@ -121,7 +106,7 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         let arc = Arc::clone(&c64);
         move |s: &mut Cursive| {
             s.call_on_name("memory", |view: &mut HexView| {
-                view.set_data(arc.lock().unwrap().memory().mem(0).iter());
+                view.set_data(lock(&arc).memory().mem(0).iter());
             });
         }
     };
@@ -168,4 +153,20 @@ fn set_theme(siv: &mut CursiveRunnable) {
         cursive::theme::Color::Dark(BaseColor::White);
     // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
     siv.set_theme(theme);
+}
+
+fn update_ui(s: &mut Cursive, c64: Arc<Mutex<C64>>) {
+    let addr = if let Some(d) = s.user_data::<UIState>() {
+        d.addr_from
+    } else {
+        0
+    };
+    s.call_on_name("memory", |view: &mut HexView| {
+        let data = lock(&c64).memory().fragment(addr, addr + 200);
+        view.set_start_addr(addr as usize);
+        view.set_data(data.iter());
+    });
+    s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
+        view.state_mut().state = lock(&c64).cpu().registers.to_string();
+    });
 }

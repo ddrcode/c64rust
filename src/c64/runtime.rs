@@ -1,5 +1,6 @@
 use super::C64;
 use crate::machine::{Machine, MachineStatus};
+use crate::utils::lock;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -15,7 +16,7 @@ pub fn irq_loop(c64mutex: Arc<Mutex<C64>>) {
     loop {
         thread::sleep(IRQ_INTERVAL);
         {
-            let mut c64 = c64mutex.lock().unwrap();
+            let mut c64 = lock(&c64mutex);
             if *c64.get_status() == MachineStatus::Stopped {
                 break;
             }
@@ -25,13 +26,13 @@ pub fn irq_loop(c64mutex: Arc<Mutex<C64>>) {
     }
 }
 
-pub fn machine_loop(c64mutex: Arc<Mutex<dyn Machine>>) {
+pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
     let mut cycles = 0u64;
     let mut cont = true;
-    c64mutex.lock().unwrap().set_status(MachineStatus::Running);
+    lock(&c64mutex).set_status(MachineStatus::Running);
     while cont {
         {
-            let mut c64 = c64mutex.lock().unwrap();
+            let mut c64 = lock(&c64mutex);
             if let Some(max_cycles) = c64.get_config().max_cycles {
                 if cycles > max_cycles {
                     c64.stop();
