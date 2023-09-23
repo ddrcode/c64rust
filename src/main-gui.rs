@@ -1,4 +1,5 @@
 // #[macro_use]
+extern crate colored;
 extern crate cursive_hexview;
 extern crate log;
 
@@ -15,7 +16,7 @@ use crate::cli_utils::get_file_as_byte_vec;
 use crate::gui::*;
 use crate::machine::{Machine, MachineConfig};
 use clap::Parser;
-use cursive::{event::Key, logger, menu, CbSink, Cursive, CursiveRunnable};
+use cursive::{event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable};
 use cursive_hexview::{HexView, HexViewConfig};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -30,6 +31,7 @@ fn main() {
     // logger::set_external_filter_level(LevelFilter::Debug);
     // set_filter_levels_from_env(LevelFilter::Debug);
     logger::init();
+    colored::control::set_override(false);
 
     let c64 = Arc::new(Mutex::new(init_c64()));
     let c64_arc = Arc::clone(&c64);
@@ -62,6 +64,9 @@ fn main() {
                         .fragment(addr, addr + 200)
                         .iter(),
                 );
+            });
+            s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
+                view.state_mut().state = c64.lock().unwrap().cpu().registers.to_string();
             });
         };
         while do_loop.load(Ordering::Relaxed) {
@@ -99,7 +104,7 @@ fn init_c64() -> C64 {
 
 fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     let mut siv = cursive::default();
-    // set_theme(&mut siv);
+    set_theme(&mut siv);
     // siv.set_autorefresh(true);
     siv.set_autohide_menu(false);
     siv.set_fps(15);
@@ -160,7 +165,7 @@ fn set_theme(siv: &mut CursiveRunnable) {
     theme.palette[cursive::theme::PaletteColor::Background] =
         cursive::theme::Color::TerminalDefault;
     theme.palette[cursive::theme::PaletteColor::View] =
-        cursive::theme::Color::Dark(BaseColor::Blue);
+        cursive::theme::Color::Dark(BaseColor::White);
     // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
     siv.set_theme(theme);
 }
