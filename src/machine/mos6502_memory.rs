@@ -6,7 +6,6 @@ pub struct MOS6502Memory {
 }
 
 impl MOS6502Memory {
-
     #[allow(dead_code)]
     pub fn new(size: usize) -> Self {
         // let size: usize = 1 << 16;

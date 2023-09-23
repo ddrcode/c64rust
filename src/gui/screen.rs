@@ -3,7 +3,7 @@
 use crate::c64::{C64KeyCode, C64};
 use cursive::{
     event::{Event, EventResult, Key},
-    theme::{Color, ColorStyle },
+    theme::{Color, ColorStyle},
     Printer, Vec2, View,
 };
 

@@ -1,4 +1,6 @@
+// #[macro_use]
 extern crate cursive_hexview;
+extern crate log;
 
 mod c64;
 mod cli_args;
@@ -10,37 +12,18 @@ mod mos6510;
 use crate::c64::{irq_loop, machine_loop, C64};
 use crate::cli_args::Args;
 use crate::cli_utils::get_file_as_byte_vec;
-use crate::gui::{main_screen};
+use crate::gui::*;
 use crate::machine::{Machine, MachineConfig};
 use clap::Parser;
 use cursive::{event::Key, logger, menu, CbSink, Cursive, CursiveRunnable};
-use cursive_hexview::HexView;
+use cursive_hexview::{HexView, HexViewConfig};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-// #[macro_use]
-extern crate log;
-
-use log::LevelFilter;
-
 static IS_RUNNING: AtomicBool = AtomicBool::new(true);
 const GUI_REFRESH: Duration = Duration::from_millis(500);
-
-
-fn set_theme(siv: &mut CursiveRunnable) {
-    use cursive::theme::*;
-    let mut theme = siv.current_theme().clone();
-    theme.shadow = true;
-    theme.borders = cursive::theme::BorderStyle::None;
-    theme.palette[cursive::theme::PaletteColor::Background] =
-        cursive::theme::Color::TerminalDefault;
-    theme.palette[cursive::theme::PaletteColor::View] =
-        cursive::theme::Color::Dark(BaseColor::Blue);
-    // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
-    siv.set_theme(theme);
-}
 
 fn main() {
     // logger::set_internal_filter_level(LevelFilter::Warn);
@@ -65,8 +48,20 @@ fn main() {
     let irq_thread = start_thread(|c64, _, _| irq_loop(c64));
     let siv_thread = start_thread(|c64, sink, do_loop| {
         let clj = move |s: &mut Cursive| {
+            let addr = if let Some(d) = s.user_data::<UIState>() {
+                d.addr_from
+            } else {
+                0
+            };
             s.call_on_name("memory", |view: &mut HexView| {
-                view.set_data(c64.lock().unwrap().memory().mem(0).iter());
+                view.set_start_addr(addr as usize);
+                view.set_data(
+                    c64.lock()
+                        .unwrap()
+                        .memory()
+                        .fragment(addr, addr + 200)
+                        .iter(),
+                );
             });
         };
         while do_loop.load(Ordering::Relaxed) {
@@ -104,7 +99,7 @@ fn init_c64() -> C64 {
 
 fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     let mut siv = cursive::default();
-    set_theme(&mut siv);
+    // set_theme(&mut siv);
     // siv.set_autorefresh(true);
     siv.set_autohide_menu(false);
     siv.set_fps(15);
@@ -132,23 +127,40 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         .add_subtree(
             "Machine",
             menu::Tree::new()
-                .leaf("Pause", |s| {})
-                .leaf("Restart", |s| {})
-                .leaf("Stop interrupts", |s| {}),
+                .leaf("Pause", |_s| {})
+                .leaf("Restart", |_s| {})
+                .leaf("Stop interrupts", |_s| {}),
         )
         .add_subtree(
-            "Memory",
+            "Monitor",
             menu::Tree::new()
                 .leaf("Refresh [F5]", refresh_mem_handler.clone())
-                .leaf("Go to address [F6]", |s| {}),
+                .leaf("Go to address [F6]", |s| s.add_layer(address_dialog()))
+                .delimiter()
+                .leaf("Autorefresh: on", |_s| {}),
         )
-        .add_leaf("Quit [F10]", quit_handler.clone());
+        .add_leaf("Quit", quit_handler.clone());
 
     siv.add_global_callback(Key::Esc, |s| s.select_menubar());
     siv.add_global_callback(Key::F10, quit_handler);
     siv.add_global_callback(Key::F5, refresh_mem_handler);
+    siv.add_global_callback(Key::F6, |s| s.add_layer(address_dialog()));
 
     siv.add_layer(screen);
+    siv.set_user_data(UIState::default());
 
     siv
+}
+
+fn set_theme(siv: &mut CursiveRunnable) {
+    use cursive::theme::*;
+    let mut theme = siv.current_theme().clone();
+    theme.shadow = true;
+    theme.borders = cursive::theme::BorderStyle::None;
+    theme.palette[cursive::theme::PaletteColor::Background] =
+        cursive::theme::Color::TerminalDefault;
+    theme.palette[cursive::theme::PaletteColor::View] =
+        cursive::theme::Color::Dark(BaseColor::Blue);
+    // theme.palette[cursive::theme::PaletteColor::View] = cursive::theme::Color::TerminalDefault;
+    siv.set_theme(theme);
 }

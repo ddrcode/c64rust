@@ -8,8 +8,6 @@ use cursive_hexview::{DisplayState, HexView, HexViewConfig};
 use std::sync::{Arc, Mutex};
 
 pub fn main_screen(c64: Arc<Mutex<C64>>) -> LinearLayout {
-    log::info!("Starting!");
-
     let iter = Arc::clone(&c64);
     let c64_screen = Screen::new(c64);
 
@@ -19,11 +17,13 @@ pub fn main_screen(c64: Arc<Mutex<C64>>) -> LinearLayout {
         byte_group_separator: " ",
         show_ascii: true,
         hex_ascii_separator: "   ",
+        bytes_per_addr: 4,
         ..Default::default()
     };
 
-    let mut hex_view = HexView::new_from_iter(iter.lock().unwrap().memory().mem(0).iter())
-        .display_state(DisplayState::Disabled);
+    let mut hex_view =
+        HexView::new_from_iter(iter.lock().unwrap().memory().fragment(0, 200).iter())
+            .display_state(DisplayState::Disabled);
     hex_view.set_config(config);
 
     let hex_pane = ResizedView::with_fixed_size(

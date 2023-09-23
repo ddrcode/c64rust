@@ -38,4 +38,16 @@ pub trait Memory {
         }
         println!();
     }
+
+    fn fragment(&self, from: Addr, to: Addr) -> Vec<u8> {
+        let mut vec = Vec::<u8>::new();
+        let range = std::ops::Range {
+            start: from,
+            end: to,
+        };
+        for i in range {
+            vec.push(self.get_byte(i));
+        }
+        vec
+    }
 }
