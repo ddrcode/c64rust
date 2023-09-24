@@ -55,7 +55,7 @@
           projectCrate = rustPlatform.buildRustPackage {
             inherit (crateInfo.package) name description;
 
-            src = ./.;
+            crates = ./.;
 
             nativeBuildInputs = nativeBuildInputs;
 

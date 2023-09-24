@@ -104,11 +104,11 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     let debug_handler = {
         use machine::MachineStatus::*;
         let arc = Arc::clone(&c64);
-        move |s: &mut Cursive| {
+        move |_s: &mut Cursive| {
             let mut c64 = lock(&arc);
             match c64.get_status() {
-                Running => c64.set_status(Debug),
-                Debug => c64.set_status(Running),
+                Running => c64.debug(),
+                Debug => c64.resume(),
                 _ => (),
             };
         }
@@ -138,6 +138,12 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
                 .leaf("Go to address [F6]", |s| s.add_layer(address_dialog()))
                 .delimiter()
                 .leaf("Autorefresh: on", |_s| {}),
+        )
+        .add_subtree(
+            "View",
+            menu::Tree::new()
+                .leaf("Hide memory view", |_s|())
+                .leaf("Hide processor status", |_s|())
         )
         .add_leaf("Quit", quit_handler.clone());
 

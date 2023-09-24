@@ -78,8 +78,8 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.memory_mut().set_byte(addr, val);
     }
 
-    // boot sequence, etc
-    fn power_on(&mut self) {
+    fn start(&mut self) {
+        let mut cycles = 0u64;
         // see https://www.pagetable.com/c64ref/c64mem/
         self.set_byte(0x0000, 0x2f);
         self.set_byte(0x0001, 0x37);
@@ -87,10 +87,6 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         // By default, after start, the PC is set to address from RST vector ($fffc)
         // http://wilsonminesco.com/6502primer/MemMapReqs.html
         self.set_PC(self.memory().get_word(0xfffc));
-    }
-
-    fn start(&mut self) {
-        let mut cycles = 0u64;
         while *self.get_status() == MachineStatus::Running {
             if let Some(max_cycles) = self.get_config().max_cycles {
                 if cycles > max_cycles {
@@ -118,6 +114,14 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
     fn debug(&mut self) {
         self.set_status(MachineStatus::Debug);
+    }
+
+    fn resume(&mut self) {
+        self.set_status(MachineStatus::Running);
+    }
+
+    fn reset(&mut self) {
+        panic!("Not implemented yet :-)");
     }
 
     fn execute_operation(&mut self, op: &Operation) -> u8;

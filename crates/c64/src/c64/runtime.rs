@@ -18,7 +18,7 @@ pub fn irq_loop(c64mutex: Arc<Mutex<C64>>) {
             let mut c64 = lock(&c64mutex);
             match c64.get_status() {
                 MachineStatus::Stopped => break,
-                MachineStatus::Debug => break,
+                MachineStatus::Debug => continue,
                 _ => {}
             };
             c64.cia1.keyboard.cycle();
@@ -49,7 +49,7 @@ pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
             }
             if let Some(addr) = c64.get_config().exit_on_addr {
                 if c64.PC() == addr {
-                    c64.stop();
+                    c64.debug();
                 }
             }
         }
