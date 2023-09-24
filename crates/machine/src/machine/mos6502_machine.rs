@@ -54,8 +54,8 @@ impl Machine for MOS6502Machine {
         &self.events
     }
 
-    fn get_status(&self) -> &MachineStatus {
-        &self.status
+    fn get_status(&self) -> MachineStatus {
+        self.status
     }
 
     fn set_status(&mut self, status: MachineStatus) {

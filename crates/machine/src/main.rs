@@ -1,14 +1,14 @@
 extern crate colored;
 
 mod cli;
+mod client;
 mod machine;
 mod mos6502;
-mod client;
 mod utils;
 
 use crate::cli::{get_file_as_byte_vec, Args};
+use crate::client::{ClientError, DirectClient, NonInteractiveClient};
 use crate::machine::{MOS6502Machine, Machine, MachineConfig};
-use crate::client::{ DirectClient, NonInteractiveClient, ClientError };
 use clap::Parser;
 
 fn main() -> Result<(), ClientError> {
@@ -27,11 +27,11 @@ fn main() -> Result<(), ClientError> {
     }
 
     let mut client = DirectClient::new(machine);
-    client.start()?;
+    client.start_sync()?;
 
     if args.show_status {
         println!("{}", client.get_cpu_state().unwrap());
     }
 
-    Ok(())
+    client.stop()
 }

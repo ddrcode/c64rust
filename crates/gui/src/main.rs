@@ -142,8 +142,8 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         .add_subtree(
             "View",
             menu::Tree::new()
-                .leaf("Hide memory view", |_s|())
-                .leaf("Hide processor status", |_s|())
+                .leaf("Hide memory view", |_s| ())
+                .leaf("Hide processor status", |_s| ()),
         )
         .add_leaf("Quit", quit_handler.clone());
 

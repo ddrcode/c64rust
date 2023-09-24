@@ -30,7 +30,7 @@ pub struct Args {
     pub disassemble: bool,
 
     #[arg(long = "max-cycles")]
-    pub max_cycles: Option<u64>,
+    pub max_cycles: Option<u128>,
 
     #[arg(long = "max-time")]
     pub max_time: Option<u64>,
