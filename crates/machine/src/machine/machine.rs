@@ -5,10 +5,11 @@ use crate::mos6502::{
 };
 use std::num::Wrapping;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum MachineStatus {
     Stopped,
     Running,
+    Debug,
 }
 
 pub trait RegSetter<T> {
@@ -25,7 +26,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn cpu_mut(&mut self) -> &mut MOS6502;
     fn get_config(&self) -> &MachineConfig;
     fn get_events(&self) -> &MachineEvents;
-    fn get_status(&self) -> &MachineStatus;
+    fn get_status(&self) -> MachineStatus;
     fn set_status(&mut self, status: MachineStatus);
 
     // registry shortcuts
@@ -77,8 +78,11 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.memory_mut().set_byte(addr, val);
     }
 
-    // boot sequence, etc
-    fn power_on(&mut self) {
+    /// Start only changes the machine's status (and setups memory_
+    /// but it doesn't cycle the machine! Either self.next() must be called
+    /// or (better), a client should be used instead
+    fn start(&mut self) {
+        let mut cycles = 0u128;
         // see https://www.pagetable.com/c64ref/c64mem/
         self.set_byte(0x0000, 0x2f);
         self.set_byte(0x0001, 0x37);
@@ -86,33 +90,23 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         // By default, after start, the PC is set to address from RST vector ($fffc)
         // http://wilsonminesco.com/6502primer/MemMapReqs.html
         self.set_PC(self.memory().get_word(0xfffc));
-    }
-
-    fn start(&mut self) {
-        let mut cycles = 0u64;
-        while *self.get_status() == MachineStatus::Running {
-            if let Some(max_cycles) = self.get_config().max_cycles {
-                if cycles > max_cycles {
-                    self.stop();
-                }
-            }
-            if !self.next() {
-                self.stop();
-            };
-            if let Some(addr) = self.get_config().exit_on_addr {
-                if self.PC() == addr {
-                    self.stop();
-                }
-            }
-            // if let Some(on_next) = self.events.on_next {
-            //     on_next(self, &cycles);
-            // }
-            cycles += 1;
-        }
+        self.set_status(MachineStatus::Running);
     }
 
     fn stop(&mut self) {
         self.set_status(MachineStatus::Stopped);
+    }
+
+    fn debug(&mut self) {
+        self.set_status(MachineStatus::Debug);
+    }
+
+    fn resume(&mut self) {
+        self.set_status(MachineStatus::Running);
+    }
+
+    fn reset(&mut self) {
+        panic!("Not implemented yet :-)");
     }
 
     fn execute_operation(&mut self, op: &Operation) -> u8;
@@ -120,17 +114,22 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn next(&mut self) -> bool {
         let def = { self.decode_op() };
         let operand = { self.decode_operand(&def) };
-        let address = if let Some(o) = &operand {
-            self.decode_address(&def, &o)
-        } else {
-            None
-        };
+        let address = operand
+            .as_ref()
+            .map_or(None, |o| self.decode_address(&def, &o));
         let op = Operation::new(def.clone(), operand, address);
-        self.execute_operation(&op);
+
         if self.get_config().disassemble {
             self.print_op(&op);
         }
-        !(self.get_config().exit_on_brk && Mnemonic::RTI == op.def.mnemonic)
+
+        if self.get_config().exit_on_brk && matches!(def.mnemonic, Mnemonic::BRK) {
+            self.stop();
+            return false;
+        }
+
+        self.execute_operation(&op);
+        true
     }
 
     fn print_op(&self, op: &Operation) {

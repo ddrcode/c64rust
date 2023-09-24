@@ -1,4 +1,10 @@
 ;; Keyboard scanning functionality
+;;
+;; Memory (page zero)
+;; $50-$57  Scan results
+;; $58      Number of keys pressed
+;; $59      tmp
+
 
 !zone
 
@@ -6,6 +12,9 @@
 !addr .port_b       = $dc01
 !addr .scan_res     = $50
 !addr .key_cnt      = $58
+!addr .tmp1         = $59
+
+
 
 
 keyboard_scan:
@@ -56,6 +65,14 @@ keyboard_scan:
 
 ; My invention starts here :-)
 
+;; Algoritm
+;; for x from 8 to 1 (exit on 0)
+;;      if scan_res-1 is $ff - no key pressed - continue
+;;      set y to 1 (bit 0)
+;;        ????
+;;      shit y left
+;; 
+
         LDA #0                              ; zero number of keys found
         STA .key_cnt
         LDX #8
@@ -65,10 +82,21 @@ keyboard_scan:
         CMP #$ff                            ; $ff = no key found
         BEQ +                               ; key found
         
-        INC .key_cnt
+        TAY                                 ; move A to Y
+        LDA #1
+        STA .tmp1
+-       ASL .tmp1
+        ;; do test
+        BCC -                               ; if carry is not set, continue
+
+        CLC                                 ; clear carry
+        INC .key_cnt                        ; increase key count
 
 +       DEX
         BNE .check
 
 
 RTS
+
+
+

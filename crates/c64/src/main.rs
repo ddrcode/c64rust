@@ -6,10 +6,12 @@ use std::io::Read;
 use std::path::PathBuf;
 
 mod c64;
+mod client;
 
-use crate::c64::{machine_loop, C64};
-use machine::{cli::Args, utils::lock, Machine, MachineConfig};
-use std::sync::{Arc, Mutex};
+use crate::c64::C64;
+use crate::client::C64Client;
+use machine::client::{ClientError, NonInteractiveClient};
+use machine::{cli::Args, Machine, MachineConfig};
 
 fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
     let mut f = File::open(filename).expect("no file found");
@@ -18,7 +20,7 @@ fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
     buffer
 }
 
-fn main() {
+fn main() -> Result<(), ClientError> {
     let args = Args::parse();
     let mut c64 = C64::new(MachineConfig::from(&args));
 
@@ -27,22 +29,22 @@ fn main() {
         c64.memory_mut().init_rom(&rom[..]);
     }
 
-    c64.power_on();
-
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
         c64.memory_mut().write(addr, &ram[..]);
     }
 
-    let arc = Arc::new(Mutex::new(c64));
-    machine_loop(arc.clone());
+    let mut client = C64Client::new(c64);
+    client.start_sync()?;
 
     if args.show_status {
-        println!("{}", lock(&arc).cpu().registers);
+        println!("{}", client.get_cpu_state().unwrap());
     }
 
     if args.show_screen {
-        lock(&arc).print_screen();
+        client.mutex().lock().unwrap().print_screen();
     }
+
+    client.stop()
 }

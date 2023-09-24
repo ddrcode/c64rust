@@ -1,14 +1,17 @@
 extern crate colored;
 
 mod cli;
+mod client;
 mod machine;
 mod mos6502;
+mod utils;
 
 use crate::cli::{get_file_as_byte_vec, Args};
+use crate::client::{ClientError, DirectClient, NonInteractiveClient};
 use crate::machine::{MOS6502Machine, Machine, MachineConfig};
 use clap::Parser;
 
-fn main() {
+fn main() -> Result<(), ClientError> {
     let args = Args::parse();
     let mut machine = MOS6502Machine::new(MachineConfig::from(&args));
 
@@ -17,17 +20,18 @@ fn main() {
         machine.memory_mut().init_rom(&rom[..]);
     }
 
-    machine.power_on();
-
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
         machine.memory_mut().write(addr, &ram[..]);
     }
 
-    machine.start();
+    let mut client = DirectClient::new(machine);
+    client.start_sync()?;
 
     if args.show_status {
-        println!("{}", machine.cpu().registers);
+        println!("{}", client.get_cpu_state().unwrap());
     }
+
+    client.stop()
 }
