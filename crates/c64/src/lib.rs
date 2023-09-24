@@ -1,3 +1,4 @@
 mod c64;
-pub mod client;
+mod client;
 pub use c64::*;
+pub use client::*;

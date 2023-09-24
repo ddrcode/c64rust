@@ -2,7 +2,7 @@ use super::*;
 use crate::machine::{Addr, Machine, MachineStatus};
 use crate::mos6502::Registers;
 use crate::utils::lock;
-use runtime::*;
+use runtime::Runtime;
 use std;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -30,8 +30,12 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
     }
 
     fn start_machine_in_thread(&mut self) {
+        self.lock().start();
         let arc = self.machine_mtx.clone();
-        let handle = thread::spawn(move || machine_loop::<T>(arc));
+        let handle = thread::spawn(move || {
+            let mut runtime = Runtime::<T>::new(arc);
+            runtime.machine_loop();
+        });
         self.handle = Some(handle);
     }
 

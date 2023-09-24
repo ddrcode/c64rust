@@ -1,4 +1,4 @@
-const KEY_DOWN_CYCLES: u8 = 3;
+const KEY_DOWN_CYCLES: u8 = 2;
 
 pub struct Keyboard {
     last_keys: Vec<u8>,

@@ -6,29 +6,36 @@ extern crate log;
 mod gui;
 
 use crate::gui::*;
-use c64::{irq_loop, machine_loop, C64};
+use c64::{C64Client, C64};
 use clap::Parser;
-use cursive::{event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable};
+use cursive::{
+    event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable, CursiveRunner,
+};
 use cursive_hexview::HexView;
-use machine::{cli::*, utils::lock, Machine, MachineConfig};
+use machine::{
+    cli::*,
+    client::{Client, ClientError, InteractiveClient, NonInteractiveClient},
+    utils::lock,
+    Machine, MachineConfig,
+};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
 static IS_RUNNING: AtomicBool = AtomicBool::new(true);
-const GUI_REFRESH: Duration = Duration::from_millis(500);
+const GUI_REFRESH: Duration = Duration::from_millis(100);
 
-fn main() {
+fn main() -> Result<(), ClientError> {
     // logger::set_internal_filter_level(LevelFilter::Warn);
     // logger::set_external_filter_level(LevelFilter::Debug);
     // set_filter_levels_from_env(LevelFilter::Debug);
     logger::init();
     colored::control::set_override(false);
 
-    let c64 = Arc::new(Mutex::new(init_c64()));
-    let c64_arc = Arc::clone(&c64);
-    let mut siv = init_ui(c64);
+    let mut c64_client = C64Client::new(init_c64());
+    let c64_arc = c64_client.mutex();
+    let mut siv = init_ui(c64_client.mutex());
     let mut threads = Vec::new();
 
     let mut start_thread = |cb: fn(c64: Arc<Mutex<C64>>, sink: CbSink, b: Arc<&AtomicBool>)| {
@@ -41,8 +48,8 @@ fn main() {
         threads.push(handle);
     };
 
-    start_thread(|c64, _, _| machine_loop(c64));
-    start_thread(|c64, _, _| irq_loop(c64));
+    c64_client.start()?;
+
     start_thread(|c64, sink, do_loop| {
         while do_loop.load(Ordering::Relaxed) {
             thread::sleep(GUI_REFRESH);
@@ -52,11 +59,23 @@ fn main() {
     });
 
     siv.run();
+    // let mut runner = siv.runner();
+    // runner.refresh();
+    // loop {
+    //     runner.step();
+    //     update_ui_x(&c64_client, &mut runner);
+    //     if !runner.is_running() {
+    //         break;
+    //     }
+    //     thread::sleep(GUI_REFRESH);
+    // }
+
     IS_RUNNING.store(false, Ordering::Relaxed);
 
     threads.into_iter().for_each(|t| {
         t.join().expect("Thread failed!");
     });
+    c64_client.stop()
 }
 
 fn init_c64() -> C64 {
@@ -66,8 +85,6 @@ fn init_c64() -> C64 {
         let rom = get_file_as_byte_vec(&rom_file);
         c64.memory_mut().init_rom(&rom[..]);
     }
-
-    c64.power_on();
 
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file);
@@ -173,15 +190,14 @@ fn set_theme(siv: &mut CursiveRunnable) {
 }
 
 fn update_ui(s: &mut Cursive, c64: Arc<Mutex<C64>>) {
-    let addr = if let Some(d) = s.user_data::<UIState>() {
-        d.addr_from
-    } else {
-        0
-    };
+    let addr = s.user_data::<UIState>().map_or(0, |data| data.addr_from);
+
+    // FIXME this is a total workaround that makes keybord "buffer" to clear
+    lock(&c64).cia1.keyboard.cycle();
 
     s.call_on_name("memory", |view: &mut HexView| {
         let data = lock(&c64).memory().fragment(addr, addr + 200);
-        view.set_start_addr(addr as usize);
+        view.config_mut().start_addr = addr as usize;
         view.set_data(data.iter());
     });
 
