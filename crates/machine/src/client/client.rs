@@ -39,6 +39,7 @@ pub trait InteractiveClient {
     type Error: std::error::Error + Send + Sync;
 
     fn send_key(&mut self, key: KeyboardEvent);
+    fn get_screen_memory(&self) -> Result<Vec<u8>, Self::Error>;
 }
 
 pub trait Client: NonInteractiveClient + InteractiveClient {}

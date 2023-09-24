@@ -123,7 +123,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             self.print_op(&op);
         }
 
-        if (self.get_config().exit_on_brk && matches!(def.mnemonic, Mnemonic::BRK)) {
+        if self.get_config().exit_on_brk && matches!(def.mnemonic, Mnemonic::BRK) {
             self.stop();
             return false;
         }

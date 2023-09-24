@@ -1,4 +1,4 @@
-use crate::machine::{Machine, MachineStatus, MachineStatus::*};
+use crate::machine::{Machine, MachineStatus::*};
 use crate::utils::lock;
 use std::sync::{Arc, Mutex};
 use std::thread;

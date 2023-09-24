@@ -28,13 +28,13 @@ pub fn irq_loop(c64mutex: Arc<Mutex<C64>>) {
 }
 
 pub fn machine_loop(c64mutex: Arc<Mutex<C64>>) {
-    let mut cycles = 0u64;
+    let mut cycles = 0u128;
     let mut status = MachineStatus::Running;
     lock(&c64mutex).set_status(MachineStatus::Running);
     while status != MachineStatus::Stopped {
         {
             let mut c64 = lock(&c64mutex);
-            status = *c64.get_status();
+            status = c64.get_status();
             if status == MachineStatus::Debug {
                 continue;
             }

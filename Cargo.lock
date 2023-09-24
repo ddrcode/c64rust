@@ -110,6 +110,7 @@ dependencies = [
  "clap",
  "colored",
  "env_logger",
+ "keyboard-types",
  "machine",
  "substring",
 ]

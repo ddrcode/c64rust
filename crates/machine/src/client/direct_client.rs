@@ -50,6 +50,10 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
         self.start()?;
         self.join()
     }
+
+    pub fn mutex(&self) -> Arc<Mutex<T>> {
+        self.machine_mtx.clone()
+    }
 }
 
 impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
@@ -76,7 +80,9 @@ impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
         if self.is_running() {
             self.lock().stop();
         }
-        self.join()
+        let result = self.join();
+        self.handle = None;
+        result
     }
 
     fn pause(&mut self) -> Result<()> {
