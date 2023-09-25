@@ -1,3 +1,4 @@
+use crate::events::*;
 use crate::machine::{Addr, MachineStatus};
 use crate::mos6502::Registers;
 use keyboard_types::KeyboardEvent;
@@ -42,4 +43,9 @@ pub trait InteractiveClient {
     fn get_screen_memory(&self) -> Result<Vec<u8>, Self::Error>;
 }
 
-pub trait Client: NonInteractiveClient + InteractiveClient {}
+pub trait ClientEventHandlers {
+    fn on_cpu_state_change(&mut self, handler: impl Fn(&CpuStateChangeEvent) + 'static);
+    fn on_mem_cell_change(&mut self, handler: impl Fn(&MemCellChangeEvent) + 'static);
+}
+
+pub trait Client: NonInteractiveClient + InteractiveClient + ClientEventHandlers {}

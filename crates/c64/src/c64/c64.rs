@@ -4,7 +4,7 @@ use super::{C64KeyCode, C64Memory, CIA1, CIA6526, VIC_II};
 use machine::{
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Machine, MachineConfig, MachineEvents, MachineStatus, Memory, RegSetter,
+    Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
 use std::num::Wrapping;
 
@@ -12,10 +12,10 @@ pub struct C64 {
     config: MachineConfig,
     mos6510: MOS6502,
     mem: Box<dyn Memory + Send>,
-    events: MachineEvents,
     gpu: VIC_II,
     pub cia1: CIA1,
     status: MachineStatus,
+    cycle: u128, // FIXME remove!
 }
 
 impl C64 {
@@ -25,15 +25,10 @@ impl C64 {
             config: config,
             mos6510: MOS6502::new(),
             mem: Box::new(C64Memory::new(size)),
-            events: MachineEvents {
-                on_next: Some(|machine, cycle| {
-                    // it simulates line drawing (to avoid infinite loop waiting for next line)
-                    machine.set_byte(0xd012, (*cycle % 255) as u8);
-                }),
-            },
             gpu: VIC_II {},
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,
+            cycle: 0,
         }
     }
 
@@ -101,10 +96,6 @@ impl Machine for C64 {
         &self.config
     }
 
-    fn get_events(&self) -> &MachineEvents {
-        &self.events
-    }
-
     fn get_status(&self) -> MachineStatus {
         self.status
     }
@@ -131,5 +122,10 @@ impl Machine for C64 {
         } else {
             self.memory_mut().set_byte(addr, val)
         }
+    }
+
+    fn post_next(&mut self) {
+        self.cycle = self.cycle.wrapping_add(1);
+        self.set_byte(0xd012, (self.cycle % 255) as u8);
     }
 }

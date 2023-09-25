@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use super::{Addr, MachineConfig, MachineEvents, Memory};
+use super::{Addr, MachineConfig, Memory};
 use crate::mos6502::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6502,
 };
@@ -25,7 +25,6 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn cpu(&self) -> &MOS6502;
     fn cpu_mut(&mut self) -> &mut MOS6502;
     fn get_config(&self) -> &MachineConfig;
-    fn get_events(&self) -> &MachineEvents;
     fn get_status(&self) -> MachineStatus;
     fn set_status(&mut self, status: MachineStatus);
 
@@ -131,6 +130,8 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.execute_operation(&op);
         true
     }
+    fn pre_next(&mut self) {}
+    fn post_next(&mut self) {}
 
     fn print_op(&self, op: &Operation) {
         let addr = self.PC().wrapping_sub(op.def.len() as u16);

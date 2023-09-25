@@ -398,6 +398,7 @@ dependencies = [
  "cursive_hexview",
  "debounce",
  "env_logger",
+ "lazy_static",
  "log",
  "machine",
  "substring",

@@ -14,7 +14,8 @@ use cursive::{
 use cursive_hexview::HexView;
 use machine::{
     cli::*,
-    client::{Client, ClientError, InteractiveClient, NonInteractiveClient},
+    client::{Client, ClientError, ClientEventHandlers, InteractiveClient, NonInteractiveClient},
+    events::*,
     utils::lock,
     Machine, MachineConfig,
 };
@@ -50,25 +51,39 @@ fn main() -> Result<(), ClientError> {
 
     c64_client.start()?;
 
-    start_thread(|c64, sink, do_loop| {
-        while do_loop.load(Ordering::Relaxed) {
-            thread::sleep(GUI_REFRESH);
-            let c = Arc::clone(&c64);
-            sink.send(Box::new(|s| update_ui(s, c))).unwrap();
-        }
-    });
-
-    siv.run();
-    // let mut runner = siv.runner();
-    // runner.refresh();
-    // loop {
-    //     runner.step();
-    //     update_ui_x(&c64_client, &mut runner);
-    //     if !runner.is_running() {
-    //         break;
+    // start_thread(|c64, sink, do_loop| {
+    //     while do_loop.load(Ordering::Relaxed) {
+    //         thread::sleep(GUI_REFRESH);
+    //         let c = Arc::clone(&c64);
+    //         sink.send(Box::new(|s| update_ui(s, c))).unwrap();
     //     }
-    //     thread::sleep(GUI_REFRESH);
-    // }
+    // });
+
+    {
+        let sink = siv.cb_sink().clone();
+        c64_client.on_cpu_state_change(move |event: &CpuStateChangeEvent| {
+            let cpu_state = event.registers.to_string();
+            sink.send(Box::new(move |s| {
+                s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
+                    view.state_mut().state = cpu_state;
+                });
+            }))
+            .unwrap();
+        });
+    }
+
+    // siv.run();
+    let mut runner = siv.runner();
+    runner.refresh();
+    loop {
+        runner.step();
+        c64_client.step();
+        // update_ui_x(&c64_client, &mut runner);
+        if !runner.is_running() {
+            break;
+        }
+        thread::sleep(GUI_REFRESH);
+    }
 
     IS_RUNNING.store(false, Ordering::Relaxed);
 

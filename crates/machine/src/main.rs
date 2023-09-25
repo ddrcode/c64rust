@@ -2,6 +2,7 @@ extern crate colored;
 
 mod cli;
 mod client;
+mod events;
 mod machine;
 mod mos6502;
 mod utils;

@@ -47,10 +47,12 @@ impl<M: Machine> Runtime<M> {
                 if let Some(max_cycles) = machine.get_config().max_cycles {
                     if self.cycles > max_cycles {}
                 }
+                machine.pre_next();
                 machine.next();
-                if let Some(on_next) = machine.get_events().on_next {
-                    on_next(&mut *machine, &self.cycles);
-                }
+                machine.post_next();
+                // if let Some(on_next) = machine.get_events().on_next {
+                //     on_next(&mut *machine, &self.cycles);
+                // }
                 if let Some(addr) = machine.get_config().exit_on_addr {
                     if machine.PC() == addr {
                         machine.debug();
