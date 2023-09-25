@@ -5,6 +5,7 @@ use machine::{
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
     Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
+    debugger::{ Debugger, DebuggerState, DebugMachine },
 };
 use std::num::Wrapping;
 
@@ -16,6 +17,7 @@ pub struct C64 {
     pub cia1: CIA1,
     status: MachineStatus,
     cycle: u128, // FIXME remove!
+    debugger_state: DebuggerState
 }
 
 impl C64 {
@@ -29,6 +31,7 @@ impl C64 {
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,
             cycle: 0,
+            debugger_state: DebuggerState::default()
         }
     }
 
@@ -124,8 +127,28 @@ impl Machine for C64 {
         }
     }
 
-    fn post_next(&mut self) {
+    fn post_next(&mut self, op: &Operation) {
+        // FIXME this is an ugly workaround to fix screen scannig
+        // value at 0d012 represents currently scanned line
+        // if not updated  - screen won't be refreshed
+        // it should be implemented at VIC level
         self.cycle = self.cycle.wrapping_add(1);
         self.set_byte(0xd012, (self.cycle % 255) as u8);
+
+        if self.get_status() == MachineStatus::Running && self.should_pause(op) {
+            self.start_debugging();
+        }
     }
 }
+
+impl Debugger for C64 {
+    fn debugger_state(&self) -> &DebuggerState {
+        &self.debugger_state
+    }
+    
+    fn machine(&self) -> &dyn Machine {
+        self
+    }
+}
+
+impl DebugMachine for C64 {}

@@ -127,11 +127,13 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             return false;
         }
 
+        self.pre_next(&op);
         self.execute_operation(&op);
+        self.post_next(&op);
         true
     }
-    fn pre_next(&mut self) {}
-    fn post_next(&mut self) {}
+    fn pre_next(&mut self, op: &Operation) {}
+    fn post_next(&mut self, op: &Operation) {}
 
     fn print_op(&self, op: &Operation) {
         let addr = self.PC().wrapping_sub(op.def.len() as u16);

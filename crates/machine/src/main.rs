@@ -6,6 +6,7 @@ mod events;
 mod machine;
 mod mos6502;
 mod utils;
+mod debugger;
 
 use crate::cli::{get_file_as_byte_vec, Args};
 use crate::client::{ClientError, DirectClient, NonInteractiveClient};
