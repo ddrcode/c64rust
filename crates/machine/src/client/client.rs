@@ -48,4 +48,4 @@ pub trait ClientEventHandlers {
     fn on_mem_cell_change(&mut self, handler: impl Fn(&MemCellChangeEvent) + 'static);
 }
 
-pub trait Client: NonInteractiveClient + InteractiveClient + ClientEventHandlers {}
+pub trait Client: NonInteractiveClient + InteractiveClient {}

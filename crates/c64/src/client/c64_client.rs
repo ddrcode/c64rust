@@ -10,14 +10,14 @@ type Result<T> = std::result::Result<T, ClientError>;
 
 pub struct C64Client {
     base_client: DirectClient<C64>, // awful!!!
-    event_emitter: EventEmitter,
+    // event_emitter: EventEmitter,
 }
 
 impl C64Client {
     pub fn new(c64: C64) -> Self {
         C64Client {
             base_client: DirectClient::new(c64),
-            event_emitter: EventEmitter::new(),
+            // event_emitter: EventEmitter::new(),
         }
     }
 
@@ -30,10 +30,10 @@ impl C64Client {
     }
 
     pub fn step(&self) {
-        let regs = self.base_client.lock().cpu().registers.clone();
-        self.event_emitter
-            .cpu_events
-            .emit(&CpuStateChangeEvent::new(regs));
+        // let regs = self.base_client.lock().cpu().registers.clone();
+        // self.event_emitter
+        //     .cpu_events
+        //     .emit(&CpuStateChangeEvent::new(regs));
     }
 }
 
@@ -88,14 +88,14 @@ impl NonInteractiveClient for C64Client {
     }
 }
 
-impl ClientEventHandlers for C64Client {
-    fn on_cpu_state_change(&mut self, handler: impl Fn(&CpuStateChangeEvent) + 'static) {
-        self.event_emitter.cpu_events.push(EventFn::new(handler));
-    }
-
-    fn on_mem_cell_change(&mut self, handler: impl Fn(&MemCellChangeEvent) + 'static) {
-        self.event_emitter.memory_events.push(EventFn::new(handler));
-    }
-}
+// impl ClientEventHandlers for C64Client {
+//     fn on_cpu_state_change(&mut self, handler: impl Fn(&CpuStateChangeEvent) + 'static) {
+//         self.event_emitter.cpu_events.push(EventFn::new(handler));
+//     }
+//
+//     fn on_mem_cell_change(&mut self, handler: impl Fn(&MemCellChangeEvent) + 'static) {
+//         self.event_emitter.memory_events.push(EventFn::new(handler));
+//     }
+// }
 
 impl Client for C64Client {}
