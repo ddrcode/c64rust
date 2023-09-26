@@ -1,5 +1,5 @@
-use std::fmt;
 use serde_derive::Serialize;
+use std::fmt;
 
 #[derive(Clone, Serialize)]
 pub enum Operand {

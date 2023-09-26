@@ -7,7 +7,7 @@ mod machine;
 mod mos6502;
 mod utils;
 
-use crate::cli::{get_file_as_byte_vec, Args, load_profile_file};
+use crate::cli::{get_file_as_byte_vec, load_profile_file, Args};
 use crate::client::{ClientError, DirectClient, NonInteractiveClient};
 use crate::machine::{MOS6502Machine, Machine, MachineConfig};
 use clap::Parser;

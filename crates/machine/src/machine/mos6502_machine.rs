@@ -1,8 +1,8 @@
 use super::{
     impl_reg_setter, MOS6502Memory, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
-use crate::mos6502::{execute_operation, Operation, MOS6502};
 use crate::debugger::DebugMachine;
+use crate::mos6502::{execute_operation, Operation, MOS6502};
 use std::num::Wrapping;
 
 pub struct MOS6502Machine {
@@ -59,9 +59,6 @@ impl Machine for MOS6502Machine {
     fn execute_operation(&mut self, op: &Operation) -> u8 {
         execute_operation(&op, self)
     }
-    
 }
 
-impl DebugMachine for MOS6502Machine {
-    
-}
+impl DebugMachine for MOS6502Machine {}

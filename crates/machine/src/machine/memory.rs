@@ -40,7 +40,7 @@ pub trait Memory {
     }
 
     fn fragment(&self, from: Addr, to: Addr) -> Vec<u8> {
-        let mut vec = Vec::<u8>::new();
+        let mut vec = Vec::<u8>::with_capacity((to - from) as usize);
         let range = std::ops::Range {
             start: from,
             end: to,

@@ -83,6 +83,7 @@
 
               pkgs.cargo-watch
               pkgs.cargo-machete
+              pkgs.rust-analyzer
 
               rustVersion
 

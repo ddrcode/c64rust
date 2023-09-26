@@ -1,5 +1,5 @@
-use std::fmt;
 use serde_derive::Serialize;
+use std::fmt;
 
 // inspired by https://yizhang82.dev/nes-emu-cpu
 // also see http://www.emulator101.com/6502-addressing-modes.html

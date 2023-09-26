@@ -3,7 +3,7 @@ use colored::*;
 use std::fmt;
 use std::num::Wrapping;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct Registers {
     pub counter: u16,
     pub stack: Wrapping<u8>,

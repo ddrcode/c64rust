@@ -1,22 +1,34 @@
 use crate::c64::C64;
 use keyboard_types::KeyboardEvent;
 use machine::client::*;
+use machine::debugger::DebuggerState;
 use machine::mos6502::Registers;
 use machine::{Addr, Machine, MachineStatus};
 use std::sync::{Arc, Mutex};
 
 type Result<T> = std::result::Result<T, ClientError>;
 
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct MachineState {
+    pub registers: Registers,
+    pub last_op: String,
+    pub memory_slice: Vec<u8>,
+    pub screen: String,
+}
+
 pub struct C64Client {
-    base_client: DirectClient<C64>, // awful!!!
-                                    // event_emitter: EventEmitter,
+    base_client: DirectClient<C64>,    // awful!!!
+    pub debugger_state: DebuggerState, // event_emitter: EventEmitter,
 }
 
 impl C64Client {
     pub fn new(c64: C64) -> Self {
         C64Client {
             base_client: DirectClient::new(c64),
-            // event_emitter: EventEmitter::new(),
+            debugger_state: DebuggerState {
+                observed_mem: (0..200),
+                ..Default::default()
+            },
         }
     }
 
@@ -28,8 +40,21 @@ impl C64Client {
         self.base_client.mutex()
     }
 
-    pub fn step(&self) {
-        // let regs = self.base_client.lock().cpu().registers.clone();
+    pub fn step(&self) -> MachineState {
+        let c64 = self.base_client.lock();
+        let registers = c64.cpu().registers.clone();
+        let last_op = c64.disassemble(&c64.last_op, true);
+        let memory_slice = c64.memory().fragment(
+            self.debugger_state.observed_mem.start,
+            self.debugger_state.observed_mem.end,
+        );
+        let screen = c64.get_screen_memory();
+        MachineState {
+            registers,
+            last_op,
+            memory_slice,
+            screen,
+        }
     }
 }
 

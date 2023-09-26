@@ -18,13 +18,14 @@ pub struct C64 {
     status: MachineStatus,
     cycle: u128, // FIXME remove!
     pub debugger_state: DebuggerState,
+    pub last_op: Operation,
 }
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
         let size = config.ram_size.clone();
         C64 {
-            config: config,
+            config,
             mos6510: MOS6502::new(),
             mem: Box::new(C64Memory::new(size)),
             gpu: VIC_II {},
@@ -32,6 +33,7 @@ impl C64 {
             status: MachineStatus::Stopped,
             cycle: 0,
             debugger_state: DebuggerState::default(),
+            last_op: Operation::default(),
         }
     }
 
@@ -106,8 +108,9 @@ impl Machine for C64 {
     fn set_status(&mut self, status: MachineStatus) {
         self.status = status;
     }
-    
+
     fn execute_operation(&mut self, op: &Operation) -> u8 {
+        self.last_op = op.clone();
         execute_operation(&op, self)
     }
 

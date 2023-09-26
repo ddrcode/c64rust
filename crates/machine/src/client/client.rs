@@ -42,5 +42,4 @@ pub trait InteractiveClient {
     fn get_screen_memory(&self) -> Result<Vec<u8>, Self::Error>;
 }
 
-
 pub trait Client: NonInteractiveClient + InteractiveClient {}

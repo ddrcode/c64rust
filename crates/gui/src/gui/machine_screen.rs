@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 use substring::Substring;
 
 pub struct MachineScreen {
+    state: String,
     screen_size: Vec2,
     c64: Arc<Mutex<C64>>,
 }
@@ -19,8 +20,17 @@ pub struct MachineScreen {
 impl MachineScreen {
     pub fn new(c64: Arc<Mutex<C64>>) -> Self {
         MachineScreen {
-            c64: c64,
+            state: String::from(" ".repeat(40 * 25)),
+            c64,
             screen_size: Vec2::new(44, 27),
+        }
+    }
+}
+
+impl MachineScreen {
+    pub fn set_state(&mut self, state: String) {
+        if self.state != state {
+            self.state = state;
         }
     }
 }
@@ -40,11 +50,13 @@ impl View for MachineScreen {
         let x_padding = 2;
         let y_padding = 1;
         let screen_padding = cursive::Vec2::new(x_padding, y_padding);
-        let txt = lock(&self.c64).get_screen_memory();
         let screen_printer = printer.offset(screen_padding);
         screen_printer.with_color(color, |printer| {
             for i in 0..25 {
-                printer.print((0, i), &format!("{}", txt.substring(i * 40, (i + 1) * 40)));
+                printer.print(
+                    (0, i),
+                    &format!("{}", self.state.substring(i * 40, (i + 1) * 40)),
+                );
             }
         });
     }

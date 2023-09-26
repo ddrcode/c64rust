@@ -19,7 +19,7 @@ pub trait RegSetter<T> {
     fn set_SC(&mut self, val: T);
 }
 
-pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>>  {
+pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
     fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
     fn cpu(&self) -> &MOS6502;
@@ -76,12 +76,11 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>>  {
     fn set_byte(&mut self, addr: Addr, val: u8) {
         self.memory_mut().set_byte(addr, val);
     }
-    
+
     /// Start only changes the machine's status (and setups memory_
     /// but it doesn't cycle the machine! Either self.next() must be called
     /// or (better), a client should be used instead
     fn start(&mut self) {
-        let mut cycles = 0u128;
         // see https://www.pagetable.com/c64ref/c64mem/
         self.set_byte(0x0000, 0x2f);
         self.set_byte(0x0001, 0x37);
@@ -110,8 +109,9 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>>  {
 
     fn execute_operation(&mut self, op: &Operation) -> u8;
 
-    fn next(&mut self) -> bool 
-        where Self: Sized 
+    fn next(&mut self) -> bool
+    where
+        Self: Sized,
     {
         let def = { self.decode_op() };
         let operand = { self.decode_operand(&def) };
@@ -126,10 +126,10 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>>  {
 
         self.get_status() != MachineStatus::Stopped
     }
-    
+
     fn pre_next(&mut self, op: &Operation) {
         if self.get_config().disassemble {
-            println!("{}", self.disassemble(op));
+            println!("{}", self.disassemble(op, self.get_config().verbose));
         }
 
         if self.get_config().exit_on_brk && matches!(op.def.mnemonic, Mnemonic::BRK) {
@@ -139,7 +139,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>>  {
 
     fn post_next(&mut self, op: &Operation) {}
 
-    fn disassemble(&self, op: &Operation) -> String {
+    fn disassemble(&self, op: &Operation, verbose: bool) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         let addr = self.PC().wrapping_sub(op.def.len() as u16);
@@ -152,9 +152,14 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>>  {
             ),
             _ => String::from("     "),
         };
-        write!(&mut out, "{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
-        if self.get_config().verbose {
-            write!(&mut out,
+        write!(
+            &mut out,
+            "{:04x}: {:02x} {} | {}",
+            addr, op.def.opcode, val, op
+        );
+        if verbose {
+            write!(
+                &mut out,
                 "{}|  {}",
                 " ".repeat(13 - op.to_string().len()),
                 self.cpu().registers,

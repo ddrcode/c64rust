@@ -19,5 +19,4 @@ pub trait DebugMachine: Machine {
     fn start_debugging(&mut self) {
         self.set_status(MachineStatus::Debug);
     }
-
 }
