@@ -10,7 +10,7 @@ type Result<T> = std::result::Result<T, ClientError>;
 
 pub struct C64Client {
     base_client: DirectClient<C64>, // awful!!!
-    // event_emitter: EventEmitter,
+                                    // event_emitter: EventEmitter,
 }
 
 impl C64Client {

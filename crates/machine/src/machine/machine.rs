@@ -118,54 +118,15 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             .map_or(None, |o| self.decode_address(&def, &o));
         let op = Operation::new(def.clone(), operand, address);
 
-        if self.get_config().disassemble {
-            self.print_op(&op);
-        }
-
-        if self.get_config().exit_on_brk && matches!(def.mnemonic, Mnemonic::BRK) {
-            self.stop();
-            return false;
-        }
-
         self.pre_next(&op);
         self.execute_operation(&op);
         self.post_next(&op);
-        true
+
+        self.get_status() != MachineStatus::Stopped
     }
+
     fn pre_next(&mut self, op: &Operation) {}
     fn post_next(&mut self, op: &Operation) {}
-
-    fn print_op(&self, op: &Operation) {
-        let addr = self.PC().wrapping_sub(op.def.len() as u16);
-        let val = match op.def.len() {
-            2 => format!("{:02x}   ", self.get_byte(addr + 1)),
-            3 => format!(
-                "{:02x} {:02x}",
-                self.get_byte(addr + 1),
-                self.get_byte(addr + 2)
-            ),
-            _ => String::from("     "),
-        };
-        print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
-        if self.get_config().verbose {
-            print!(
-                "{}|  {}",
-                " ".repeat(13 - op.to_string().len()),
-                self.cpu().registers,
-                // self.get_vars()
-            );
-        }
-        println!();
-    }
-
-    // fn get_vars(&self) -> String {
-    //     let a = self.memory().get_word(0x0010);
-    //     let b = self.memory().get_word(0x0012);
-    //     let c = self.memory().get_word(0x0014);
-    //     let mut s = String::new();
-    //     write!(&mut s, "a={:04x}, b={:04x}, c={:04x}", a, b, c);
-    //     s
-    // }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {
         let val = self.get_byte(self.PC());

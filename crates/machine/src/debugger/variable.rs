@@ -1,4 +1,4 @@
-use crate::machine::{ Addr };
+use crate::machine::Addr;
 
 #[derive(Debug, Default, Clone)]
 pub struct Variable {

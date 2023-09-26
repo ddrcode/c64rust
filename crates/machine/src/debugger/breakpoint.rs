@@ -1,5 +1,5 @@
-use crate::machine::{ Addr, Machine };
-use crate::mos6502::{ Mnemonic, Operation };
+use crate::machine::{Addr, Machine};
+use crate::mos6502::{Mnemonic, Operation};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Breakpoint {
@@ -8,7 +8,7 @@ pub enum Breakpoint {
     Instruction(Mnemonic),
     BRK,
     Opcode(u8),
-    Byte((Addr, u8))
+    Byte((Addr, u8)),
 }
 
 impl Breakpoint {
@@ -19,8 +19,10 @@ impl Breakpoint {
             Self::Instruction(m) => op.def.mnemonic == m,
             Self::BRK => op.def.mnemonic == Mnemonic::BRK,
             Self::Opcode(o) => op.def.opcode == o,
-            Self::Byte((addr, val)) => addr == machine.PC() && val == machine.get_byte(machine.PC()),
-            _ => false
+            Self::Byte((addr, val)) => {
+                addr == machine.PC() && val == machine.get_byte(machine.PC())
+            }
+            _ => false,
         }
     }
 }

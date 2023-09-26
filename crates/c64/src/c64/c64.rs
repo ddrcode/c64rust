@@ -2,10 +2,10 @@
 
 use super::{C64KeyCode, C64Memory, CIA1, CIA6526, VIC_II};
 use machine::{
+    debugger::{DebugMachine, Debugger, DebuggerState},
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
     Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
-    debugger::{ Debugger, DebuggerState, DebugMachine },
 };
 use std::num::Wrapping;
 
@@ -17,7 +17,7 @@ pub struct C64 {
     pub cia1: CIA1,
     status: MachineStatus,
     cycle: u128, // FIXME remove!
-    debugger_state: DebuggerState
+    pub debugger_state: DebuggerState,
 }
 
 impl C64 {
@@ -31,7 +31,7 @@ impl C64 {
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,
             cycle: 0,
-            debugger_state: DebuggerState::default()
+            debugger_state: DebuggerState::default(),
         }
     }
 
@@ -145,7 +145,7 @@ impl Debugger for C64 {
     fn debugger_state(&self) -> &DebuggerState {
         &self.debugger_state
     }
-    
+
     fn machine(&self) -> &dyn Machine {
         self
     }

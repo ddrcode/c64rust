@@ -12,6 +12,7 @@ use cursive::{
     event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable, CursiveRunner,
 };
 use cursive_hexview::HexView;
+use log::LevelFilter;
 use machine::{
     cli::*,
     client::{Client, ClientError, ClientEventHandlers, InteractiveClient, NonInteractiveClient},
@@ -28,11 +29,9 @@ static IS_RUNNING: AtomicBool = AtomicBool::new(true);
 const GUI_REFRESH: Duration = Duration::from_millis(100);
 
 fn main() -> Result<(), ClientError> {
-    // logger::set_internal_filter_level(LevelFilter::Warn);
-    // logger::set_external_filter_level(LevelFilter::Debug);
-    // set_filter_levels_from_env(LevelFilter::Debug);
-    logger::init();
     colored::control::set_override(false);
+    init_log();
+    log::debug!("kksoskos");
 
     let mut c64_client = C64Client::new(init_c64());
     let c64_arc = c64_client.mutex();
@@ -58,19 +57,6 @@ fn main() -> Result<(), ClientError> {
             sink.send(Box::new(|s| update_ui(s, c))).unwrap();
         }
     });
-
-    // {
-    //     let sink = siv.cb_sink().clone();
-    //     c64_client.on_cpu_state_change(move |event: &CpuStateChangeEvent| {
-    //         let cpu_state = event.registers.to_string();
-    //         sink.send(Box::new(move |s| {
-    //             s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
-    //                 view.state_mut().state = cpu_state;
-    //             });
-    //         }))
-    //         .unwrap();
-    //     });
-    // }
 
     siv.run();
     // let mut runner = siv.runner();
@@ -106,6 +92,11 @@ fn init_c64() -> C64 {
         let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
         c64.memory_mut().write(addr, &ram[..]);
     }
+
+    use machine::debugger::Breakpoint;
+    c64.debugger_state
+        .breakpoints
+        .push(Breakpoint::Address(0xe1d6));
 
     c64
 }
@@ -185,6 +176,7 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     siv.add_global_callback(Key::F6, |s| s.add_layer(address_dialog()));
     siv.add_global_callback(Key::F7, debug_handler);
     siv.add_global_callback(Key::F8, next_handler);
+    siv.add_global_callback(Key::F2, cursive::Cursive::toggle_debug_console);
 
     siv.add_layer(screen);
     siv.set_user_data(UIState::default());
@@ -219,4 +211,19 @@ fn update_ui(s: &mut Cursive, c64: Arc<Mutex<C64>>) {
     s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
         view.state_mut().state = lock(&c64).cpu().registers.to_string();
     });
+}
+
+fn init_log() {
+    cursive::logger::init();
+    match std::env::var("RUST_LOG")
+        .unwrap_or_else(|_| "info".to_string())
+        .as_ref()
+    {
+        "trace" => log::set_max_level(LevelFilter::Trace),
+        "debug" => log::set_max_level(LevelFilter::Debug),
+        "info" => log::set_max_level(LevelFilter::Info),
+        "warn" => log::set_max_level(LevelFilter::Warn),
+        "error" => log::set_max_level(LevelFilter::Error),
+        _ => log::set_max_level(LevelFilter::Off),
+    };
 }

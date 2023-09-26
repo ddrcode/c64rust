@@ -2,11 +2,11 @@ extern crate colored;
 
 mod cli;
 mod client;
+mod debugger;
 mod events;
 mod machine;
 mod mos6502;
 mod utils;
-mod debugger;
 
 use crate::cli::{get_file_as_byte_vec, Args};
 use crate::client::{ClientError, DirectClient, NonInteractiveClient};
@@ -32,7 +32,7 @@ fn main() -> Result<(), ClientError> {
     client.start_sync()?;
 
     if args.show_status {
-        println!("{}", client.get_cpu_state().unwrap());
+        println!("{}", client.get_cpu_state()?);
     }
 
     client.stop()

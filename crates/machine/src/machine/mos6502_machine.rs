@@ -1,6 +1,7 @@
 use super::{
     impl_reg_setter, MOS6502Memory, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
+use crate::debugger::DebugMachine;
 use crate::mos6502::{execute_operation, Operation, MOS6502};
 use std::num::Wrapping;
 
@@ -59,3 +60,5 @@ impl Machine for MOS6502Machine {
         execute_operation(&op, self)
     }
 }
+
+impl DebugMachine for MOS6502Machine {}
