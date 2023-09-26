@@ -12,8 +12,11 @@ use crate::cli::{get_file_as_byte_vec, Args};
 use crate::client::{ClientError, DirectClient, NonInteractiveClient};
 use crate::machine::{MOS6502Machine, Machine, MachineConfig};
 use clap::Parser;
+use env_logger;
+use std::io::Write;
 
 fn main() -> Result<(), ClientError> {
+    env_logger::init();
     let args = Args::parse();
     let mut machine = MOS6502Machine::new(MachineConfig::from(&args));
 

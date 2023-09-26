@@ -125,8 +125,43 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.get_status() != MachineStatus::Stopped
     }
 
-    fn pre_next(&mut self, op: &Operation) {}
+    fn pre_next(&mut self, op: &Operation) {
+        use log;
+        if self.get_config().disassemble {
+            println!("{}", self.disassemble(op));
+            // log::info!("{}", self.disassemble(op));
+        }
+
+        if self.get_config().exit_on_brk && matches!(op.def.mnemonic, Mnemonic::BRK) {
+            self.stop();
+        }
+    }
+
     fn post_next(&mut self, op: &Operation) {}
+
+    fn disassemble(&self, op: &Operation) -> String {
+        use std::fmt::Write;
+        let mut out = String::new();
+        let addr = self.PC().wrapping_sub(op.def.len() as u16);
+        let val = match op.def.len() {
+            2 => format!("{:02x}   ", self.get_byte(addr + 1)),
+            3 => format!(
+                "{:02x} {:02x}",
+                self.get_byte(addr + 1),
+                self.get_byte(addr + 2)
+            ),
+            _ => String::from("     "),
+        };
+        write!(&mut out, "{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
+        if self.get_config().verbose {
+            write!(&mut out,
+                "{}|  {}",
+                " ".repeat(13 - op.to_string().len()),
+                self.cpu().registers,
+            );
+        }
+        out
+    }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {
         let val = self.get_byte(self.PC());

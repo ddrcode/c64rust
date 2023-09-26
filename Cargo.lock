@@ -520,6 +520,7 @@ dependencies = [
  "colored",
  "env_logger",
  "keyboard-types",
+ "log",
  "substring",
 ]
 
