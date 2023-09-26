@@ -1,8 +1,9 @@
 use std::fmt;
+use serde_derive::Serialize;
 
 // inspired by https://yizhang82.dev/nes-emu-cpu
 // also see http://www.emulator101.com/6502-addressing-modes.html
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize)]
 pub enum AddressMode {
     Implicit,
     Accumulator,

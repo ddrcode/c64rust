@@ -1,4 +1,7 @@
 use std::fmt;
+use serde_derive::Serialize;
+
+#[derive(Clone, Serialize)]
 pub enum Operand {
     Byte(u8),
     Word(u16),

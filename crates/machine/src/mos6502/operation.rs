@@ -1,6 +1,8 @@
 use super::{AddressMode::*, Operand, OperationDef};
 use std::fmt;
+use serde_derive::Serialize;
 
+#[derive(Clone, Serialize)]
 pub struct Operation {
     pub def: OperationDef,
     pub operand: Option<Operand>,

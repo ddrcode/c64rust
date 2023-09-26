@@ -1,6 +1,7 @@
 use super::{AddressMode, AddressMode::*, Mnemonic};
+use serde_derive::Serialize;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct OperationDef {
     pub opcode: u8,
     pub mnemonic: Mnemonic,

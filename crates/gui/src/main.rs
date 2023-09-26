@@ -15,8 +15,7 @@ use cursive_hexview::HexView;
 use log::LevelFilter;
 use machine::{
     cli::*,
-    client::{Client, ClientError, ClientEventHandlers, InteractiveClient, NonInteractiveClient},
-    events::*,
+    client::{Client, ClientError, InteractiveClient, NonInteractiveClient},
     utils::lock,
     Machine, MachineConfig,
 };

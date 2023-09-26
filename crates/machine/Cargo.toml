@@ -15,6 +15,9 @@ substring = "1.4.5"
 env_logger = "0.10.0"
 keyboard-types = { version="0.7", features=["webdriver"] }
 log = "0.4.20"
+toml = "0.8.0"
+serde_derive = "1.0.188"
+serde = "1.0.188"
 
 [[bin]]
 name = "machine"

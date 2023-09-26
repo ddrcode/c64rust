@@ -19,7 +19,7 @@ pub trait RegSetter<T> {
     fn set_SC(&mut self, val: T);
 }
 
-pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
+pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>>  {
     fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
     fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
     fn cpu(&self) -> &MOS6502;
@@ -76,7 +76,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn set_byte(&mut self, addr: Addr, val: u8) {
         self.memory_mut().set_byte(addr, val);
     }
-
+    
     /// Start only changes the machine's status (and setups memory_
     /// but it doesn't cycle the machine! Either self.next() must be called
     /// or (better), a client should be used instead
@@ -110,7 +110,9 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
     fn execute_operation(&mut self, op: &Operation) -> u8;
 
-    fn next(&mut self) -> bool {
+    fn next(&mut self) -> bool 
+        where Self: Sized 
+    {
         let def = { self.decode_op() };
         let operand = { self.decode_operand(&def) };
         let address = operand
@@ -124,12 +126,10 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
         self.get_status() != MachineStatus::Stopped
     }
-
+    
     fn pre_next(&mut self, op: &Operation) {
-        use log;
         if self.get_config().disassemble {
             println!("{}", self.disassemble(op));
-            // log::info!("{}", self.disassemble(op));
         }
 
         if self.get_config().exit_on_brk && matches!(op.def.mnemonic, Mnemonic::BRK) {

@@ -106,7 +106,7 @@ impl Machine for C64 {
     fn set_status(&mut self, status: MachineStatus) {
         self.status = status;
     }
-
+    
     fn execute_operation(&mut self, op: &Operation) -> u8 {
         execute_operation(&op, self)
     }

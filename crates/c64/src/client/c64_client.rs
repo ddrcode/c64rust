@@ -1,7 +1,6 @@
 use crate::c64::C64;
 use keyboard_types::KeyboardEvent;
 use machine::client::*;
-use machine::events::*;
 use machine::mos6502::Registers;
 use machine::{Addr, Machine, MachineStatus};
 use std::sync::{Arc, Mutex};
@@ -31,9 +30,6 @@ impl C64Client {
 
     pub fn step(&self) {
         // let regs = self.base_client.lock().cpu().registers.clone();
-        // self.event_emitter
-        //     .cpu_events
-        //     .emit(&CpuStateChangeEvent::new(regs));
     }
 }
 
@@ -87,15 +83,5 @@ impl NonInteractiveClient for C64Client {
         self.base_client.get_cpu_state()
     }
 }
-
-// impl ClientEventHandlers for C64Client {
-//     fn on_cpu_state_change(&mut self, handler: impl Fn(&CpuStateChangeEvent) + 'static) {
-//         self.event_emitter.cpu_events.push(EventFn::new(handler));
-//     }
-//
-//     fn on_mem_cell_change(&mut self, handler: impl Fn(&MemCellChangeEvent) + 'static) {
-//         self.event_emitter.memory_events.push(EventFn::new(handler));
-//     }
-// }
 
 impl Client for C64Client {}
