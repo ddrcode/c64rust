@@ -4,14 +4,16 @@ extern crate cursive_hexview;
 extern crate log;
 
 mod gui;
+mod utils;
 
 use crate::gui::*;
 use c64::{C64Client, MachineState, C64};
 use clap::Parser;
 use cursive::{
-    event::Key,
+    event::{Key, Event},
     logger, menu,
     views::{Canvas, TextView},
+    view::{ViewWrapper},
     Cursive, CursiveRunnable,
 };
 use cursive_hexview::HexView;
@@ -61,6 +63,8 @@ fn main() -> Result<(), ClientError> {
 fn handle_user_data(client: &mut C64Client, s: &mut Cursive) {
     if let Some(ud) = s.user_data::<UIState>() {
         client.debugger_state.observed_mem = ud.addr_from..(ud.addr_from + 200);
+        ud.key.as_ref().map(|key| client.send_key(key.clone()));
+        ud.key = None;
     }
 }
 
@@ -135,7 +139,7 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         }
     };
 
-    let screen = main_screen(c64);
+    let screen = main_screen();
 
     siv.menubar()
         .add_subtree(
@@ -149,8 +153,6 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
             "Monitor",
             menu::Tree::new()
                 .leaf("Go to address [F6]", |s| s.add_layer(address_dialog()))
-                .delimiter()
-                .leaf("Autorefresh: on", |_s| {}),
         )
         .add_subtree(
             "View",
@@ -165,7 +167,7 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
     siv.add_global_callback(Key::F6, |s| s.add_layer(address_dialog()));
     siv.add_global_callback(Key::F7, debug_handler);
     siv.add_global_callback(Key::F8, next_handler);
-    siv.add_global_callback(Key::F2, cursive::Cursive::toggle_debug_console);
+    siv.add_global_callback(Event::Char('`'), cursive::Cursive::toggle_debug_console);
 
     siv.add_layer(screen);
     siv.set_user_data(UIState::new());

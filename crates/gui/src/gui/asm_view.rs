@@ -2,19 +2,20 @@ use super::UIState;
 use cursive::{
     event::{EventResult, Key},
     traits::{Nameable, With},
-    view::{scroll::Scroller, Scrollable, View},
+    view::{scroll::Scroller, Scrollable, View, ScrollStrategy},
     views::*,
-    Cursive,
+    Cursive, theme::{ Style},
 };
 
 pub fn update_asm_view(s: &mut Cursive, line: &String) {
     let lines = if let Some(ud) = s.user_data::<UIState>() {
         ud.asm_lines.push(line.to_string());
-        if ud.asm_lines.len() > 10 {
+        if ud.asm_lines.len() > 100 {
             ud.asm_lines.remove(0);
         }
         ud.asm_lines.join("\n")
     } else {
+        log::warn!("No user data found in update_asm_view");
         String::new()
     };
 
@@ -23,10 +24,15 @@ pub fn update_asm_view(s: &mut Cursive, line: &String) {
     });
 }
 
+
 pub fn get_asm_view() -> impl View {
+    let style = Style::default();
+
     let view = TextView::new("")
+        .style(style)
         .with_name("asm")
         .scrollable()
+        .scroll_strategy(ScrollStrategy::StickToBottom)
         .wrap_with(OnEventView::new)
         .on_pre_event_inner(Key::PageUp, |v, _| {
             let scroller = v.get_scroller_mut();
@@ -42,5 +48,5 @@ pub fn get_asm_view() -> impl View {
             }
             Some(EventResult::Consumed(None))
         });
-    PaddedView::lrtb(3, 0, 0, 0, view)
+    ResizedView::with_fixed_height(10, PaddedView::lrtb(3, 0, 0, 0, view))
 }

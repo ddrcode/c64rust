@@ -1,27 +1,25 @@
 #![allow(non_camel_case_types)]
 
-use c64::{C64KeyCode, C64};
+use crate::utils::keyboard::map_key_event;
 use cursive::{
-    event::{Event, EventResult, Key},
+    event::{Callback, Event, EventResult},
     theme::{Color, ColorStyle},
     Printer, Vec2, View,
 };
-use machine::utils::lock;
-
-use std::sync::{Arc, Mutex};
+use keyboard_types::Key;
 use substring::Substring;
+
+use super::UIState;
 
 pub struct MachineScreen {
     state: String,
     screen_size: Vec2,
-    c64: Arc<Mutex<C64>>,
 }
 
 impl MachineScreen {
-    pub fn new(c64: Arc<Mutex<C64>>) -> Self {
+    pub fn new() -> Self {
         MachineScreen {
             state: String::from(" ".repeat(40 * 25)),
-            c64,
             screen_size: Vec2::new(44, 27),
         }
     }
@@ -66,39 +64,15 @@ impl View for MachineScreen {
     }
 
     fn on_event(&mut self, event: Event) -> EventResult {
-        match event {
-            Event::Char(ch) => {
-                if !ch.is_ascii() {
-                    return EventResult::Ignored;
-                };
-                let mut c64 = lock(&self.c64);
-                if ch.is_ascii_uppercase() {
-                    c64.send_key_with_modifier(
-                        C64KeyCode::from(ch.to_ascii_lowercase()),
-                        C64KeyCode::RShift,
-                    );
-                } else {
-                    if ch == '"' {
-                        c64.send_key_with_modifier(C64KeyCode::from('2'), C64KeyCode::RShift);
-                    } else if ch == '$' {
-                        c64.send_key_with_modifier(C64KeyCode::from('4'), C64KeyCode::RShift);
-                    } else {
-                        c64.send_key(C64KeyCode::from(ch));
-                    }
-                }
-                EventResult::Consumed(None)
-            }
-            Event::Key(key) => {
-                use C64KeyCode::*;
-                let kc = match key {
-                    Key::Enter => Return,
-                    Key::Backspace => Delete,
-                    _ => return EventResult::Ignored,
-                };
-                lock(&self.c64).send_key(kc);
-                EventResult::Consumed(None)
-            }
-            _ => EventResult::Ignored,
+        let event = map_key_event(event);
+        if event.key == Key::Unidentified {
+            EventResult::Ignored
+        } else {
+            EventResult::Consumed(Some(Callback::from_fn_once(|s| {
+                s.with_user_data(|data: &mut UIState| {
+                    data.key = Some(event);
+                });
+            })))
         }
     }
 }

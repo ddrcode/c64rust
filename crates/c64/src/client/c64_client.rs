@@ -61,7 +61,9 @@ impl C64Client {
 impl InteractiveClient for C64Client {
     type Error = ClientError;
 
-    fn send_key(&mut self, key: KeyboardEvent) {}
+    fn send_key(&mut self, key: KeyboardEvent) {
+        log::info!("Sending key {:?}", key);
+    }
 
     fn get_screen_memory(&self) -> Result<Vec<u8>> {
         self.base_client.get_mem_slice(0x400, 0x07e8)

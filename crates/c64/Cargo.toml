@@ -12,7 +12,7 @@ colored = "2"
 substring = "1.4.5"
 env_logger = "0.10.0"
 keyboard-types = { version="0.7", features=["webdriver"] }
-event_emitter = { path="../../../../github/event_emitter/" }
+log = "0.4.20"
 
 [lib]
 name = "c64"
