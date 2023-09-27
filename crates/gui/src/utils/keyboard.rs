@@ -59,14 +59,20 @@ pub fn key_event_from_char(c: char, modifiers: Modifiers) -> KeyboardEvent {
 }
 
 pub fn key_event_from_ckey(ckey: CKey, modifiers: Modifiers) -> KeyboardEvent {
-    C64_SPECIAL_KEYS.get(&ckey).map_or(KeyboardEvent::default(), |(key, code, shift)|{
-        KeyboardEvent {
-            key: key.clone(),
-            code: *code,
-            modifiers: modifiers.union(if *shift { Modifiers::SHIFT } else { Modifiers::empty() }),
-            ..Default::default()
-        }
-    })
+    C64_SPECIAL_KEYS
+        .get(&ckey)
+        .map_or(KeyboardEvent::default(), |(key, code, shift)| {
+            KeyboardEvent {
+                key: key.clone(),
+                code: *code,
+                modifiers: modifiers.union(if *shift {
+                    Modifiers::SHIFT
+                } else {
+                    Modifiers::empty()
+                }),
+                ..Default::default()
+            }
+        })
 }
 
 pub fn map_key_event(e: Event) -> KeyboardEvent {

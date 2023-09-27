@@ -14,14 +14,6 @@ impl MOS6502Memory {
             rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
         }
     }
-
-    pub fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
-        let mut idx = addr as usize;
-        for byte in data.iter() {
-            self.rom[idx] = *byte;
-            idx += 1;
-        }
-    }
 }
 
 impl Memory for MOS6502Memory {
@@ -53,5 +45,13 @@ impl Memory for MOS6502Memory {
         let [high, low] = val.to_be_bytes();
         self.ram[idx] = low;
         self.ram[idx + 1] = high; // little endian!
+    }
+
+    fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
+        let mut idx = addr as usize;
+        for byte in data.iter() {
+            self.rom[idx] = *byte;
+            idx += 1;
+        }
     }
 }

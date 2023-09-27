@@ -1,5 +1,5 @@
 ; Calculate 8x8 multiplication
-; Example based on 
+; Example based on
 ; https://www.lysator.liu.se/~nisse/misc/6502-mul.html
 
         JMP start

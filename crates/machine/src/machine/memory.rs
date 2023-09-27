@@ -5,6 +5,7 @@ pub trait Memory {
     // check https://www.c64-wiki.com/wiki/Bank_Switching for details
     fn mem(&self, addr: Addr) -> &[u8];
     fn init_rom(&mut self, data: &[u8]);
+    fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]);
 
     fn get_byte(&self, addr: Addr) -> u8 {
         self.mem(addr)[addr as usize]
@@ -23,7 +24,7 @@ pub trait Memory {
         let mut idx = addr;
         for byte in data.iter() {
             self.set_byte(idx, *byte);
-            idx += 1;
+            idx = idx.wrapping_add(1);
         }
     }
 

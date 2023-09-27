@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
-use super::{C64KeyCode, C64Memory, CIA1, CIA6526, VIC_II};
+use super::{C64Memory, CIA1, CIA6526, VIC_II};
+use crate::key_utils::C64KeyCode;
 use machine::{
     debugger::{DebugMachine, Debugger, DebuggerState},
     impl_reg_setter,
@@ -28,7 +29,7 @@ impl C64 {
             config,
             mos6510: MOS6502::new(),
             mem: Box::new(C64Memory::new(size)),
-            gpu: VIC_II {},
+            gpu: VIC_II::new(),
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,
             cycle: 0,
@@ -45,14 +46,8 @@ impl C64 {
         self.gpu.print_screen(&self.memory());
     }
 
-    pub fn get_screen_memory(&self) -> String {
-        let mut chars = String::new();
-        for i in 0x0400..0x07e8 {
-            let sc = self.get_byte(i);
-            let ch = VIC_II::to_ascii(sc);
-            chars.push(ch);
-        }
-        chars
+    pub fn get_screen_memory(&self) -> Vec<u8> {
+        self.memory().fragment(0x0400, 0x07e8)
     }
 
     pub fn key_down(&mut self, ck: C64KeyCode) {
@@ -73,8 +68,10 @@ impl C64 {
 
     pub fn send_keys(&mut self, vec: &Vec<C64KeyCode>, is_down: bool) {
         vec.iter().for_each(|kc: &C64KeyCode| {
-            if is_down { self.key_down(*kc) } else {
-self.key_up(*kc)
+            if is_down {
+                self.key_down(*kc)
+            } else {
+                self.key_up(*kc)
             };
         });
     }

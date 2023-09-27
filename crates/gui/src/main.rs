@@ -87,7 +87,7 @@ fn update_ui(state: &MachineState, s: &mut Cursive) {
     });
 
     s.call_on_name("machine_screen", move |view: &mut MachineScreen| {
-        view.set_state(screen);
+        view.set_state(screen, state.character_set);
     });
 
     update_asm_view(s, &state.last_op);
@@ -99,6 +99,11 @@ fn init_c64() -> C64 {
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
         c64.memory_mut().init_rom(&rom[..]);
+    }
+
+    if let Some(character_rom) = args.character_rom {
+        let rom = get_file_as_byte_vec(&character_rom);
+        c64.memory_mut().init_rom_at_addr(0xd000, &rom[..]);
     }
 
     if let Some(ram_file) = args.ram {
@@ -235,4 +240,3 @@ fn create_toggle_handler<V: ViewWrapper>(name: &str) -> impl Fn(&mut Cursive) + 
         });
     }
 }
-

@@ -1,5 +1,6 @@
 #![allow(non_camel_case_types)]
 
+use crate::key_utils::screen_code_to_ascii;
 use colored::*;
 use machine::Memory;
 
@@ -22,31 +23,26 @@ use machine::Memory;
  * #6C5EB5 mid blue
  * #959595 light grey
  */
-
-// see https://c64os.com/post/c64screencodes
-// const SCREEN_CODES: &str = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-//                             -abcdefghijklmnopqrstuvwxyz[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-//                             @abcdefghijklmnopqrstuvwxyz[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-//                             -ABCDEFGHIJKLMNOPQRSTUVWXYZ····································_";
-
-const SCREEN_CODES: &str = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-                            -abcdefghijklmnopqrstuvwxyz[£]↑← !\"#$%&'()*+,-./0123456789:;<=>?\
-                            @abcdefghijklmnopqrstuvwxyz[£]↑←█!\"#$%&'()*+,-./0123456789:;<=>?\
-                            -ABCDEFGHIJKLMNOPQRSTUVWXYZ····································_";
-pub struct VIC_II {}
+pub struct VIC_II {
+    char_set: u8,
+}
 
 impl VIC_II {
+    pub fn new() -> Self {
+        VIC_II { char_set: 0x14 }
+    }
+
     pub fn print_screen(&self, mem: &Box<dyn Memory + Send>) {
-        let chars: Vec<char> = SCREEN_CODES.chars().collect();
         let mut n = 0;
         println!();
         println!("{}", " ".repeat(44).on_truecolor(0x6c, 0x5e, 0xb5));
         print!("{}", "  ".on_truecolor(0x6c, 0x5e, 0xb5));
         for i in 0x0400..0x07e8 {
-            let sc = mem.get_byte(i) as usize;
+            let sc = mem.get_byte(i);
             print!(
                 "{}",
-                format!("{}", chars[sc]).on_truecolor(0x35, 0x28, 0x79)
+                format!("{}", screen_code_to_ascii(&sc, self.char_set))
+                    .on_truecolor(0x35, 0x28, 0x79)
             );
             n += 1;
             if n % 40 == 0 {
@@ -59,20 +55,7 @@ impl VIC_II {
         println!("              ");
     }
 
-    pub fn to_ascii(screen_code: u8) -> char {
-        let chars: Vec<char> = SCREEN_CODES.chars().collect();
-        chars[screen_code as usize]
-    }
-
-    pub fn to_screen_code(ch: char) -> u8 {
-        for (i, c) in SCREEN_CODES.chars().enumerate() {
-            if ch == c {
-                return i as u8;
-            }
-        }
-        0
-    }
-
+    // probably nonsense
     pub fn ascii_to_petscii(ch: char) -> u8 {
         let c = u64::from(ch) as u8;
         if c >= 32 && c <= 93 {

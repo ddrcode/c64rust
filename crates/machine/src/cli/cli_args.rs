@@ -43,6 +43,9 @@ pub struct Args {
 
     #[arg(short = 'v', long)]
     pub verbose: bool,
+
+    #[arg(long = "char-rom")]
+    pub character_rom: Option<PathBuf>,
 }
 
 impl From<&Args> for MachineConfig {

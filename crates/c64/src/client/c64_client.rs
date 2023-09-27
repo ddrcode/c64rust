@@ -1,5 +1,5 @@
-use crate::c64::{C64KeyCode, C64};
-use crate::key_utils::ui_event_to_c64_key_codes;
+use crate::c64::C64;
+use crate::key_utils::{ui_event_to_c64_key_codes, C64KeyCode};
 use keyboard_types::{KeyState, KeyboardEvent};
 use machine::client::*;
 use machine::debugger::DebuggerState;
@@ -17,7 +17,8 @@ pub struct MachineState {
     pub registers: Registers,
     pub last_op: String,
     pub memory_slice: Vec<u8>,
-    pub screen: String,
+    pub screen: Vec<u8>,
+    pub character_set: u8,
 }
 
 pub struct C64Client {
@@ -53,11 +54,13 @@ impl C64Client {
             self.debugger_state.observed_mem.end,
         );
         let screen = c64.get_screen_memory();
+        let character_set = c64.get_byte(0xd018); // https://www.c64-wiki.com/wiki/Character_set
         MachineState {
             registers,
             last_op,
             memory_slice,
             screen,
+            character_set,
         }
     }
 }
@@ -66,7 +69,7 @@ impl InteractiveClient for C64Client {
     type Error = ClientError;
 
     fn send_key(&mut self, event: KeyboardEvent) {
-        log::info!("Sending key {:?}", event);
+        log::debug!("Sending key {:?}", event);
         if event.state == KeyState::Up {
             log::error!("Can't send key-up events on this client.");
             return ();
@@ -81,7 +84,7 @@ impl InteractiveClient for C64Client {
         up_event.state = KeyState::Up;
         let arc = self.base_client.mutex();
         thread::spawn(move || {
-            thread::sleep(Duration::from_millis(25));
+            thread::sleep(Duration::from_millis(80));
             lock::<C64>(&arc).send_keys(&ui_event_to_c64_key_codes(&up_event), false);
         });
     }
