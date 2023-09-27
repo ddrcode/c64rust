@@ -1,10 +1,11 @@
 use super::UIState;
 use cursive::{
     event::{EventResult, Key},
+    theme::Style,
     traits::{Nameable, With},
-    view::{scroll::Scroller, Scrollable, View, ScrollStrategy},
+    view::{scroll::Scroller, ScrollStrategy, Scrollable, View},
     views::*,
-    Cursive, theme::{ Style},
+    Cursive,
 };
 
 pub fn update_asm_view(s: &mut Cursive, line: &String) {
@@ -23,7 +24,6 @@ pub fn update_asm_view(s: &mut Cursive, line: &String) {
         view.set_content(lines);
     });
 }
-
 
 pub fn get_asm_view() -> impl View {
     let style = Style::default();
@@ -48,5 +48,10 @@ pub fn get_asm_view() -> impl View {
             }
             Some(EventResult::Consumed(None))
         });
-    ResizedView::with_fixed_height(10, PaddedView::lrtb(3, 0, 0, 0, view))
+
+    HideableView::new(ResizedView::with_fixed_height(
+        10,
+        PaddedView::lrtb(3, 0, 0, 0, view),
+    ))
+    .with_name("asm_wrapper")
 }

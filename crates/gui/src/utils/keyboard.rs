@@ -1,6 +1,6 @@
-use std::str::FromStr;
 use cursive::event::{Event, EventResult, Key as CKey};
 use keyboard_types::{Code, Key, KeyState, KeyboardEvent, Modifiers};
+use std::str::FromStr;
 
 pub fn char_to_code(c: char) -> Code {
     let code = if c.is_ascii_alphabetic() {

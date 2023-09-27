@@ -8,6 +8,7 @@ pub struct Keyboard {
 
 // https://www.c64-wiki.com/wiki/Keyboard_code
 #[allow(non_camel_case_types, dead_code)]
+#[derive(Clone, Copy)]
 pub enum C64KeyCode {
     Delete = 0x00,
     Return = 0x01,
@@ -81,10 +82,10 @@ impl Into<u8> for C64KeyCode {
     }
 }
 
-impl From<char> for C64KeyCode {
-    fn from(ch: char) -> Self {
+impl C64KeyCode {
+    pub fn from_char(ch: char) -> Option<Self> {
         use C64KeyCode::*;
-        match ch {
+        Some(match ch {
             'a' => Key_A,
             'b' => Key_B,
             'c' => Key_C,
@@ -129,8 +130,8 @@ impl From<char> for C64KeyCode {
             '-' => Minus,
             '=' => Equal,
             ' ' => Space,
-            _ => Pound, // :-)
-        }
+            _ => return None,
+        })
     }
 }
 
@@ -264,5 +265,3 @@ impl Keyboard {
         }
     }
 }
-
-

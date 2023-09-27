@@ -10,10 +10,11 @@ use crate::gui::*;
 use c64::{C64Client, MachineState, C64};
 use clap::Parser;
 use cursive::{
-    event::{Key, Event},
+    event::{Event, Key},
     logger, menu,
-    views::{Canvas, TextView},
-    view::{ViewWrapper},
+    view::ViewWrapper,
+    views::{self, NamedView, OnEventView, ScrollView},
+    views::{Canvas, Dialog, HideableView, PaddedView, ResizedView, TextView},
     Cursive, CursiveRunnable,
 };
 use cursive_hexview::HexView;
@@ -34,10 +35,11 @@ fn main() -> Result<(), ClientError> {
     colored::control::set_override(false);
     init_log();
 
-    let mut c64_client = C64Client::new(init_c64());
-    let mut siv = init_ui(c64_client.mutex());
+    let c64_client = C64Client::new(init_c64());
+    let client = Arc::new(Mutex::new(c64_client));
+    let mut siv = init_ui(client.clone());
 
-    c64_client.start()?;
+    lock(&client).start().unwrap_or_else(handle_error);
 
     let mut prev_state = MachineState::default();
     let mut runner = siv.runner();
@@ -47,23 +49,25 @@ fn main() -> Result<(), ClientError> {
         if !runner.is_running() {
             break;
         }
-        let state = c64_client.step();
+        let state = lock(&client).step();
         if state != prev_state {
             update_ui(&state, &mut runner);
             runner.refresh();
             prev_state = state;
         }
-        handle_user_data(&mut c64_client, &mut runner);
+        handle_user_data(client.clone(), &mut runner);
         thread::sleep(GUI_REFRESH);
     }
 
-    c64_client.stop()
+    lock(&client.clone()).stop()
 }
 
-fn handle_user_data(client: &mut C64Client, s: &mut Cursive) {
+fn handle_user_data(client: Arc<Mutex<C64Client>>, s: &mut Cursive) {
     if let Some(ud) = s.user_data::<UIState>() {
-        client.debugger_state.observed_mem = ud.addr_from..(ud.addr_from + 200);
-        ud.key.as_ref().map(|key| client.send_key(key.clone()));
+        lock(&client).debugger_state.observed_mem = ud.addr_from..(ud.addr_from + 200);
+        ud.key
+            .as_ref()
+            .map(|key| lock(&client).send_key(key.clone()));
         ud.key = None;
     }
 }
@@ -105,41 +109,48 @@ fn init_c64() -> C64 {
     c64
 }
 
-fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
+fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
     let mut siv = cursive::default();
     set_theme(&mut siv);
     siv.set_autorefresh(false);
     siv.set_autohide_menu(false);
 
     let quit_handler = {
-        let arc = Arc::clone(&c64);
+        let arc = client.clone();
         move |s: &mut Cursive| {
             s.quit();
-            lock(&arc).stop();
+            lock(&arc).stop().unwrap_or_else(handle_error);
         }
     };
 
     let debug_handler = {
         use machine::MachineStatus::*;
-        let arc = Arc::clone(&c64);
+        let arc = Arc::clone(&client);
         move |_s: &mut Cursive| {
             let mut c64 = lock(&arc);
-            match c64.get_status() {
-                Running => c64.debug(),
+            (match c64.get_status() {
+                Running => c64.pause(),
                 Debug => c64.resume(),
-                _ => (),
-            };
+                _ => Ok(()),
+            })
+            .unwrap_or_else(handle_error);
         }
     };
 
     let next_handler = {
-        let arc = Arc::clone(&c64);
+        let arc = client.clone();
         move |_s: &mut Cursive| {
-            lock(&arc).next();
+            lock(&arc).next().unwrap_or_else(|err| {
+                handle_error(err);
+                false
+            });
         }
     };
 
     let screen = main_screen();
+
+    type AsmIsEasierThanThis =
+        ResizedView<PaddedView<OnEventView<ScrollView<NamedView<TextView>>>>>;
 
     siv.menubar()
         .add_subtree(
@@ -151,23 +162,30 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         )
         .add_subtree(
             "Monitor",
-            menu::Tree::new()
-                .leaf("Go to address [F6]", |s| s.add_layer(address_dialog()))
+            menu::Tree::new().leaf("Go to address [F6]", |s| s.add_layer(address_dialog())),
         )
         .add_subtree(
             "View",
             menu::Tree::new()
-                .leaf("Hide memory view", |_s| ())
-                .leaf("Hide processor status", |_s| ()),
+                .leaf("Toggle memory view", |_s| ())
+                .leaf("Toggle processor status", |_s| ())
+                .leaf(
+                    "Toggle disassembly view [F2]",
+                    create_toggle_handler::<AsmIsEasierThanThis>("asm_wrapper"),
+                ),
         )
         .add_leaf("Quit", quit_handler.clone());
 
-    siv.add_global_callback(Key::Esc, |s| s.select_menubar());
+    siv.add_global_callback(Key::F9, |s| s.select_menubar());
     siv.add_global_callback(Key::F10, quit_handler);
     siv.add_global_callback(Key::F6, |s| s.add_layer(address_dialog()));
     siv.add_global_callback(Key::F7, debug_handler);
     siv.add_global_callback(Key::F8, next_handler);
     siv.add_global_callback(Event::Char('`'), cursive::Cursive::toggle_debug_console);
+    siv.add_global_callback(
+        Key::F2,
+        create_toggle_handler::<AsmIsEasierThanThis>("asm_wrapper"),
+    );
 
     siv.add_layer(screen);
     siv.set_user_data(UIState::new());
@@ -201,3 +219,19 @@ fn init_log() {
         _ => log::set_max_level(LevelFilter::Off),
     };
 }
+
+fn handle_error(err: ClientError) {
+    log::error!("An error occured on emulator side: {}", err);
+    Dialog::info("The emulator has failed!");
+}
+
+fn create_toggle_handler<V: ViewWrapper>(name: &str) -> impl Fn(&mut Cursive) + '_ {
+    |s| {
+        log::error!("calling!");
+        s.call_on_name(name, |view: &mut HideableView<V>| {
+            let visible = view.is_visible();
+            view.set_visible(!visible);
+        });
+    }
+}
+

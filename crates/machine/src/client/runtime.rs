@@ -41,6 +41,7 @@ impl<M: Machine> Runtime<M> {
         while status != Stopped {
             {
                 let mut machine = lock::<M>(&self.mutex);
+                status = machine.get_status();
                 if status == Debug {
                     continue;
                 }
@@ -53,6 +54,7 @@ impl<M: Machine> Runtime<M> {
                         machine.debug();
                     }
                 }
+                // status must be checked 2nd time after next() - in case of BRK
                 status = machine.get_status();
             }
             self.irq_loop();

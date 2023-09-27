@@ -1,4 +1,5 @@
-use crate::c64::C64;
+use crate::c64::{ C64, C64KeyCode };
+use crate::key_utils::ui_event_to_c64_key_codes;
 use keyboard_types::KeyboardEvent;
 use machine::client::*;
 use machine::debugger::DebuggerState;
@@ -61,8 +62,12 @@ impl C64Client {
 impl InteractiveClient for C64Client {
     type Error = ClientError;
 
-    fn send_key(&mut self, key: KeyboardEvent) {
-        log::info!("Sending key {:?}", key);
+    fn send_key(&mut self, event: KeyboardEvent) {
+        log::info!("Sending key {:?}", event);
+        let mut c64 = self.base_client.lock();
+        ui_event_to_c64_key_codes(&event).iter().for_each(|kc: &C64KeyCode| {
+            c64.send_key(*kc);
+        });
     }
 
     fn get_screen_memory(&self) -> Result<Vec<u8>> {
