@@ -1,11 +1,14 @@
-use crate::c64::{ C64, C64KeyCode };
+use crate::c64::{C64KeyCode, C64};
 use crate::key_utils::ui_event_to_c64_key_codes;
-use keyboard_types::KeyboardEvent;
+use keyboard_types::{KeyState, KeyboardEvent};
 use machine::client::*;
 use machine::debugger::DebuggerState;
 use machine::mos6502::Registers;
+use machine::utils::lock;
 use machine::{Addr, Machine, MachineStatus};
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 type Result<T> = std::result::Result<T, ClientError>;
 
@@ -64,9 +67,22 @@ impl InteractiveClient for C64Client {
 
     fn send_key(&mut self, event: KeyboardEvent) {
         log::info!("Sending key {:?}", event);
+        if event.state == KeyState::Up {
+            log::error!("Can't send key-up events on this client.");
+            return ();
+        }
+
+        // key down
         let mut c64 = self.base_client.lock();
-        ui_event_to_c64_key_codes(&event).iter().for_each(|kc: &C64KeyCode| {
-            c64.send_key(*kc);
+        c64.send_keys(&ui_event_to_c64_key_codes(&event), true);
+
+        // key up (simulated with timeout)
+        let mut up_event = event.clone();
+        up_event.state = KeyState::Up;
+        let arc = self.base_client.mutex();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(25));
+            lock::<C64>(&arc).send_keys(&ui_event_to_c64_key_codes(&up_event), false);
         });
     }
 

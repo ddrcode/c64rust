@@ -1,6 +1,36 @@
-use cursive::event::{Event, EventResult, Key as CKey};
+use cursive::event::{Event, Key as CKey};
 use keyboard_types::{Code, Key, KeyState, KeyboardEvent, Modifiers};
+use std::collections::HashMap;
 use std::str::FromStr;
+
+lazy_static! {
+    static ref C64_PUNCTATION_KEYS: Vec<char> = String::from("+-=:;,./*@ £").chars().collect();
+    static ref C64_SHIFTED_PUNCTATION_KEYS: HashMap<char, char> = HashMap::from([
+        ('!', '1'),
+        ('@', '2'),
+        ('#', '3'),
+        ('$', '4'),
+        ('%', '5'),
+        ('&', '6'),
+        ('\'', '7'),
+        ('(', '8'),
+        (')', '9'),
+        ('<', ','),
+        ('>', '.'),
+        ('?', '/'),
+        ('[', ':'),
+        (']', ';'),
+    ]);
+    static ref C64_SPECIAL_KEYS: HashMap<CKey, (Key, Code, bool)> = HashMap::from([
+        (CKey::Enter, (Key::Enter, Code::Enter, false)),
+        (CKey::Backspace, (Key::Backspace, Code::Backspace, false)),
+        (CKey::Home, (Key::Home, Code::Home, false)),
+        (CKey::Up, (Key::ArrowDown, Code::ArrowDown, true)),
+        (CKey::Down, (Key::ArrowDown, Code::ArrowDown, false)),
+        (CKey::Right, (Key::ArrowRight, Code::ArrowRight, false)),
+        (CKey::Left, (Key::ArrowRight, Code::ArrowRight, true)),
+    ]);
+}
 
 pub fn char_to_code(c: char) -> Code {
     let code = if c.is_ascii_alphabetic() {
@@ -28,35 +58,27 @@ pub fn key_event_from_char(c: char, modifiers: Modifiers) -> KeyboardEvent {
     }
 }
 
-pub fn ckey_into_key(key: CKey) -> (Key, Code) {
-    match key {
-        CKey::Enter => (Key::Enter, Code::Enter),
-        CKey::Backspace => (Key::Backspace, Code::Backspace),
-        _ => {
-            log::warn!("Can't convert Cursive key: {:?}", key);
-            (Key::Unidentified, Code::Unidentified)
-        }
-    }
-}
-
 pub fn key_event_from_ckey(ckey: CKey, modifiers: Modifiers) -> KeyboardEvent {
-    let (key, code) = ckey_into_key(ckey);
-    KeyboardEvent {
-        key,
-        code,
-        modifiers,
-        ..Default::default()
-    }
+    C64_SPECIAL_KEYS.get(&ckey).map_or(KeyboardEvent::default(), |(key, code, shift)|{
+        KeyboardEvent {
+            key: key.clone(),
+            code: *code,
+            modifiers: modifiers.union(if *shift { Modifiers::SHIFT } else { Modifiers::empty() }),
+            ..Default::default()
+        }
+    })
 }
 
 pub fn map_key_event(e: Event) -> KeyboardEvent {
     let no_key = KeyboardEvent::default();
     match e {
         Event::Char(c) => {
-            if c.is_ascii_lowercase() || c.is_ascii_digit() {
+            if c.is_ascii_lowercase() || c.is_ascii_digit() || C64_PUNCTATION_KEYS.contains(&c) {
                 key_event_from_char(c, Modifiers::empty())
             } else if c.is_ascii_uppercase() {
-                key_event_from_char(c, Modifiers::SHIFT)
+                key_event_from_char(c.to_ascii_lowercase(), Modifiers::SHIFT)
+            } else if C64_SHIFTED_PUNCTATION_KEYS.contains_key(&c) {
+                key_event_from_char(C64_SHIFTED_PUNCTATION_KEYS[&c], Modifiers::SHIFT)
             } else {
                 no_key
             }

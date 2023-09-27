@@ -1,8 +1,5 @@
-const KEY_DOWN_CYCLES: u8 = 2;
-
 pub struct Keyboard {
     last_keys: Vec<u8>,
-    key_cycles: u8,
     scan_data: Box<[(u8, u8, u8)]>,
 }
 
@@ -128,7 +125,11 @@ impl C64KeyCode {
             ';' => Semicolon,
             ':' => Colon,
             '-' => Minus,
+            '+' => Plus,
             '=' => Equal,
+            '£' => Pound,
+            '@' => At,
+            '*' => Asterix,
             ' ' => Space,
             _ => return None,
         })
@@ -140,7 +141,6 @@ impl Keyboard {
     pub fn new() -> Self {
         Keyboard {
             last_keys: Vec::new(),
-            key_cycles: 0,
             scan_data: Box::new([
                 (0x3f, 0x7f, 0x7f),
                 (0x3e, 0x7f, 0xbf),
@@ -210,18 +210,17 @@ impl Keyboard {
         }
     }
 
-    pub fn cycle(&mut self) {
-        if self.last_keys.len() > 0 {
-            if self.key_cycles == 1 {
-                self.last_keys.drain(..);
-            }
-            self.key_cycles -= 1;
+    pub fn key_down(&mut self, ck: u8) {
+        if !self.last_keys.contains(&ck) {
+            self.last_keys.push(ck);
         }
     }
 
-    pub fn key_down(&mut self, ch: u8) {
-        self.last_keys.push(ch);
-        self.key_cycles = KEY_DOWN_CYCLES;
+    pub fn key_up(&mut self, ck: u8) {
+        let key = self.last_keys.iter().enumerate().find(|(_, v)| ck == **v);
+        if let Some((i, _)) = key {
+            self.last_keys.remove(i);
+        }
     }
 
     fn is_column_scan(&self, c: u8) -> bool {

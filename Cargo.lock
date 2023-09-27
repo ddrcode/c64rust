@@ -398,6 +398,7 @@ dependencies = [
  "cursive",
  "cursive_hexview",
  "keyboard-types",
+ "lazy_static",
  "log",
  "machine",
  "substring",

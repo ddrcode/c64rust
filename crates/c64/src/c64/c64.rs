@@ -55,7 +55,7 @@ impl C64 {
         chars
     }
 
-    pub fn send_key(&mut self, ck: C64KeyCode) {
+    pub fn key_down(&mut self, ck: C64KeyCode) {
         self.cia1.keyboard.key_down(ck as u8);
 
         // let sc = VIC_II::ascii_to_petscii(ch);
@@ -67,9 +67,16 @@ impl C64 {
         // self.machine.memory_mut().set_byte(0xcb, 3);
     }
 
-    pub fn send_key_with_modifier(&mut self, ck: C64KeyCode, modifier: C64KeyCode) {
-        self.cia1.keyboard.key_down(modifier as u8);
-        self.cia1.keyboard.key_down(ck as u8);
+    pub fn key_up(&mut self, ck: C64KeyCode) {
+        self.cia1.keyboard.key_up(ck as u8);
+    }
+
+    pub fn send_keys(&mut self, vec: &Vec<C64KeyCode>, is_down: bool) {
+        vec.iter().for_each(|kc: &C64KeyCode| {
+            if is_down { self.key_down(*kc) } else {
+self.key_up(*kc)
+            };
+        });
     }
 
     pub fn is_io(&self, addr: Addr) -> bool {

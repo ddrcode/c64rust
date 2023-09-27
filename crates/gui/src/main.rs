@@ -1,4 +1,5 @@
-// #[macro_use]
+#[macro_use]
+extern crate lazy_static;
 extern crate colored;
 extern crate cursive_hexview;
 extern crate log;

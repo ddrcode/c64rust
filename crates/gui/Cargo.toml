@@ -17,6 +17,7 @@ cursive_hexview = { git="https://github.com/hellow554/cursive_hexview.git" }
 substring = "1.4.5"
 log = "0.4.20"
 keyboard-types = { version="0.7", features=["webdriver"] }
+lazy_static = "1.4.0"
 
 [[bin]]
 name = "gui"
