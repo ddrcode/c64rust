@@ -1,20 +1,39 @@
 use crate::c64::C64;
-use keyboard_types::KeyboardEvent;
-use machine::client::{Client, ClientError, DirectClient, InteractiveClient, NonInteractiveClient};
+use crate::key_utils::{ui_event_to_c64_key_codes, C64KeyCode};
+use keyboard_types::{KeyState, KeyboardEvent};
+use machine::client::*;
+use machine::debugger::DebuggerState;
 use machine::mos6502::Registers;
-use machine::{Addr, MachineStatus};
+use machine::utils::lock;
+use machine::{Addr, Machine, MachineStatus};
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 type Result<T> = std::result::Result<T, ClientError>;
 
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct MachineState {
+    pub registers: Registers,
+    pub last_op: String,
+    pub memory_slice: Vec<u8>,
+    pub screen: Vec<u8>,
+    pub character_set: u8,
+}
+
 pub struct C64Client {
-    base_client: DirectClient<C64>, // awful!!!
+    base_client: DirectClient<C64>,    // awful!!!
+    pub debugger_state: DebuggerState, // event_emitter: EventEmitter,
 }
 
 impl C64Client {
     pub fn new(c64: C64) -> Self {
         C64Client {
             base_client: DirectClient::new(c64),
+            debugger_state: DebuggerState {
+                observed_mem: (0..200),
+                ..Default::default()
+            },
         }
     }
 
@@ -25,12 +44,50 @@ impl C64Client {
     pub fn mutex(&self) -> Arc<Mutex<C64>> {
         self.base_client.mutex()
     }
+
+    pub fn step(&self) -> MachineState {
+        let c64 = self.base_client.lock();
+        let registers = c64.cpu().registers.clone();
+        let last_op = c64.disassemble(&c64.last_op, true);
+        let memory_slice = c64.memory().fragment(
+            self.debugger_state.observed_mem.start,
+            self.debugger_state.observed_mem.end,
+        );
+        let screen = c64.get_screen_memory();
+        let character_set = c64.get_byte(0xd018); // https://www.c64-wiki.com/wiki/Character_set
+        MachineState {
+            registers,
+            last_op,
+            memory_slice,
+            screen,
+            character_set,
+        }
+    }
 }
 
 impl InteractiveClient for C64Client {
     type Error = ClientError;
 
-    fn send_key(&mut self, key: KeyboardEvent) {}
+    fn send_key(&mut self, event: KeyboardEvent) {
+        log::debug!("Sending key {:?}", event);
+        if event.state == KeyState::Up {
+            log::error!("Can't send key-up events on this client.");
+            return ();
+        }
+
+        // key down
+        let mut c64 = self.base_client.lock();
+        c64.send_keys(&ui_event_to_c64_key_codes(&event), true);
+
+        // key up (simulated with timeout)
+        let mut up_event = event.clone();
+        up_event.state = KeyState::Up;
+        let arc = self.base_client.mutex();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(80));
+            lock::<C64>(&arc).send_keys(&ui_event_to_c64_key_codes(&up_event), false);
+        });
+    }
 
     fn get_screen_memory(&self) -> Result<Vec<u8>> {
         self.base_client.get_mem_slice(0x400, 0x07e8)

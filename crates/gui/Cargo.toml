@@ -5,7 +5,6 @@ description = "DDR's Commodore 64 emulator"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 machine = { path="../machine/" }
@@ -17,8 +16,8 @@ cursive_hexview = { git="https://github.com/hellow554/cursive_hexview.git" }
 # cursive_hexview = "0.7"
 substring = "1.4.5"
 log = "0.4.20"
-env_logger = "0.10.0"
-debounce = "0.2.2"
+keyboard-types = { version="0.7", features=["webdriver"] }
+lazy_static = "1.4.0"
 
 [[bin]]
 name = "gui"

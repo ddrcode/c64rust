@@ -1,7 +1,8 @@
+use serde_derive::Serialize;
 use std::fmt;
 
 // source: http://6502.org/tutorials/6502opcodes.html
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize)]
 pub enum Mnemonic {
     ADC,
     AND,

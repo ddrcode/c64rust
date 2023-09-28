@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate colored;
 
 use clap::Parser;
@@ -7,6 +9,7 @@ use std::path::PathBuf;
 
 mod c64;
 mod client;
+mod key_utils;
 
 use crate::c64::C64;
 use crate::client::C64Client;

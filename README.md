@@ -1,11 +1,12 @@
 # c64rust
 
-This is a simple (and incomplete) CMOS6502 and C64 emulator implemented in Rust. The main purpose of this project is to
+This is a simple (and incomplete) CMOS6502 and C64 emulator/debugger implemented in Rust.
+The main purpose of this project is to
 practice my Rust skills and turn into reality my old dream of building an emulator.
 
 When built, the project provides three binaries (in `target/debug`)
 
-- `machine`: a generic 6502 emulator (CPU and memory only)
+- `machine`: a generic 6502 emulator (CPU and memory only) for CLI,
 - `c64`: CLI-based C64 emulator built on top of the above - good for testing: it
   can execute a binary and exit (on BRK or specific address) with processor status
   (or full disassembly)
@@ -24,7 +25,7 @@ You are welcome to contribute and help to make it an alternative C64 OS :-)
 But for now, just hit:
 `cargo run --bin gui -- --rom rom/hello.rom`
 
-Running options:
+### Running options:
 
 ```
 Options:
@@ -49,25 +50,27 @@ Options:
 
 - MOS6502 (6510) instruction set fully implemented (no illegal opcodes)
 - C64 memory addressing implemented (RAM/ROM switching, with partial CIA)
-- The emulator boots with provided C64 ROM
+- The emulator boots with provided C64 ROM (some cartridges work too)
 - Text client with keyboard emulation - possible to run BASIC commands
-- The client has integrated simple debugging features: memory view and processor state
+- The client has integrated simple debugging features: memory view, disassembler, and processor state
+- Step-by-step debugging
 
 This is the result of running current version of the emulator:
 
-<img src="screenshots/debugger.png?raw=true" width="800"/>
+<img src="screenshots/disassembler.png?raw=true" width="800"/>
 
 ## Features and goals
 
 ### Short-term / realistic goals
 
-- Clock emulation (currently it ticks at host speed; it's not an issue as there is no emulation of
+- Clock emulation (right now the emu ticks at host speed; it's not an issue as there is no emulation of
   other devices like GPU/VIC II, so sync is not required).
 - Basic CIA features (other than the keyboard)
 
 ### Ambitions
 
 - VIC II graphics (without sprites and smooth scrolling)
+- Improved debugger (variables, breakpoints)
 
 ### Long-term goals
 
@@ -90,9 +93,18 @@ at the bottom-right of the scrren show zeros, which - according to the documenta
 "Possible 6526 CIA Failure". Well, it's quite right as CIA is not implemented at this stage
 at all (apart keyboard support).
 
-<img src="screenshots/hello-os.png?raw=true" width="300"/>
+<img src="screenshots/diagnostic.png?raw=true" width="300"/>
 
-And here is [HelloOS](rom/): my beloved, work-in-progress, doing-absolutely-nothing, operating system for C64.
+Another diagnostic tool - this one - besides proving that I've found the right Unicode characters
+for C64 graphics keys, seems to be failing miserably. At least it's doing nithing (perhaps depends
+heavily on clock).
+
+<img src="screenshots/cli-emu.png?raw=true" width="300"/>
+
+This is how it looks like when run the raw 6502 "machine" emulator in CLI.
+It's configured as 1kB machine that starts loaded program at 0x200. The provided ROM
+is 6-byte jump vector setting the reset vector to 0x200. Some debugging
+is possible that way.
 
 ## Credits
 

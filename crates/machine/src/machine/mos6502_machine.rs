@@ -1,7 +1,7 @@
 use super::{
-    impl_reg_setter, MOS6502Memory, Machine, MachineConfig, MachineEvents, MachineStatus, Memory,
-    RegSetter,
+    impl_reg_setter, MOS6502Memory, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
+use crate::debugger::DebugMachine;
 use crate::mos6502::{execute_operation, Operation, MOS6502};
 use std::num::Wrapping;
 
@@ -9,7 +9,6 @@ pub struct MOS6502Machine {
     config: MachineConfig,
     mos6502: MOS6502,
     mem: Box<dyn Memory + Send>,
-    events: MachineEvents,
     status: MachineStatus,
 }
 
@@ -21,7 +20,6 @@ impl MOS6502Machine {
             config: config,
             mos6502: MOS6502::new(),
             mem: Box::new(MOS6502Memory::new(size)),
-            events: MachineEvents { on_next: None },
             status: MachineStatus::Stopped,
         }
     }
@@ -50,10 +48,6 @@ impl Machine for MOS6502Machine {
         &self.config
     }
 
-    fn get_events(&self) -> &MachineEvents {
-        &self.events
-    }
-
     fn get_status(&self) -> MachineStatus {
         self.status
     }
@@ -66,3 +60,5 @@ impl Machine for MOS6502Machine {
         execute_operation(&op, self)
     }
 }
+
+impl DebugMachine for MOS6502Machine {}

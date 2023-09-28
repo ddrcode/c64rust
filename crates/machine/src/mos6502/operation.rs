@@ -1,6 +1,7 @@
 use super::{AddressMode::*, Operand, OperationDef};
 use std::fmt;
 
+#[derive(Clone, Default)]
 pub struct Operation {
     pub def: OperationDef,
     pub operand: Option<Operand>,
@@ -10,9 +11,9 @@ pub struct Operation {
 impl Operation {
     pub fn new(def: OperationDef, operand: Option<Operand>, address: Option<u16>) -> Self {
         Operation {
-            def: def,
-            operand: operand,
-            address: address,
+            def,
+            operand,
+            address,
         }
     }
 }

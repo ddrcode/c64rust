@@ -41,6 +41,7 @@ impl<M: Machine> Runtime<M> {
         while status != Stopped {
             {
                 let mut machine = lock::<M>(&self.mutex);
+                status = machine.get_status();
                 if status == Debug {
                     continue;
                 }
@@ -48,14 +49,12 @@ impl<M: Machine> Runtime<M> {
                     if self.cycles > max_cycles {}
                 }
                 machine.next();
-                if let Some(on_next) = machine.get_events().on_next {
-                    on_next(&mut *machine, &self.cycles);
-                }
                 if let Some(addr) = machine.get_config().exit_on_addr {
                     if machine.PC() == addr {
                         machine.debug();
                     }
                 }
+                // status must be checked 2nd time after next() - in case of BRK
                 status = machine.get_status();
             }
             self.irq_loop();

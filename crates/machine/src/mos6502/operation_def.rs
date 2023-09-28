@@ -10,6 +10,20 @@ pub struct OperationDef {
     pub fn_name: String, // pub function: OpFn,
 }
 
+// Return NOP as default
+impl Default for OperationDef {
+    fn default() -> Self {
+        Self {
+            opcode: 0xea,
+            mnemonic: Mnemonic::NOP,
+            cycles: 2,
+            page_boundary_cycle: false,
+            address_mode: AddressMode::Implicit,
+            fn_name: "op_nop".to_owned(),
+        }
+    }
+}
+
 impl OperationDef {
     pub fn len(&self) -> u8 {
         match self.address_mode {

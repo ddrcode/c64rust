@@ -1,10 +1,12 @@
 #![allow(non_snake_case)]
 
-use super::{C64KeyCode, C64Memory, CIA1, CIA6526, VIC_II};
+use super::{C64Memory, CIA1, CIA6526, VIC_II};
+use crate::key_utils::C64KeyCode;
 use machine::{
+    debugger::{DebugMachine, Debugger, DebuggerState},
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Machine, MachineConfig, MachineEvents, MachineStatus, Memory, RegSetter,
+    Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
 use std::num::Wrapping;
 
@@ -12,28 +14,27 @@ pub struct C64 {
     config: MachineConfig,
     mos6510: MOS6502,
     mem: Box<dyn Memory + Send>,
-    events: MachineEvents,
     gpu: VIC_II,
     pub cia1: CIA1,
     status: MachineStatus,
+    cycle: u128, // FIXME remove!
+    pub debugger_state: DebuggerState,
+    pub last_op: Operation,
 }
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
         let size = config.ram_size.clone();
         C64 {
-            config: config,
+            config,
             mos6510: MOS6502::new(),
             mem: Box::new(C64Memory::new(size)),
-            events: MachineEvents {
-                on_next: Some(|machine, cycle| {
-                    // it simulates line drawing (to avoid infinite loop waiting for next line)
-                    machine.set_byte(0xd012, (*cycle % 255) as u8);
-                }),
-            },
-            gpu: VIC_II {},
+            gpu: VIC_II::new(),
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,
+            cycle: 0,
+            debugger_state: DebuggerState::default(),
+            last_op: Operation::default(),
         }
     }
 
@@ -45,17 +46,11 @@ impl C64 {
         self.gpu.print_screen(&self.memory());
     }
 
-    pub fn get_screen_memory(&self) -> String {
-        let mut chars = String::new();
-        for i in 0x0400..0x07e8 {
-            let sc = self.get_byte(i);
-            let ch = VIC_II::to_ascii(sc);
-            chars.push(ch);
-        }
-        chars
+    pub fn get_screen_memory(&self) -> Vec<u8> {
+        self.memory().fragment(0x0400, 0x07e8)
     }
 
-    pub fn send_key(&mut self, ck: C64KeyCode) {
+    pub fn key_down(&mut self, ck: C64KeyCode) {
         self.cia1.keyboard.key_down(ck as u8);
 
         // let sc = VIC_II::ascii_to_petscii(ch);
@@ -67,9 +62,18 @@ impl C64 {
         // self.machine.memory_mut().set_byte(0xcb, 3);
     }
 
-    pub fn send_key_with_modifier(&mut self, ck: C64KeyCode, modifier: C64KeyCode) {
-        self.cia1.keyboard.key_down(modifier as u8);
-        self.cia1.keyboard.key_down(ck as u8);
+    pub fn key_up(&mut self, ck: C64KeyCode) {
+        self.cia1.keyboard.key_up(ck as u8);
+    }
+
+    pub fn send_keys(&mut self, vec: &Vec<C64KeyCode>, is_down: bool) {
+        vec.iter().for_each(|kc: &C64KeyCode| {
+            if is_down {
+                self.key_down(*kc)
+            } else {
+                self.key_up(*kc)
+            };
+        });
     }
 
     pub fn is_io(&self, addr: Addr) -> bool {
@@ -101,10 +105,6 @@ impl Machine for C64 {
         &self.config
     }
 
-    fn get_events(&self) -> &MachineEvents {
-        &self.events
-    }
-
     fn get_status(&self) -> MachineStatus {
         self.status
     }
@@ -114,6 +114,7 @@ impl Machine for C64 {
     }
 
     fn execute_operation(&mut self, op: &Operation) -> u8 {
+        self.last_op = op.clone();
         execute_operation(&op, self)
     }
 
@@ -132,4 +133,29 @@ impl Machine for C64 {
             self.memory_mut().set_byte(addr, val)
         }
     }
+
+    fn post_next(&mut self, op: &Operation) {
+        // FIXME this is an ugly workaround to fix screen scannig
+        // value at 0d012 represents currently scanned line
+        // if not updated  - screen won't be refreshed
+        // it should be implemented at VIC level
+        self.cycle = self.cycle.wrapping_add(1);
+        self.set_byte(0xd012, (self.cycle % 255) as u8);
+
+        if self.get_status() == MachineStatus::Running && self.should_pause(op) {
+            self.start_debugging();
+        }
+    }
 }
+
+impl Debugger for C64 {
+    fn debugger_state(&self) -> &DebuggerState {
+        &self.debugger_state
+    }
+
+    fn machine(&self) -> &dyn Machine {
+        self
+    }
+}
+
+impl DebugMachine for C64 {}

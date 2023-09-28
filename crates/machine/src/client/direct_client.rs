@@ -25,7 +25,7 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
         }
     }
 
-    fn lock(&self) -> MutexGuard<T> {
+    pub fn lock(&self) -> MutexGuard<T> {
         lock::<T>(&self.machine_mtx)
     }
 

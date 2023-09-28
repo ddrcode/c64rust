@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use super::{Addr, MachineConfig, MachineEvents, Memory};
+use super::{Addr, MachineConfig, Memory};
 use crate::mos6502::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6502,
 };
@@ -25,7 +25,6 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn cpu(&self) -> &MOS6502;
     fn cpu_mut(&mut self) -> &mut MOS6502;
     fn get_config(&self) -> &MachineConfig;
-    fn get_events(&self) -> &MachineEvents;
     fn get_status(&self) -> MachineStatus;
     fn set_status(&mut self, status: MachineStatus);
 
@@ -82,7 +81,6 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     /// but it doesn't cycle the machine! Either self.next() must be called
     /// or (better), a client should be used instead
     fn start(&mut self) {
-        let mut cycles = 0u128;
         // see https://www.pagetable.com/c64ref/c64mem/
         self.set_byte(0x0000, 0x2f);
         self.set_byte(0x0001, 0x37);
@@ -111,7 +109,10 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
     fn execute_operation(&mut self, op: &Operation) -> u8;
 
-    fn next(&mut self) -> bool {
+    fn next(&mut self) -> bool
+    where
+        Self: Sized,
+    {
         let def = { self.decode_op() };
         let operand = { self.decode_operand(&def) };
         let address = operand
@@ -119,20 +120,28 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             .map_or(None, |o| self.decode_address(&def, &o));
         let op = Operation::new(def.clone(), operand, address);
 
-        if self.get_config().disassemble {
-            self.print_op(&op);
-        }
-
-        if self.get_config().exit_on_brk && matches!(def.mnemonic, Mnemonic::BRK) {
-            self.stop();
-            return false;
-        }
-
+        self.pre_next(&op);
         self.execute_operation(&op);
-        true
+        self.post_next(&op);
+
+        self.get_status() != MachineStatus::Stopped
     }
 
-    fn print_op(&self, op: &Operation) {
+    fn pre_next(&mut self, op: &Operation) {
+        if self.get_config().disassemble {
+            println!("{}", self.disassemble(op, self.get_config().verbose));
+        }
+
+        if self.get_config().exit_on_brk && matches!(op.def.mnemonic, Mnemonic::BRK) {
+            self.stop();
+        }
+    }
+
+    fn post_next(&mut self, op: &Operation) {}
+
+    fn disassemble(&self, op: &Operation, verbose: bool) -> String {
+        use std::fmt::Write;
+        let mut out = String::new();
         let addr = self.PC().wrapping_sub(op.def.len() as u16);
         let val = match op.def.len() {
             2 => format!("{:02x}   ", self.get_byte(addr + 1)),
@@ -143,26 +152,21 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             ),
             _ => String::from("     "),
         };
-        print!("{:04x}: {:02x} {} | {}", addr, op.def.opcode, val, op);
-        if self.get_config().verbose {
-            print!(
+        write!(
+            &mut out,
+            "{:04x}: {:02x} {} | {}",
+            addr, op.def.opcode, val, op
+        );
+        if verbose {
+            write!(
+                &mut out,
                 "{}|  {}",
                 " ".repeat(13 - op.to_string().len()),
                 self.cpu().registers,
-                // self.get_vars()
             );
         }
-        println!();
+        out
     }
-
-    // fn get_vars(&self) -> String {
-    //     let a = self.memory().get_word(0x0010);
-    //     let b = self.memory().get_word(0x0012);
-    //     let c = self.memory().get_word(0x0014);
-    //     let mut s = String::new();
-    //     write!(&mut s, "a={:04x}, b={:04x}, c={:04x}", a, b, c);
-    //     s
-    // }
 
     fn get_byte_and_inc_pc(&mut self) -> u8 {
         let val = self.get_byte(self.PC());

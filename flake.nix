@@ -83,6 +83,7 @@
 
               pkgs.cargo-watch
               pkgs.cargo-machete
+              pkgs.rust-analyzer
 
               rustVersion
 
@@ -90,6 +91,14 @@
               pkgs.acme
               pkgs.ncurses
             ];
+
+            shellHook = ''
+              export INT_FILTER_LEVEL="off"
+              export EXT_FILTER_LEVEL="debug"
+              export RUST_LOG="info"
+              export CURSIVE_LOG="off"
+              export RUST_BACKTRACE=1
+            '';
 
           };
 

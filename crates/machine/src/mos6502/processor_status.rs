@@ -1,6 +1,6 @@
 // source: http://www.6502.org/users/obelisk/6502/registers.html
 // source: https://www.nesdev.org/wiki/Status_flags
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct ProcessorStatus {
     pub carry: bool,
     pub zero: bool,

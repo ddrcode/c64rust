@@ -34,7 +34,7 @@ fn on_submit(s: &mut Cursive, addr_str: &str) {
     match u16::from_str_radix(addr_str, 16) {
         Ok(addr) => {
             s.with_user_data(|data: &mut UIState| {
-                data.addr_from = addr;
+                data.addr_from = std::cmp::min(addr - addr % 8, 0xffff - 200);
             });
             s.pop_layer();
         }

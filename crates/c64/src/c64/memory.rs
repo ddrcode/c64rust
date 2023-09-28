@@ -30,14 +30,6 @@ impl C64Memory {
             rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
         }
     }
-
-    pub fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
-        let mut idx = addr as usize;
-        for byte in data.iter() {
-            self.rom[idx] = *byte;
-            idx += 1;
-        }
-    }
 }
 
 impl Memory for C64Memory {
@@ -71,6 +63,13 @@ impl Memory for C64Memory {
         }
     }
 
+    fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
+        let mut idx = addr as usize;
+        for byte in data.iter() {
+            self.rom[idx] = *byte;
+            idx += 1;
+        }
+    }
     fn set_byte(&mut self, addr: Addr, val: u8) {
         self.ram[addr as usize] = val;
     }

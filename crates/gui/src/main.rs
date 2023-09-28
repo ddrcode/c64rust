@@ -1,81 +1,96 @@
-// #[macro_use]
+#[macro_use]
+extern crate lazy_static;
 extern crate colored;
 extern crate cursive_hexview;
 extern crate log;
 
 mod gui;
+mod utils;
 
 use crate::gui::*;
-use c64::{C64Client, C64};
+use c64::{C64Client, MachineState, C64};
 use clap::Parser;
 use cursive::{
-    event::Key, logger, menu, views::Canvas, CbSink, Cursive, CursiveRunnable, CursiveRunner,
+    event::{Event, Key},
+    logger, menu,
+    view::ViewWrapper,
+    views::{self, NamedView, OnEventView, ScrollView},
+    views::{Canvas, Dialog, HideableView, PaddedView, ResizedView, TextView},
+    Cursive, CursiveRunnable,
 };
 use cursive_hexview::HexView;
+use log::LevelFilter;
 use machine::{
     cli::*,
     client::{Client, ClientError, InteractiveClient, NonInteractiveClient},
     utils::lock,
     Machine, MachineConfig,
 };
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-static IS_RUNNING: AtomicBool = AtomicBool::new(true);
-const GUI_REFRESH: Duration = Duration::from_millis(100);
+const GUI_REFRESH: Duration = Duration::from_millis(50);
 
 fn main() -> Result<(), ClientError> {
-    // logger::set_internal_filter_level(LevelFilter::Warn);
-    // logger::set_external_filter_level(LevelFilter::Debug);
-    // set_filter_levels_from_env(LevelFilter::Debug);
-    logger::init();
     colored::control::set_override(false);
+    init_log();
 
-    let mut c64_client = C64Client::new(init_c64());
-    let c64_arc = c64_client.mutex();
-    let mut siv = init_ui(c64_client.mutex());
-    let mut threads = Vec::new();
+    let c64_client = C64Client::new(init_c64());
+    let client = Arc::new(Mutex::new(c64_client));
+    let mut siv = init_ui(client.clone());
 
-    let mut start_thread = |cb: fn(c64: Arc<Mutex<C64>>, sink: CbSink, b: Arc<&AtomicBool>)| {
-        let c64_t = c64_arc.clone();
-        let sink_t = siv.cb_sink().clone();
-        let b_t = Arc::new(&IS_RUNNING);
-        let handle = thread::spawn(move || {
-            cb(c64_t, sink_t, b_t);
-        });
-        threads.push(handle);
-    };
+    lock(&client).start().unwrap_or_else(handle_error);
 
-    c64_client.start()?;
-
-    start_thread(|c64, sink, do_loop| {
-        while do_loop.load(Ordering::Relaxed) {
-            thread::sleep(GUI_REFRESH);
-            let c = Arc::clone(&c64);
-            sink.send(Box::new(|s| update_ui(s, c))).unwrap();
+    let mut prev_state = MachineState::default();
+    let mut runner = siv.runner();
+    runner.refresh();
+    loop {
+        runner.step();
+        if !runner.is_running() {
+            break;
         }
+        let state = lock(&client).step();
+        if state != prev_state {
+            update_ui(&state, &mut runner);
+            runner.refresh();
+            prev_state = state;
+        }
+        handle_user_data(client.clone(), &mut runner);
+        thread::sleep(GUI_REFRESH);
+    }
+
+    lock(&client.clone()).stop()
+}
+
+fn handle_user_data(client: Arc<Mutex<C64Client>>, s: &mut Cursive) {
+    if let Some(ud) = s.user_data::<UIState>() {
+        lock(&client).debugger_state.observed_mem = ud.addr_from..(ud.addr_from + 200);
+        ud.key
+            .as_ref()
+            .map(|key| lock(&client).send_key(key.clone()));
+        ud.key = None;
+    }
+}
+
+fn update_ui(state: &MachineState, s: &mut Cursive) {
+    let addr = s.user_data::<UIState>().map_or(0, |data| data.addr_from);
+    let screen = state.screen.clone();
+
+    s.call_on_name("memory", |view: &mut HexView| {
+        view.config_mut().start_addr = addr as usize;
+        view.set_data(state.memory_slice.iter());
     });
 
-    siv.run();
-    // let mut runner = siv.runner();
-    // runner.refresh();
-    // loop {
-    //     runner.step();
-    //     update_ui_x(&c64_client, &mut runner);
-    //     if !runner.is_running() {
-    //         break;
-    //     }
-    //     thread::sleep(GUI_REFRESH);
-    // }
-
-    IS_RUNNING.store(false, Ordering::Relaxed);
-
-    threads.into_iter().for_each(|t| {
-        t.join().expect("Thread failed!");
+    s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
+        view.state_mut().state = state.registers.to_string();
     });
-    c64_client.stop()
+
+    s.call_on_name("machine_screen", move |view: &mut MachineScreen| {
+        view.set_state(screen, state.character_set);
+    });
+
+    update_asm_view(s, &state.last_op);
 }
 
 fn init_c64() -> C64 {
@@ -84,6 +99,11 @@ fn init_c64() -> C64 {
     if let Some(rom_file) = args.rom {
         let rom = get_file_as_byte_vec(&rom_file);
         c64.memory_mut().init_rom(&rom[..]);
+    }
+
+    if let Some(character_rom) = args.character_rom {
+        let rom = get_file_as_byte_vec(&character_rom);
+        c64.memory_mut().init_rom_at_addr(0xd000, &rom[..]);
     }
 
     if let Some(ram_file) = args.ram {
@@ -95,50 +115,48 @@ fn init_c64() -> C64 {
     c64
 }
 
-fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
+fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
     let mut siv = cursive::default();
     set_theme(&mut siv);
     siv.set_autorefresh(false);
     siv.set_autohide_menu(false);
 
     let quit_handler = {
-        let arc = Arc::clone(&c64);
+        let arc = client.clone();
         move |s: &mut Cursive| {
             s.quit();
-            lock(&arc).stop();
-        }
-    };
-
-    let refresh_mem_handler = {
-        let arc = Arc::clone(&c64);
-        move |s: &mut Cursive| {
-            s.call_on_name("memory", |view: &mut HexView| {
-                view.set_data(lock(&arc).memory().mem(0).iter());
-            });
+            lock(&arc).stop().unwrap_or_else(handle_error);
         }
     };
 
     let debug_handler = {
         use machine::MachineStatus::*;
-        let arc = Arc::clone(&c64);
+        let arc = Arc::clone(&client);
         move |_s: &mut Cursive| {
             let mut c64 = lock(&arc);
-            match c64.get_status() {
-                Running => c64.debug(),
+            (match c64.get_status() {
+                Running => c64.pause(),
                 Debug => c64.resume(),
-                _ => (),
-            };
+                _ => Ok(()),
+            })
+            .unwrap_or_else(handle_error);
         }
     };
 
     let next_handler = {
-        let arc = Arc::clone(&c64);
+        let arc = client.clone();
         move |_s: &mut Cursive| {
-            lock(&arc).next();
+            lock(&arc).next().unwrap_or_else(|err| {
+                handle_error(err);
+                false
+            });
         }
     };
 
-    let screen = main_screen(c64);
+    let screen = main_screen();
+
+    type AsmIsEasierThanThis =
+        ResizedView<PaddedView<OnEventView<ScrollView<NamedView<TextView>>>>>;
 
     siv.menubar()
         .add_subtree(
@@ -150,29 +168,33 @@ fn init_ui(c64: Arc<Mutex<C64>>) -> CursiveRunnable {
         )
         .add_subtree(
             "Monitor",
-            menu::Tree::new()
-                .leaf("Refresh [F5]", refresh_mem_handler.clone())
-                .leaf("Go to address [F6]", |s| s.add_layer(address_dialog()))
-                .delimiter()
-                .leaf("Autorefresh: on", |_s| {}),
+            menu::Tree::new().leaf("Go to address [F6]", |s| s.add_layer(address_dialog())),
         )
         .add_subtree(
             "View",
             menu::Tree::new()
-                .leaf("Hide memory view", |_s| ())
-                .leaf("Hide processor status", |_s| ()),
+                .leaf("Toggle memory view", |_s| ())
+                .leaf("Toggle processor status", |_s| ())
+                .leaf(
+                    "Toggle disassembly view [F2]",
+                    create_toggle_handler::<AsmIsEasierThanThis>("asm_wrapper"),
+                ),
         )
         .add_leaf("Quit", quit_handler.clone());
 
-    siv.add_global_callback(Key::Esc, |s| s.select_menubar());
+    siv.add_global_callback(Key::F9, |s| s.select_menubar());
     siv.add_global_callback(Key::F10, quit_handler);
-    siv.add_global_callback(Key::F5, refresh_mem_handler);
     siv.add_global_callback(Key::F6, |s| s.add_layer(address_dialog()));
     siv.add_global_callback(Key::F7, debug_handler);
     siv.add_global_callback(Key::F8, next_handler);
+    siv.add_global_callback(Event::Char('`'), cursive::Cursive::toggle_debug_console);
+    siv.add_global_callback(
+        Key::F2,
+        create_toggle_handler::<AsmIsEasierThanThis>("asm_wrapper"),
+    );
 
     siv.add_layer(screen);
-    siv.set_user_data(UIState::default());
+    siv.set_user_data(UIState::new());
 
     siv
 }
@@ -189,19 +211,32 @@ fn set_theme(siv: &mut CursiveRunnable) {
     siv.set_theme(theme);
 }
 
-fn update_ui(s: &mut Cursive, c64: Arc<Mutex<C64>>) {
-    let addr = s.user_data::<UIState>().map_or(0, |data| data.addr_from);
+fn init_log() {
+    cursive::logger::init();
+    match std::env::var("RUST_LOG")
+        .unwrap_or_else(|_| "info".to_string())
+        .as_ref()
+    {
+        "trace" => log::set_max_level(LevelFilter::Trace),
+        "debug" => log::set_max_level(LevelFilter::Debug),
+        "info" => log::set_max_level(LevelFilter::Info),
+        "warn" => log::set_max_level(LevelFilter::Warn),
+        "error" => log::set_max_level(LevelFilter::Error),
+        _ => log::set_max_level(LevelFilter::Off),
+    };
+}
 
-    // FIXME this is a total workaround that makes keybord "buffer" to clear
-    lock(&c64).cia1.keyboard.cycle();
+fn handle_error(err: ClientError) {
+    log::error!("An error occured on emulator side: {}", err);
+    Dialog::info("The emulator has failed!");
+}
 
-    s.call_on_name("memory", |view: &mut HexView| {
-        let data = lock(&c64).memory().fragment(addr, addr + 200);
-        view.config_mut().start_addr = addr as usize;
-        view.set_data(data.iter());
-    });
-
-    s.call_on_name("cpu", |view: &mut Canvas<CpuState>| {
-        view.state_mut().state = lock(&c64).cpu().registers.to_string();
-    });
+fn create_toggle_handler<V: ViewWrapper>(name: &str) -> impl Fn(&mut Cursive) + '_ {
+    |s| {
+        log::error!("calling!");
+        s.call_on_name(name, |view: &mut HideableView<V>| {
+            let visible = view.is_visible();
+            view.set_visible(!visible);
+        });
+    }
 }
