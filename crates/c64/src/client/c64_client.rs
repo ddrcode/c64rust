@@ -5,12 +5,13 @@ use machine::client::*;
 use machine::debugger::DebuggerState;
 use machine::mos6502::Registers;
 use machine::utils::lock;
-use machine::{Addr, Machine, MachineStatus};
+use machine::{Addr, Machine, MachineStatus, Memory};
+use machine::MachineError;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-type Result<T> = std::result::Result<T, ClientError>;
+type Result<T> = std::result::Result<T, MachineError>;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct MachineState {
@@ -23,7 +24,7 @@ pub struct MachineState {
 
 pub struct C64Client {
     base_client: DirectClient<C64>,    // awful!!!
-    pub debugger_state: DebuggerState, // event_emitter: EventEmitter,
+    pub debugger_state: DebuggerState,
 }
 
 impl C64Client {
@@ -66,7 +67,7 @@ impl C64Client {
 }
 
 impl InteractiveClient for C64Client {
-    type Error = ClientError;
+    type Error = MachineError;
 
     fn send_key(&mut self, event: KeyboardEvent) {
         log::debug!("Sending key {:?}", event);
@@ -96,7 +97,7 @@ impl InteractiveClient for C64Client {
 
 // this is stupid but I have no idea how to do it better
 impl NonInteractiveClient for C64Client {
-    type Error = ClientError;
+    type Error = MachineError;
 
     fn get_status(&self) -> MachineStatus {
         self.base_client.get_status()

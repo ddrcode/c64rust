@@ -1,8 +1,9 @@
 use crate::machine::MachineConfig;
 use clap::Parser;
 use std::path::PathBuf;
+use serde::Deserialize;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Deserialize)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(short, long)]
@@ -46,6 +47,9 @@ pub struct Args {
 
     #[arg(long = "char-rom")]
     pub character_rom: Option<PathBuf>,
+
+    #[arg(long = "profile")]
+    pub profile: Option<PathBuf>,
 }
 
 impl From<&Args> for MachineConfig {

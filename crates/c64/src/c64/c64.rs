@@ -6,14 +6,14 @@ use machine::{
     debugger::{DebugMachine, Debugger, DebuggerState},
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
+    Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter, FromConfig
 };
 use std::num::Wrapping;
 
 pub struct C64 {
     config: MachineConfig,
     mos6510: MOS6502,
-    mem: Box<dyn Memory + Send>,
+    mem: C64Memory,
     gpu: VIC_II,
     pub cia1: CIA1,
     status: MachineStatus,
@@ -28,7 +28,7 @@ impl C64 {
         C64 {
             config,
             mos6510: MOS6502::new(),
-            mem: Box::new(C64Memory::new(size)),
+            mem: C64Memory::new(size),
             gpu: VIC_II::new(),
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,
@@ -85,11 +85,13 @@ impl C64 {
 impl_reg_setter!(C64);
 
 impl Machine for C64 {
-    fn memory(&self) -> &Box<dyn Memory + Send + 'static> {
+    type MemoryImpl = C64Memory;
+
+    fn memory(&self) -> &C64Memory{
         &self.mem
     }
 
-    fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static> {
+    fn memory_mut(&mut self) -> &mut C64Memory {
         &mut self.mem
     }
 
@@ -149,13 +151,22 @@ impl Machine for C64 {
 }
 
 impl Debugger for C64 {
+    type MachineImpl = C64;
+
     fn debugger_state(&self) -> &DebuggerState {
         &self.debugger_state
     }
 
-    fn machine(&self) -> &dyn Machine {
+    fn machine(&self) -> &C64 {
         self
     }
 }
 
 impl DebugMachine for C64 {}
+
+impl FromConfig for C64 {
+    fn from_config(config: MachineConfig) -> Self {
+        C64::new(config)
+    }
+}
+

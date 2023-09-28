@@ -1,13 +1,15 @@
 use super::*;
-use crate::machine::{Addr, Machine, MachineStatus};
+use crate::error::MachineError;
+use crate::machine::{Addr, Machine, MachineStatus, Memory};
 use crate::mos6502::Registers;
 use crate::utils::lock;
+// use crate::error::MachineError;
 use runtime::Runtime;
 use std;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
-type Result<T> = std::result::Result<T, ClientError>;
+type Result<T> = std::result::Result<T, MachineError>;
 
 /// DirectClient is an implementation of Client that runs
 /// the machine directly (in a thread) rather than
@@ -44,7 +46,7 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
             if !handle.is_finished() {
                 return handle
                     .join()
-                    .or(Err(ClientError::new("Failed to join machine's thread")));
+                    .or(Err(MachineError::Client("Failed to join machine's thread".to_string())));
             }
         }
         Ok(())
@@ -61,7 +63,7 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
 }
 
 impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
-    type Error = ClientError;
+    type Error = MachineError;
 
     fn get_status(&self) -> MachineStatus {
         self.lock().get_status()
@@ -69,7 +71,7 @@ impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
 
     fn start(&mut self) -> Result<()> {
         if self.is_running() {
-            return Err(ClientError::new("Machine is already running"));
+            return Err(MachineError::Client(String::from("Machine is already running")));
         }
         self.start_machine_in_thread();
         Ok(())

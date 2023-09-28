@@ -3,6 +3,7 @@
 use crate::key_utils::screen_code_to_ascii;
 use colored::*;
 use machine::Memory;
+use super::C64Memory;
 
 /*
  * RGB values of C64 colours
@@ -32,7 +33,7 @@ impl VIC_II {
         VIC_II { char_set: 0x14 }
     }
 
-    pub fn print_screen(&self, mem: &Box<dyn Memory + Send>) {
+    pub fn print_screen(&self, mem: &C64Memory) {
         let mut n = 0;
         println!();
         println!("{}", " ".repeat(44).on_truecolor(0x6c, 0x5e, 0xb5));

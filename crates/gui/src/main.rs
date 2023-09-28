@@ -8,23 +8,22 @@ mod gui;
 mod utils;
 
 use crate::gui::*;
+use anyhow;
 use c64::{C64Client, MachineState, C64};
-use clap::Parser;
 use cursive::{
     event::{Event, Key},
-    logger, menu,
+    menu,
     view::ViewWrapper,
-    views::{self, NamedView, OnEventView, ScrollView},
     views::{Canvas, Dialog, HideableView, PaddedView, ResizedView, TextView},
+    views::{NamedView, OnEventView, ScrollView},
     Cursive, CursiveRunnable,
 };
 use cursive_hexview::HexView;
 use log::LevelFilter;
 use machine::{
-    cli::*,
-    client::{Client, ClientError, InteractiveClient, NonInteractiveClient},
-    utils::lock,
-    Machine, MachineConfig,
+    cli::create_machine_from_cli_args,
+    client::{InteractiveClient, NonInteractiveClient},
+    utils::lock, MachineError,
 };
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -32,11 +31,11 @@ use std::time::Duration;
 
 const GUI_REFRESH: Duration = Duration::from_millis(50);
 
-fn main() -> Result<(), ClientError> {
+fn main() -> anyhow::Result<()> {
     colored::control::set_override(false);
     init_log();
 
-    let c64_client = C64Client::new(init_c64());
+    let c64_client = C64Client::new(create_machine_from_cli_args::<C64>()?);
     let client = Arc::new(Mutex::new(c64_client));
     let mut siv = init_ui(client.clone());
 
@@ -60,7 +59,8 @@ fn main() -> Result<(), ClientError> {
         thread::sleep(GUI_REFRESH);
     }
 
-    lock(&client.clone()).stop()
+    lock(&client.clone()).stop()?;
+    Ok(())
 }
 
 fn handle_user_data(client: Arc<Mutex<C64Client>>, s: &mut Cursive) {
@@ -91,28 +91,6 @@ fn update_ui(state: &MachineState, s: &mut Cursive) {
     });
 
     update_asm_view(s, &state.last_op);
-}
-
-fn init_c64() -> C64 {
-    let args = Args::parse();
-    let mut c64 = C64::new(MachineConfig::from(&args));
-    if let Some(rom_file) = args.rom {
-        let rom = get_file_as_byte_vec(&rom_file);
-        c64.memory_mut().init_rom(&rom[..]);
-    }
-
-    if let Some(character_rom) = args.character_rom {
-        let rom = get_file_as_byte_vec(&character_rom);
-        c64.memory_mut().init_rom_at_addr(0xd000, &rom[..]);
-    }
-
-    if let Some(ram_file) = args.ram {
-        let ram = get_file_as_byte_vec(&ram_file);
-        let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        c64.memory_mut().write(addr, &ram[..]);
-    }
-
-    c64
 }
 
 fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
@@ -226,7 +204,7 @@ fn init_log() {
     };
 }
 
-fn handle_error(err: ClientError) {
+fn handle_error(err: MachineError) {
     log::error!("An error occured on emulator side: {}", err);
     Dialog::info("The emulator has failed!");
 }

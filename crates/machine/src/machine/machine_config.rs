@@ -24,3 +24,9 @@ impl MachineConfig {
         }
     }
 }
+
+pub trait FromConfig {
+    fn from_config(config: MachineConfig) -> Self;
+}
+
+

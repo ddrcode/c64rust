@@ -18,6 +18,7 @@ substring = "1.4.5"
 log = "0.4.20"
 keyboard-types = { version="0.7", features=["webdriver"] }
 lazy_static = "1.4.0"
+anyhow = "1.0.75"
 
 [[bin]]
 name = "gui"

@@ -3,8 +3,10 @@ use crate::machine::{Machine, MachineStatus};
 use crate::mos6502::{Mnemonic, Operation};
 
 pub trait Debugger {
+    type MachineImpl: Machine;
+
     fn debugger_state(&self) -> &DebuggerState;
-    fn machine(&self) -> &dyn Machine;
+    fn machine(&self) -> &Self::MachineImpl;
 
     fn should_pause(&self, op: &Operation) -> bool {
         let m = self.machine();

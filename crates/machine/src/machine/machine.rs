@@ -20,8 +20,10 @@ pub trait RegSetter<T> {
 }
 
 pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
-    fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
-    fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
+    type MemoryImpl: Memory;
+
+    fn memory(&self) -> &Self::MemoryImpl;
+    fn memory_mut(&mut self) -> &mut Self::MemoryImpl;
     fn cpu(&self) -> &MOS6502;
     fn cpu_mut(&mut self) -> &mut MOS6502;
     fn get_config(&self) -> &MachineConfig;
@@ -299,7 +301,3 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-}

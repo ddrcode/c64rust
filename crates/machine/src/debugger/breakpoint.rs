@@ -12,7 +12,7 @@ pub enum Breakpoint {
 }
 
 impl Breakpoint {
-    pub fn applies(&self, op: &Operation, machine: &dyn Machine) -> bool {
+    pub fn applies<M: Machine>(&self, op: &Operation, machine: &M) -> bool {
         match *self {
             Self::Address(a) => a == machine.PC(),
             Self::Interrupt => panic!("Interrupt breakpoint not implemented!"),
