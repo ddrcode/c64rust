@@ -2,6 +2,10 @@ use super::*;
 use crate::machine::{Machine, MachineStatus};
 use crate::mos6502::{Mnemonic, Operation};
 
+pub trait MachineObserver {
+    fn on_next(&mut self, op: &Operation);
+}
+
 pub trait Debugger {
     type MachineImpl: Machine;
 

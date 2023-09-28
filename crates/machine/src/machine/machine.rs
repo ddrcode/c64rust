@@ -4,6 +4,7 @@ use crate::mos6502::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6502,
 };
 use std::num::Wrapping;
+use crate::debugger::MachineObserver;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum MachineStatus {
@@ -29,6 +30,14 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn get_config(&self) -> &MachineConfig;
     fn get_status(&self) -> MachineStatus;
     fn set_status(&mut self, status: MachineStatus);
+    fn get_observer(&self) -> Option<&mut Box<dyn MachineObserver>> {
+        None
+    }
+    fn with_observer(&self, cb: impl Fn(&mut Box<dyn MachineObserver>)) {
+        if let Some(observer) = self.get_observer() {
+            (cb)(observer);
+        }
+    }
 
     // registry shortcuts
     fn A(&self) -> Wrapping<u8> {
@@ -123,6 +132,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         let op = Operation::new(def.clone(), operand, address);
 
         self.pre_next(&op);
+        self.with_observer(|cb|cb.on_next(&op));
         self.execute_operation(&op);
         self.post_next(&op);
 

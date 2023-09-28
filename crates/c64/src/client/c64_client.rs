@@ -1,6 +1,8 @@
 use crate::c64::C64;
 use crate::key_utils::ui_event_to_c64_key_codes;
 use keyboard_types::{KeyState, KeyboardEvent};
+use machine::debugger::MachineObserver;
+use machine::mos6502::Operation;
 use machine::{
     client::*, debugger::DebuggerState, mos6502::Registers, utils::lock, Addr, Machine,
     MachineError, MachineStatus, Memory,
@@ -135,3 +137,8 @@ impl NonInteractiveClient for C64Client {
 }
 
 impl Client for C64Client {}
+
+impl MachineObserver for C64Client {
+    fn on_next(&mut self, op: &Operation) {
+    }
+}
