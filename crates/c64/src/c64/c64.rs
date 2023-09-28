@@ -6,7 +6,7 @@ use machine::{
     debugger::{DebugMachine, Debugger, DebuggerState},
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter, FromConfig
+    Addr, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
 use std::num::Wrapping;
 
@@ -87,7 +87,7 @@ impl_reg_setter!(C64);
 impl Machine for C64 {
     type MemoryImpl = C64Memory;
 
-    fn memory(&self) -> &C64Memory{
+    fn memory(&self) -> &C64Memory {
         &self.mem
     }
 
@@ -169,4 +169,3 @@ impl FromConfig for C64 {
         C64::new(config)
     }
 }
-

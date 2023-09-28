@@ -23,7 +23,8 @@ use log::LevelFilter;
 use machine::{
     cli::create_machine_from_cli_args,
     client::{InteractiveClient, NonInteractiveClient},
-    utils::lock, MachineError,
+    utils::lock,
+    MachineError,
 };
 use std::sync::{Arc, Mutex};
 use std::thread;

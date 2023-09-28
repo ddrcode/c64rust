@@ -44,9 +44,9 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
     fn join(&mut self) -> Result<()> {
         if let Some(handle) = self.handle.take() {
             if !handle.is_finished() {
-                return handle
-                    .join()
-                    .or(Err(MachineError::Client("Failed to join machine's thread".to_string())));
+                return handle.join().or(Err(MachineError::Client(
+                    "Failed to join machine's thread".to_string(),
+                )));
             }
         }
         Ok(())
@@ -71,7 +71,9 @@ impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
 
     fn start(&mut self) -> Result<()> {
         if self.is_running() {
-            return Err(MachineError::Client(String::from("Machine is already running")));
+            return Err(MachineError::Client(String::from(
+                "Machine is already running",
+            )));
         }
         self.start_machine_in_thread();
         Ok(())

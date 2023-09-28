@@ -1,9 +1,9 @@
 #![allow(non_camel_case_types)]
 
+use super::C64Memory;
 use crate::key_utils::screen_code_to_ascii;
 use colored::*;
 use machine::Memory;
-use super::C64Memory;
 
 /*
  * RGB values of C64 colours

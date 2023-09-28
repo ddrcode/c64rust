@@ -1,5 +1,6 @@
 use super::{
-    impl_reg_setter, MOS6502Memory, Machine, MachineConfig, MachineStatus, Memory, RegSetter, FromConfig
+    impl_reg_setter, FromConfig, MOS6502Memory, Machine, MachineConfig, MachineStatus, Memory,
+    RegSetter,
 };
 use crate::debugger::DebugMachine;
 use crate::mos6502::{execute_operation, Operation, MOS6502};
@@ -30,7 +31,6 @@ impl MOS6502Machine {
 impl_reg_setter!(MOS6502Machine);
 
 impl Machine for MOS6502Machine {
-
     type MemoryImpl = MOS6502Memory;
 
     fn memory(&self) -> &MOS6502Memory {
@@ -68,9 +68,8 @@ impl Machine for MOS6502Machine {
 
 impl DebugMachine for MOS6502Machine {}
 impl FromConfig for MOS6502Machine {
-    fn from_config(config: MachineConfig) -> Self{
+    fn from_config(config: MachineConfig) -> Self {
         let machine = MOS6502Machine::new(config);
         machine
     }
 }
-

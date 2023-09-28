@@ -1,11 +1,12 @@
 use crate::machine::{FromConfig, Machine, MachineConfig, Memory};
-use std::fs::File;
+use std::fs::{read_to_string, File};
 use std::io::Read;
 use std::path::PathBuf;
 
 use super::Args;
-use clap::Parser;
 use anyhow::Result;
+use clap::Parser;
+use toml;
 
 pub fn get_file_as_byte_vec(filename: &PathBuf) -> Result<Vec<u8>> {
     let mut f = File::open(filename)?;
@@ -14,11 +15,26 @@ pub fn get_file_as_byte_vec(filename: &PathBuf) -> Result<Vec<u8>> {
     Ok(buffer)
 }
 
+fn get_args_from_toml(file: PathBuf) -> Result<Args> {
+    let content = read_to_string(file)?;
+    let args: Args = toml::from_str(&content)?;
+    Ok(args)
+}
+
+pub fn get_args() -> Result<Args> {
+    let args = Args::parse();
+    if args.profile.is_none() {
+        return Ok(args);
+    }
+    let toml_args = get_args_from_toml(args.profile.clone().unwrap())?;
+    Ok(Args::merge(&args, &toml_args))
+}
+
 pub fn create_machine_from_cli_args<M>() -> Result<M>
 where
     M: FromConfig + Machine,
 {
-    let args = Args::parse();
+    let args = get_args()?;
     let config = MachineConfig::from(&args);
 
     let mut machine = M::from_config(config);
@@ -30,7 +46,12 @@ where
 
     if let Some(ram_file) = args.ram {
         let ram = get_file_as_byte_vec(&ram_file)?;
-        let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
+        let addr = u16::from_str_radix(
+            &args
+                .ram_file_addr
+                .ok_or(anyhow::Error::msg("couldn't parse ram-file-addr"))?,
+            16,
+        )?;
         machine.memory_mut().write(addr, &ram[..]);
     }
 

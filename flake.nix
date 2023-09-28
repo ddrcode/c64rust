@@ -84,6 +84,7 @@
               pkgs.cargo-watch
               pkgs.cargo-machete
               pkgs.rust-analyzer
+              pkgs.clippy
 
               rustVersion
 

@@ -12,7 +12,7 @@ mod key_utils;
 use crate::c64::C64;
 use crate::client::C64Client;
 use anyhow;
-use machine::{cli::Args,client::NonInteractiveClient};
+use machine::{cli::Args, client::NonInteractiveClient};
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
