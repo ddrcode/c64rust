@@ -7,7 +7,7 @@ lazy_static! {
     static ref C64_PUNCTATION_KEYS: Vec<char> = String::from("+-=:;,./*@ £").chars().collect();
     static ref C64_SHIFTED_PUNCTATION_KEYS: HashMap<char, char> = HashMap::from([
         ('!', '1'),
-        ('@', '2'),
+        ('"', '2'),
         ('#', '3'),
         ('$', '4'),
         ('%', '5'),
