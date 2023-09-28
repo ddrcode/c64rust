@@ -55,19 +55,4 @@ impl VIC_II {
         println!("{}", " ".repeat(42).on_truecolor(0x6c, 0x5e, 0xb5));
         println!("              ");
     }
-
-    // probably nonsense
-    pub fn ascii_to_petscii(ch: char) -> u8 {
-        let c = u64::from(ch) as u8;
-        if c >= 32 && c <= 93 {
-            return c;
-        }
-        if c == 13 || c == 10 {
-            return 13;
-        }
-        if c >= 97 && c <= 122 {
-            return c - 32;
-        }
-        0
-    }
 }

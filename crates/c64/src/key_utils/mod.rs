@@ -4,8 +4,8 @@ mod key_code;
 mod scancodes;
 mod ui_events;
 
-pub use character_sets::*;
-pub use converters::*;
-pub use key_code::*;
-pub use scancodes::*;
-pub use ui_events::*;
+pub use self::character_sets::*;
+pub use self::converters::*;
+pub use self::key_code::*;
+pub use self::scancodes::*;
+pub use self::ui_events::*;

@@ -22,7 +22,6 @@ impl Breakpoint {
             Self::Byte((addr, val)) => {
                 addr == machine.PC() && val == machine.get_byte(machine.PC())
             }
-            _ => false,
         }
     }
 }

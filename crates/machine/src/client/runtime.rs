@@ -1,7 +1,6 @@
 use crate::machine::{Machine, MachineStatus::*};
 use crate::utils::lock;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::time::{Duration, Instant};
 
 /// Interval between IRQs in [ms]
@@ -20,7 +19,7 @@ pub struct Runtime<M: Machine> {
 impl<M: Machine> Runtime<M> {
     pub fn new(mutex: Arc<Mutex<M>>) -> Self {
         Runtime {
-            mutex: mutex,
+            mutex,
             irq_time: Instant::now(),
             cycles: 0,
         }
@@ -61,6 +60,4 @@ impl<M: Machine> Runtime<M> {
             self.cycles = self.cycles.wrapping_add(1);
         }
     }
-
-    pub fn on_irq(cb: impl Fn(M)) {}
 }

@@ -139,7 +139,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         }
     }
 
-    fn post_next(&mut self, op: &Operation) {}
+    fn post_next(&mut self, _op: &Operation) {}
 
     fn disassemble(&self, op: &Operation, verbose: bool) -> String {
         use std::fmt::Write;
@@ -154,13 +154,13 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             ),
             _ => String::from("     "),
         };
-        write!(
+        let _ = write!(
             &mut out,
             "{:04x}: {:02x} {} | {}",
             addr, op.def.opcode, val, op
         );
         if verbose {
-            write!(
+            let _ = write!(
                 &mut out,
                 "{}|  {}",
                 " ".repeat(13 - op.to_string().len()),
@@ -300,4 +300,3 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.handle_interrupt(0xfffa);
     }
 }
-

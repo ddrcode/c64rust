@@ -1,12 +1,10 @@
 use crate::c64::C64;
-use crate::key_utils::{ui_event_to_c64_key_codes, C64KeyCode};
+use crate::key_utils::ui_event_to_c64_key_codes;
 use keyboard_types::{KeyState, KeyboardEvent};
-use machine::client::*;
-use machine::debugger::DebuggerState;
-use machine::mos6502::Registers;
-use machine::utils::lock;
-use machine::{Addr, Machine, MachineStatus, Memory};
-use machine::MachineError;
+use machine::{
+    client::*, debugger::DebuggerState, mos6502::Registers, utils::lock, Addr, Machine,
+    MachineError, MachineStatus, Memory,
+};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -23,7 +21,7 @@ pub struct MachineState {
 }
 
 pub struct C64Client {
-    base_client: DirectClient<C64>,    // awful!!!
+    base_client: DirectClient<C64>, // awful!!!
     pub debugger_state: DebuggerState,
 }
 

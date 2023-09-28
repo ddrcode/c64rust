@@ -5,7 +5,7 @@ use crate::utils::keyboard::map_key_event;
 use c64::key_utils::screen_code_to_ascii;
 use cursive::{
     event::{Callback, Event, EventResult},
-    theme::{Color, ColorStyle, Effect},
+    theme::{Color, ColorStyle},
     Printer, Vec2, View,
 };
 use keyboard_types::Key;
