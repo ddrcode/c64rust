@@ -7,6 +7,7 @@ pub struct MachineConfig {
     pub exit_on_brk: bool,
     pub disassemble: bool,
     pub verbose: bool,
+    pub start_addr: Option<u16>
 }
 
 impl MachineConfig {
@@ -21,6 +22,7 @@ impl MachineConfig {
             exit_on_brk: false,
             disassemble: false,
             verbose: false,
+            start_addr: None
         }
     }
 }

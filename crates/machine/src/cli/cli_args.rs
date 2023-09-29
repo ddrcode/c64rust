@@ -3,7 +3,7 @@ use clap::Parser;
 use serde::Deserialize;
 use std::path::PathBuf;
 
-#[derive(Parser, Debug, Deserialize, Clone)]
+#[derive(Parser, Debug, Deserialize, Clone, Default)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(short, long)]
@@ -19,9 +19,8 @@ pub struct Args {
     #[serde(default = "Args::default_ram_size")]
     pub ram_size: usize,
 
-    #[arg(short='a', long="start-addr", default_value_t=String::from("fce2"))]
-    #[serde(default = "Args::default_start_addr")]
-    pub start_addr: String,
+    #[arg(short = 'a', long = "start-addr")]
+    pub start_addr: Option<String>,
 
     #[arg(short, long)]
     #[serde(default)]
@@ -74,6 +73,10 @@ impl From<&Args> for MachineConfig {
             exit_on_brk: args.stop_on_brk,
             disassemble: args.disassemble,
             verbose: args.verbose,
+            start_addr: args
+                .start_addr
+                .clone()
+                .map(|addr| u16::from_str_radix(&addr, 16).unwrap()),
         }
     }
 }
@@ -113,11 +116,7 @@ impl Args {
                 cli.ram_size,
                 file.ram_size,
             ),
-            start_addr: if_else(
-                cli.start_addr != Args::default_start_addr(),
-                cli.start_addr.clone(),
-                file.start_addr.clone(),
-            ),
+            start_addr: cli.start_addr.clone().or(file.start_addr.clone()),
             show_screen: val_or(cli.show_screen, file.show_screen),
             show_status: val_or(cli.show_status, file.show_status),
             disassemble: val_or(cli.disassemble, file.disassemble),

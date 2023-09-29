@@ -34,10 +34,10 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
     fn start_machine_in_thread(&mut self) {
         self.lock().start();
         let arc = self.machine_mtx.clone();
-        let handle = thread::spawn(move || {
+        let handle = thread::Builder::new().name("MOS6502 Machine".to_string()).spawn(move || {
             let mut runtime = Runtime::<T>::new(arc);
             runtime.machine_loop();
-        });
+        }).unwrap();
         self.handle = Some(handle);
     }
 

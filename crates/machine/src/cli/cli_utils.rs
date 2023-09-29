@@ -3,7 +3,7 @@ use std::fs::{read_to_string, File};
 use std::io::Read;
 use std::path::PathBuf;
 
-use super::Args;
+use super::{Args, Profile};
 use anyhow::Result;
 use clap::Parser;
 use toml;
@@ -21,21 +21,29 @@ fn get_args_from_toml(file: PathBuf) -> Result<Args> {
     Ok(args)
 }
 
-pub fn get_args() -> Result<Args> {
-    let args = Args::parse();
+pub fn get_profile(args: &Args) -> Result<Profile> {
     if args.profile.is_none() {
-        return Ok(args);
+        return Ok(Profile::from_args(args));
     }
-    let toml_args = get_args_from_toml(args.profile.clone().unwrap())?;
-    Ok(Args::merge(&args, &toml_args))
+    let mut profile = get_profile_from_toml(args.profile.clone().unwrap())?;
+    profile.config = Args::merge(&args, &profile.config);
+    Ok(profile)
 }
+
+pub fn get_profile_from_toml(file: PathBuf) -> Result<Profile> {
+    let content = read_to_string(file)?;
+    let profile: Profile = toml::from_str(&content)?;
+    Ok(profile)
+}
+
 
 pub fn create_machine_from_cli_args<M>() -> Result<M>
 where
     M: FromConfig + Machine,
 {
-    let args = get_args()?;
-    let config = MachineConfig::from(&args);
+    let args = Args::parse();
+    let profile = get_profile(&args)?;
+    let config = MachineConfig::from(&profile);
 
     let mut machine = M::from_config(config);
 

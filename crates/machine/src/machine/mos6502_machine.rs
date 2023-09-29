@@ -10,7 +10,6 @@ pub struct MOS6502Machine {
     config: MachineConfig,
     mos6502: MOS6502,
     mem: MOS6502Memory,
-    // mem: Box<dyn Memory + Send>,
     status: MachineStatus,
 }
 
@@ -21,7 +20,6 @@ impl MOS6502Machine {
         MOS6502Machine {
             config,
             mos6502: MOS6502::new(),
-            // mem: Box::new(MOS6502Memory::new(size)),
             mem: MOS6502Memory::new(size),
             status: MachineStatus::Stopped,
         }
@@ -67,6 +65,7 @@ impl Machine for MOS6502Machine {
 }
 
 impl DebugMachine for MOS6502Machine {}
+
 impl FromConfig for MOS6502Machine {
     fn from_config(config: MachineConfig) -> Self {
         let machine = MOS6502Machine::new(config);

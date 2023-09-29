@@ -98,7 +98,11 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
         // By default, after start, the PC is set to address from RST vector ($fffc)
         // http://wilsonminesco.com/6502primer/MemMapReqs.html
-        self.set_PC(self.memory().get_word(0xfffc));
+        let start_addr = self
+            .get_config()
+            .start_addr
+            .unwrap_or(self.memory().get_word(0xfffc));
+        self.set_PC(start_addr);
         self.set_status(MachineStatus::Running);
     }
 
