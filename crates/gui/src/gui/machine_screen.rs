@@ -97,6 +97,7 @@ impl View for MachineScreen {
     }
 
     fn on_event(&mut self, event: Event) -> EventResult {
+        log::warn!("mamy event {:?}", event);
         let event = map_key_event(event);
         if event.key == Key::Unidentified {
             EventResult::Ignored

@@ -1,7 +1,7 @@
 use crate::c64::C64;
 use crate::key_utils::ui_event_to_c64_key_codes;
 use keyboard_types::{KeyState, KeyboardEvent};
-use machine::debugger::MachineObserver;
+use machine::debugger::{MachineObserver, Variable};
 use machine::mos6502::Operation;
 use machine::{
     client::*, debugger::DebuggerState, mos6502::Registers, utils::lock, Addr, Machine,
@@ -20,21 +20,23 @@ pub struct MachineState {
     pub memory_slice: Vec<u8>,
     pub screen: Vec<u8>,
     pub character_set: u8,
+    pub variables: Vec<Variable>
 }
 
 pub struct C64Client {
     base_client: DirectClient<C64>, // awful!!!
-    pub debugger_state: DebuggerState,
+    // pub debugger_state: DebuggerState,
 }
 
 impl C64Client {
     pub fn new(c64: C64) -> Self {
         C64Client {
             base_client: DirectClient::new(c64),
-            debugger_state: DebuggerState {
-                observed_mem: (0..200),
-                ..Default::default()
-            },
+            // debugger_state: DebuggerState {
+            //     observed_mem: (0..200),
+            //     variables: vec![Variable{ name: "Tick".to_string(), addr: 0x001e, value: 0 }],
+            //     ..Default::default()
+            // },
         }
     }
 
@@ -46,13 +48,21 @@ impl C64Client {
         self.base_client.mutex()
     }
 
+    pub fn get_debugger_state(&self) -> DebuggerState {
+        self.base_client.lock().debugger_state.clone()
+    }
+
+    pub fn set_debugger_state(&mut self, state: DebuggerState) {
+        self.base_client.lock().debugger_state = state;
+    }
+
     pub fn step(&self) -> MachineState {
         let c64 = self.base_client.lock();
         let registers = c64.cpu().registers.clone();
         let last_op = c64.disassemble(&c64.last_op, true);
         let memory_slice = c64.memory().fragment(
-            self.debugger_state.observed_mem.start,
-            self.debugger_state.observed_mem.end,
+            c64.debugger_state.observed_mem.start,
+            c64.debugger_state.observed_mem.end,
         );
         let screen = c64.get_screen_memory();
         let character_set = c64.get_byte(0xd018); // https://www.c64-wiki.com/wiki/Character_set
@@ -62,6 +72,7 @@ impl C64Client {
             memory_slice,
             screen,
             character_set,
+            variables: c64.debugger_state.variables.clone()
         }
     }
 }
@@ -79,6 +90,8 @@ impl InteractiveClient for C64Client {
         // key down
         let mut c64 = self.base_client.lock();
         c64.send_keys(&ui_event_to_c64_key_codes(&event), true);
+
+log::info!("key ec {:?}", event);
 
         // key up (simulated with timeout)
         let mut up_event = event.clone();

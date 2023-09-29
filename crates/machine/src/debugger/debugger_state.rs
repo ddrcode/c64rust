@@ -10,3 +10,19 @@ pub struct DebuggerState {
     pub nmi_on: bool,
     pub observed_mem: Range<Addr>,
 }
+
+
+impl DebuggerState {
+    pub fn set_observed_mem(&mut self, from: Addr, to: Addr) {
+        self.observed_mem.start = from;
+        self.observed_mem.end = to;
+    }
+
+    pub fn upsert_variable(&mut self, var: Variable) {
+        if let Some(idx) = self.variables.iter().position(|v|v.name==var.name) {
+            self.variables[idx] = var;
+        } else {
+            self.variables.push(var);
+        }
+    }
+}

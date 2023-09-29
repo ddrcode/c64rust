@@ -28,7 +28,7 @@ pub fn update_asm_view(s: &mut Cursive, line: &String) {
 pub fn get_asm_view() -> impl View {
     let style = Style::default();
 
-    let view = TextView::new("")
+    TextView::new("")
         .style(style)
         .with_name("asm")
         .scrollable()
@@ -47,11 +47,13 @@ pub fn get_asm_view() -> impl View {
                 scroller.scroll_down(scroller.last_outer_size().y.saturating_sub(1));
             }
             Some(EventResult::Consumed(None))
-        });
-
-    HideableView::new(ResizedView::with_fixed_height(
-        10,
-        PaddedView::lrtb(3, 0, 0, 0, view),
-    ))
-    .with_name("asm_wrapper")
+        })
+        .wrap_with(|v| PaddedView::lrtb(3, 0, 0, 0, v))
+        .wrap_with(|v| ResizedView::with_fixed_height(10, v))
+        .wrap_with(|v| {
+            let mut hv = HideableView::new(v);
+            hv.hide();
+            hv
+        })
+        .with_name("asm_wrapper")
 }

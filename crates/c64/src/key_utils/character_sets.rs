@@ -28,9 +28,6 @@ lazy_static! {
 }
 
 pub fn screen_code_to_ascii(code: &u8, set: u8) -> char {
-    if set != 0x14 && set != 0x17 {
-        log::error!("An attempt to get unknown chat  set ({set}). Defaulting to 14");
-    }
     if set == 0x14 {
         CHAR_SET_1[*code as usize]
     } else {

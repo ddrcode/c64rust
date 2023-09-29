@@ -147,6 +147,7 @@ impl Machine for C64 {
         if self.get_status() == MachineStatus::Running && self.should_pause(op) {
             self.start_debugging();
         }
+        self.update_debugger_state();
     }
 }
 
@@ -157,9 +158,13 @@ impl Debugger for C64 {
         &self.debugger_state
     }
 
+    fn debugger_state_mut(&mut self) -> &mut DebuggerState {
+        &mut self.debugger_state
+    }
     fn machine(&self) -> &C64 {
         self
     }
+
 }
 
 impl DebugMachine for C64 {}

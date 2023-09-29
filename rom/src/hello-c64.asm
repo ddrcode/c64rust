@@ -1,6 +1,6 @@
 ;; -------------------------------------------------------------------
 ;; HELLO OS
-;; 
+;;
 ;; A fun "operating system" for C64
 ;; created by DDRcode
 ;;
@@ -19,10 +19,10 @@
 !skip $ff
 
 ; --------------------------------------------------------------------
-; GLOBAL ADDRESSESS 
+; GLOBAL ADDRESSESS
 
 ; hardware vectors
-reset_vector = $fce2                          ; For consistency (and fun) I use  
+reset_vector = $fce2                          ; For consistency (and fun) I use
 irq_vector = $ff48                            ; the same addresses as the original ROM
 nmi_vector = $fe43
 
@@ -44,10 +44,10 @@ screen_end = $07e8
 ; --------------------------------------------------------------------
 ; ROM DATA
 
-welcome_msg_line_0     !pet    "Welcome to HelloOS v0.1", 0
-welcome_msg_line_1     !pet    "============================", 0
-welcome_msg_line_2     !pet    "(proudly doing nothing, but the cursor", 0
-welcome_msg_line_3     !pet    "should be blinking cheerfully)", 0
+welcome_msg_line_0     !scr    "Welcome to HelloOS v0.1", 0
+welcome_msg_line_1     !scr    "============================", 0
+welcome_msg_line_2     !scr    "(proudly doing nothing, but the cursor", 0
+welcome_msg_line_3     !scr    "should be blinking cheerfully)", 0
 
 ; --------------------------------------------------------------------
 ; LIBRARIES
@@ -133,7 +133,7 @@ cls:
 
 !zone sub_show_cursor
 show_cursor:
-        LDA #$ff
+        LDA #$a0
         LDY cursor_x
         STA (cursor_line_addr), Y
         RTS
@@ -147,7 +147,7 @@ hide_cursor:
         RTS
 
 
-!zone 
+!zone
 ;; Computes the screen address of the beggining of cursor Y line
 ;; and stores the result in cursor_line_variable
 ;; @uses var_a, var_b
@@ -156,7 +156,7 @@ compute_cursor_line_addr:
         +set_word var_b, $00, $00
         LDY cursor_y                    ; set reg Y to cursor Y
 .loop                                   ; and loop until Y is zero
-        CPY #0                          ; if Y is 0 go to done 
+        CPY #0                          ; if Y is 0 go to done
         BEQ .done
         +set_word var_b, $28, $00       ; set var_b to $0028 (40 - line's lenght)
         JSR add                         ; add var_a and var_b
@@ -172,7 +172,7 @@ compute_cursor_line_addr:
 ;; FIXME it assumes that text never goes beyond screen
 println:
         +copy_word cursor_line_addr, var_a
-        LDX cursor_x 
+        LDX cursor_x
         BEQ +                           ; jump if cursor X is 0
         +set_word var_b, 0, 0           ; else add cursor X to line addr
         STX var_b                       ; and store result in var_a
@@ -198,7 +198,7 @@ add:    CLC                             ; clear carry flag
         ADC var_b
         PHA                             ; store result on the stack
         LDA var_a+1                     ; add hi-bytes of a and b (with carry)
-        ADC var_b+1	
+        ADC var_b+1
         STA var_a+1
         PLA                             ; load lo-byte sum from the stack
         STA var_a                       ; and store in var_a low byte
@@ -208,15 +208,16 @@ add:    CLC                             ; clear carry flag
 ; --------------------------------------------------------------------
 ; INIT
 
-!zone init_procedure 
+!zone init_procedure
 
-; $fce2 is a starting procedure address of C64 official Kernal, so we use the same adress 
+; $fce2 is a starting procedure address of C64 official Kernal, so we use the same adress
 ; to initialize the system (there is no particular reason for it other than fun or consistency)
 
 * = reset_vector
 
 init:
         SEI                             ; disable interrupts for init
+
         JSR cls                         ; Clear screen and print welcome message
         +println_at welcome_msg_line_0, 8, 1
         +println_at welcome_msg_line_1, 6, 2
