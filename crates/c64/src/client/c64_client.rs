@@ -20,12 +20,12 @@ pub struct MachineState {
     pub memory_slice: Vec<u8>,
     pub screen: Vec<u8>,
     pub character_set: u8,
-    pub variables: Vec<Variable>
+    pub variables: Vec<Variable>,
 }
 
 pub struct C64Client {
     base_client: DirectClient<C64>, // awful!!!
-    // pub debugger_state: DebuggerState,
+                                    // pub debugger_state: DebuggerState,
 }
 
 impl C64Client {
@@ -72,7 +72,7 @@ impl C64Client {
             memory_slice,
             screen,
             character_set,
-            variables: c64.debugger_state.variables.clone()
+            variables: c64.debugger_state.variables.clone(),
         }
     }
 }
@@ -91,7 +91,7 @@ impl InteractiveClient for C64Client {
         let mut c64 = self.base_client.lock();
         c64.send_keys(&ui_event_to_c64_key_codes(&event), true);
 
-log::info!("key ec {:?}", event);
+        log::info!("key ec {:?}", event);
 
         // key up (simulated with timeout)
         let mut up_event = event.clone();
@@ -152,6 +152,5 @@ impl NonInteractiveClient for C64Client {
 impl Client for C64Client {}
 
 impl MachineObserver for C64Client {
-    fn on_next(&mut self, op: &Operation) {
-    }
+    fn on_next(&mut self, op: &Operation) {}
 }

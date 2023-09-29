@@ -1,6 +1,6 @@
 use super::*;
 use crate::machine::{Machine, MachineStatus};
-use crate::mos6502::{Operation};
+use crate::mos6502::Operation;
 
 pub trait MachineObserver {
     fn on_next(&mut self, op: &Operation);
@@ -22,10 +22,15 @@ pub trait Debugger {
     }
 
     fn update_debugger_state(&mut self) {
-        let vars = self.debugger_state().variables.iter().map(|var| Variable {
-            value: self.machine().get_byte(var.addr),
-            ..var.clone()
-        }).collect();
+        let vars = self
+            .debugger_state()
+            .variables
+            .iter()
+            .map(|var| Variable {
+                value: self.machine().get_byte(var.addr),
+                ..var.clone()
+            })
+            .collect();
         self.debugger_state_mut().variables = vars;
     }
 }

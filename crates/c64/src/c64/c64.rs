@@ -164,7 +164,6 @@ impl Debugger for C64 {
     fn machine(&self) -> &C64 {
         self
     }
-
 }
 
 impl DebugMachine for C64 {}
@@ -174,6 +173,3 @@ impl FromConfig for C64 {
         C64::new(config)
     }
 }
-
-
-

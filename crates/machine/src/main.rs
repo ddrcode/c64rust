@@ -13,21 +13,24 @@ use crate::client::{DirectClient, NonInteractiveClient};
 use crate::machine::MOS6502Machine;
 use anyhow::Result;
 use clap::Parser;
+use cli::get_profile_from_toml;
 use env_logger;
 
 fn main() -> Result<()> {
     env_logger::init();
 
     let args = Args::parse();
-    let machine: MOS6502Machine = create_machine_from_cli_args()?;
-    let mut client = DirectClient::new(machine);
+    get_profile_from_toml(args.profile.unwrap())?;
 
-    client.start_sync()?;
-
-    if args.show_status {
-        println!("{}", client.get_cpu_state()?);
-    }
-
-    client.stop()?;
+    // let machine: MOS6502Machine = create_machine_from_cli_args()?;
+    // let mut client = DirectClient::new(machine);
+    //
+    // client.start_sync()?;
+    //
+    // if args.show_status {
+    //     println!("{}", client.get_cpu_state()?);
+    // }
+    //
+    // client.stop()?;
     Ok(())
 }

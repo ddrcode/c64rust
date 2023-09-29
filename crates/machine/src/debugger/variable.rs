@@ -4,7 +4,7 @@ use crate::machine::Addr;
 pub struct Variable {
     pub name: String,
     pub addr: Addr,
-    pub value: u8
+    pub value: u8,
 }
 
 impl std::fmt::Display for Variable {

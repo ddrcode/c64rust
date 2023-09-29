@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 use super::{Addr, MachineConfig, Memory};
+use crate::debugger::MachineObserver;
 use crate::mos6502::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6502,
 };
 use std::num::Wrapping;
-use crate::debugger::MachineObserver;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum MachineStatus {
@@ -132,7 +132,7 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         let op = Operation::new(def.clone(), operand, address);
 
         self.pre_next(&op);
-        self.with_observer(|cb|cb.on_next(&op));
+        self.with_observer(|cb| cb.on_next(&op));
         self.execute_operation(&op);
         self.post_next(&op);
 

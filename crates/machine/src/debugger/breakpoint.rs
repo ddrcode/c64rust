@@ -1,7 +1,9 @@
+use serde_derive::Deserialize;
+
 use crate::machine::{Addr, Machine};
 use crate::mos6502::{Mnemonic, Operation};
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Deserialize)]
 pub enum Breakpoint {
     Address(Addr),
     Interrupt,

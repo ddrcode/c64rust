@@ -11,7 +11,6 @@ pub struct DebuggerState {
     pub observed_mem: Range<Addr>,
 }
 
-
 impl DebuggerState {
     pub fn set_observed_mem(&mut self, from: Addr, to: Addr) {
         self.observed_mem.start = from;
@@ -19,7 +18,7 @@ impl DebuggerState {
     }
 
     pub fn upsert_variable(&mut self, var: Variable) {
-        if let Some(idx) = self.variables.iter().position(|v|v.name==var.name) {
+        if let Some(idx) = self.variables.iter().position(|v| v.name == var.name) {
             self.variables[idx] = var;
         } else {
             self.variables.push(var);
