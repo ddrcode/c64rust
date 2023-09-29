@@ -6,6 +6,7 @@ extern crate log;
 
 mod gui;
 mod utils;
+mod config;
 
 use crate::gui::*;
 use anyhow;

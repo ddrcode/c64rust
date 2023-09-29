@@ -11,7 +11,7 @@ machine = { path="../machine/" }
 c64 = { path="../c64/" }
 clap = { version = "4.4.2", features = ["derive"] }
 colored = "2"
-cursive = { version="0.20", default-features=false, features=["ncurses-backend"] }
+cursive = { version="0.20", default-features=false, features=["crossterm-backend"] }
 cursive_hexview = { git="https://github.com/hellow554/cursive_hexview.git" }
 # cursive_hexview = "0.7"
 substring = "1.4.5"

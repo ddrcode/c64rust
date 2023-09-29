@@ -1,6 +1,8 @@
 #![allow(non_camel_case_types)]
 
 use super::UIState;
+use crate::config::CONFIG;
+use crate::utils::color::color;
 use crate::utils::keyboard::map_key_event;
 use c64::key_utils::screen_code_to_ascii;
 use cursive::{
@@ -25,14 +27,17 @@ impl MachineScreen {
             state: [0u8; 40 * 25].to_vec(),
             screen_size: Vec2::new(44, 27),
             reversed_color: ColorStyle::new(
-                Color::Rgb(0x35, 0x28, 0x79),
-                Color::Rgb(0x70, 0xa4, 0xb2),
+                color(CONFIG.machine_screen_back),
+                color(CONFIG.machine_screen_front),
             ),
             frame_color: ColorStyle::new(
-                Color::Rgb(0x35, 0x28, 0x79),
-                Color::Rgb(0x70, 0xa4, 0xb2),
+                color(CONFIG.machine_screen_back),
+                color(CONFIG.machine_screen_front),
             ),
-            color: ColorStyle::new(Color::Rgb(0x70, 0xa4, 0xb2), Color::Rgb(0x35, 0x28, 0x79)),
+            color: ColorStyle::new(
+                color(CONFIG.machine_screen_front),
+                color(CONFIG.machine_screen_back),
+            ),
             character_set: 14,
         }
     }
