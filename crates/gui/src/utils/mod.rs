@@ -1,2 +1,2 @@
-pub (crate) mod keyboard;
-pub (crate) mod color;
+pub(crate) mod color;
+pub(crate) mod keyboard;

@@ -21,22 +21,17 @@ pub struct MachineState {
     pub screen: Vec<u8>,
     pub character_set: u8,
     pub variables: Vec<Variable>,
+    pub next_op: String,
 }
 
 pub struct C64Client {
     base_client: DirectClient<C64>, // awful!!!
-                                    // pub debugger_state: DebuggerState,
 }
 
 impl C64Client {
     pub fn new(c64: C64) -> Self {
         C64Client {
             base_client: DirectClient::new(c64),
-            // debugger_state: DebuggerState {
-            //     observed_mem: (0..200),
-            //     variables: vec![Variable{ name: "Tick".to_string(), addr: 0x001e, value: 0 }],
-            //     ..Default::default()
-            // },
         }
     }
 
@@ -59,7 +54,8 @@ impl C64Client {
     pub fn step(&self) -> MachineState {
         let c64 = self.base_client.lock();
         let registers = c64.cpu().registers.clone();
-        let last_op = c64.disassemble(&c64.last_op, true);
+        let last_op = c64.disassemble(&c64.last_op, true, false);
+        let next_op = c64.disassemble(&c64.decode_next(), false, true);
         let memory_slice = c64.memory().fragment(
             c64.debugger_state.observed_mem.start,
             c64.debugger_state.observed_mem.end,
@@ -73,6 +69,7 @@ impl C64Client {
             screen,
             character_set,
             variables: c64.debugger_state.variables.clone(),
+            next_op
         }
     }
 }
@@ -151,6 +148,3 @@ impl NonInteractiveClient for C64Client {
 
 impl Client for C64Client {}
 
-impl MachineObserver for C64Client {
-    fn on_next(&mut self, op: &Operation) {}
-}

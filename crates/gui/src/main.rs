@@ -4,9 +4,9 @@ extern crate colored;
 extern crate cursive_hexview;
 extern crate log;
 
+mod config;
 mod gui;
 mod utils;
-mod config;
 
 use crate::gui::*;
 use anyhow;
@@ -17,7 +17,7 @@ use machine::{
     cli::create_machine_from_cli_args,
     client::{InteractiveClient, NonInteractiveClient},
     utils::lock,
-    MachineError,
+    MachineError, debugger::Breakpoint,
 };
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -37,7 +37,10 @@ fn main() -> anyhow::Result<()> {
 
     let mut prev_state = MachineState::default();
     let mut runner = siv.runner();
+
     runner.refresh();
+    init_breakpoints_view(&mut runner, &lock(&client).get_debugger_state().breakpoints);
+
     loop {
         runner.step();
         if !runner.is_running() {

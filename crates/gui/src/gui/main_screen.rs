@@ -1,5 +1,11 @@
-use super::{cpu_state, get_asm_view, get_variables_view, memory_view, MachineScreen};
-use cursive::views::{LinearLayout, NamedView};
+use super::{
+    cpu_state, get_asm_view, get_breakpoints_view, get_variables_view, memory_view, MachineScreen,
+};
+use cursive::{
+    view::Nameable,
+    views::{HideableView, LinearLayout, NamedView, PaddedView},
+    With,
+};
 
 /// Creates main screen of the gui and arranges together
 /// all major components
@@ -16,6 +22,15 @@ pub fn main_screen() -> LinearLayout {
         .child(get_asm_view());
 
     LinearLayout::horizontal()
-        .child(get_variables_view())
+        .child(
+            HideableView::new(
+                (LinearLayout::vertical()
+                    .child(get_variables_view())
+                    .child(get_breakpoints_view()))
+                .wrap_with(|v| PaddedView::lrtb(0, 0, 1, 1, v)),
+            )
+            .hidden()
+            .with_name("variables_panel"),
+        )
         .child(lines)
 }

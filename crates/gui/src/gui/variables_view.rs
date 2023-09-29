@@ -1,5 +1,5 @@
 use cursive::{
-    view::{Nameable, Scrollable},
+    view::{Nameable, Resizable, Scrollable, SizeConstraint},
     views::{HideableView, PaddedView, Panel, ResizedView, TextView},
     Cursive, View, With,
 };
@@ -19,12 +19,12 @@ pub fn update_variables_view(s: &mut Cursive, vars: &Vec<Variable>) {
 pub fn get_variables_view() -> impl View {
     TextView::new("")
         .with_name("variables")
-        .wrap_with(|v| PaddedView::lrtb(1, 1, 1, 1, v))
         .scrollable()
-        .wrap_with(|v| ResizedView::with_min_height(20, v))
+        .wrap_with(|v| {
+            let mut rv = ResizedView::with_min_height(12, v);
+            rv.set_constraints(SizeConstraint::Free, SizeConstraint::AtMost(16));
+            rv
+        })
         .wrap_with(Panel::new)
         .title("Variables")
-        .wrap_with(HideableView::new)
-        .hidden()
-        .with_name("variables_wrapper")
 }

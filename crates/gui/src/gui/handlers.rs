@@ -32,7 +32,7 @@ pub(crate) fn update_ui(state: &MachineState, s: &mut Cursive) {
         view.set_state(screen, state.character_set);
     });
 
-    update_asm_view(s, &state.last_op);
+    update_asm_view(s, &state.last_op, &state.next_op);
     update_variables_view(s, &state.variables);
 }
 
@@ -44,7 +44,7 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
 
     type AsmIsEasierThanThis =
         ResizedView<PaddedView<OnEventView<ScrollView<NamedView<TextView>>>>>;
-    type OnceUponAMidnightDreary = Panel<ResizedView<ScrollView<PaddedView<NamedView<TextView>>>>>;
+    type OnceUponAMidnightDreary = PaddedView<LinearLayout>;
 
     let quit_handler = {
         let arc = client.clone();
@@ -62,7 +62,7 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
             (match c64.get_status() {
                 Running => {
                     set_visible::<AsmIsEasierThanThis>(s, "asm_wrapper", true);
-                    set_visible::<OnceUponAMidnightDreary>(s, "variables_wrapper", true);
+                    set_visible::<OnceUponAMidnightDreary>(s, "variables_panel", true);
                     c64.pause()
                 }
                 Debug => c64.resume(),
@@ -110,7 +110,7 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
                 )
                 .leaf(
                     "Toggle variables/breakpoints view [F3]",
-                    create_toggle_handler::<OnceUponAMidnightDreary>("variables_wrapper"),
+                    create_toggle_handler::<OnceUponAMidnightDreary>("variables_panel"),
                 ),
         )
         .add_leaf("Quit", quit_handler.clone());
@@ -127,7 +127,7 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
     );
     siv.add_global_callback(
         Key::F3,
-        create_toggle_handler::<OnceUponAMidnightDreary>("variables_wrapper"),
+        create_toggle_handler::<OnceUponAMidnightDreary>("variables_panel"),
     );
 
     siv.add_layer(screen);

@@ -6,9 +6,9 @@ use crate::utils::color::color;
 use crate::utils::keyboard::map_key_event;
 use c64::key_utils::screen_code_to_ascii;
 use cursive::{
-    event::{Callback, Event, EventResult},
+    event::{Callback, Event, EventResult, MouseButton, MouseEvent},
     theme::{Color, ColorStyle},
-    Printer, Vec2, View,
+    Printer, Vec2, View, direction::Direction,
 };
 use keyboard_types::Key;
 
@@ -102,16 +102,28 @@ impl View for MachineScreen {
     }
 
     fn on_event(&mut self, event: Event) -> EventResult {
-        log::warn!("mamy event {:?}", event);
-        let event = map_key_event(event);
-        if event.key == Key::Unidentified {
-            EventResult::Ignored
-        } else {
-            EventResult::Consumed(Some(Callback::from_fn_once(|s| {
-                s.with_user_data(|data: &mut UIState| {
-                    data.key = Some(event);
-                });
-            })))
+        match event {
+            Event::Mouse {
+                offset,
+                position,
+                event: MouseEvent::Press(_btn),
+            } => {
+                    // FIXME It doesn't work
+                    let _ = self.take_focus(Direction::none());
+                    EventResult::Consumed(None)
+            }
+            _ => {
+                let event = map_key_event(event);
+                if event.key == Key::Unidentified {
+                    EventResult::Ignored
+                } else {
+                    EventResult::Consumed(Some(Callback::from_fn_once(|s| {
+                        s.with_user_data(|data: &mut UIState| {
+                            data.key = Some(event);
+                        });
+                    })))
+                }
+            }
         }
     }
 }

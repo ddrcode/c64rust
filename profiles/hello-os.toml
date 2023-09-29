@@ -3,43 +3,19 @@ rom = "./rom/hello.rom"
 
 [debug]
 
-[[debug.variable]]
-name = "var_a"
-address = 0x10
+variable = [
+    { name="irq cnt", address=0x16 },
+    { name="var a", address=0x10 },
+    { name="var b", address=0x11 },
+    { name="var c", address=0x12 },
+    { name="cur x", address=0x21 },
+    { name="cur y", address=0x22 },
+    { name="port a", address=0xdc00 },
+    { name="port b", address=0xdc01 },
+    { name="key cnt", address=0x58 },
+    { name="key tmp", address=0x59 },
+]
 
-[[debug.variable]]
-name = "var_a"
-address = 0x10
-
-[[debug.variable]]
-name = "var_b"
-address = 0x11
-
-[[debug.variable]]
-name = "var_c"
-address = 0x12
-
-[[debug.variable]]
-name = "cur_x"
-address = 0x21
-
-[[debug.variable]]
-name = "cur_y"
-address = 0x22
-
-[[debug.variable]]
-name = "port_a"
-address = 0xdc00
-
-[[debug.variable]]
-name = "port_b"
-address = 0xdc01
-
-[[debug.variable]]
-name = "key_cnt"
-address = 0x58
-
-[[debug.variable]]
-name = "key-tmp"
-address = 0x59
-
+breakpoint = [
+    { Address = 0xe1d6 },
+]

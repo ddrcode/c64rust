@@ -13,7 +13,6 @@ const IRQ_INTERVAL: Duration = Duration::from_millis(20);
 pub struct Runtime<M: Machine> {
     mutex: Arc<Mutex<M>>,
     irq_time: Instant,
-    cycles: u128,
 }
 
 impl<M: Machine> Runtime<M> {
@@ -21,7 +20,6 @@ impl<M: Machine> Runtime<M> {
         Runtime {
             mutex,
             irq_time: Instant::now(),
-            cycles: 0,
         }
     }
 
@@ -44,9 +42,6 @@ impl<M: Machine> Runtime<M> {
                 if status == Debug {
                     continue;
                 }
-                if let Some(max_cycles) = machine.get_config().max_cycles {
-                    if self.cycles > max_cycles {}
-                }
                 machine.next();
                 if let Some(addr) = machine.get_config().exit_on_addr {
                     if machine.PC() == addr {
@@ -57,7 +52,6 @@ impl<M: Machine> Runtime<M> {
                 status = machine.get_status();
             }
             self.irq_loop();
-            self.cycles = self.cycles.wrapping_add(1);
         }
     }
 }

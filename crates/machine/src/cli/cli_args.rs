@@ -1,4 +1,4 @@
-use crate::machine::MachineConfig;
+use crate::{machine::{MachineConfig, Cycles}, utils::if_else};
 use clap::Parser;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -35,7 +35,7 @@ pub struct Args {
     pub disassemble: bool,
 
     #[arg(long = "max-cycles")]
-    pub max_cycles: Option<u128>,
+    pub max_cycles: Option<Cycles>,
 
     #[arg(long = "max-time")]
     pub max_time: Option<u64>,
@@ -81,13 +81,6 @@ impl From<&Args> for MachineConfig {
     }
 }
 
-fn if_else<T>(cond: bool, val1: T, val2: T) -> T {
-    if cond {
-        val1
-    } else {
-        val2
-    }
-}
 
 fn val_or(val1: bool, val2: bool) -> bool {
     if val1 {
