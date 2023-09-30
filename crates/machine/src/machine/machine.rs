@@ -1,13 +1,10 @@
 #![allow(non_snake_case)]
 use super::{Addr, MachineConfig, Memory};
-use crate::debugger::MachineObserver;
 use crate::mos6502::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6502,
 };
 use crate::utils::if_else;
 use std::num::Wrapping;
-use std::thread;
-use std::time::Duration;
 
 pub type Cycles = u64;
 

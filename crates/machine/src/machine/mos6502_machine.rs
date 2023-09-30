@@ -1,5 +1,5 @@
 use super::{
-    impl_reg_setter, FromConfig, MOS6502Memory, Machine, MachineConfig, MachineStatus, Memory,
+    impl_reg_setter, FromConfig, MOS6502Memory, Machine, MachineConfig, MachineStatus,
     RegSetter, Cycles
 };
 use crate::cli::{Profile, FromProfile};

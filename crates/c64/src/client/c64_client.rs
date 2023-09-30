@@ -1,8 +1,7 @@
 use crate::c64::C64;
 use crate::key_utils::ui_event_to_c64_key_codes;
+use crossbeam_channel::Receiver;
 use keyboard_types::{KeyState, KeyboardEvent};
-use machine::debugger::{MachineObserver, Variable};
-use machine::mos6502::Operation;
 use machine::{
     client::*, debugger::DebuggerState, mos6502::Registers, utils::lock, Addr, Machine,
     MachineError, MachineStatus, Memory,
@@ -20,7 +19,7 @@ pub struct MachineState {
     pub memory_slice: Vec<u8>,
     pub screen: Vec<u8>,
     pub character_set: u8,
-    pub variables: Vec<Variable>,
+    pub debugger: DebuggerState,
     pub next_op: String,
 }
 
@@ -51,7 +50,8 @@ impl C64Client {
         self.base_client.lock().debugger_state = state;
     }
 
-    pub fn step(&self) -> MachineState {
+    pub fn step(&mut self) -> MachineState {
+        self.handle_events();
         let c64 = self.base_client.lock();
         let registers = c64.cpu().registers.clone();
         let last_op = c64.disassemble(&c64.last_op, true, false);
@@ -68,8 +68,28 @@ impl C64Client {
             memory_slice,
             screen,
             character_set,
-            variables: c64.debugger_state.variables.clone(),
-            next_op
+            debugger: c64.debugger_state.clone(),
+            next_op,
+        }
+    }
+
+    fn handle_events(&mut self) {
+        use ClientEvent::*;
+        if let Some(r) = &self.base_client.receiver {
+            for event in r.try_iter().collect::<Vec<ClientEvent>>().iter() {
+                match event {
+                    EnableBreakpoint(b) => {
+                        self.base_client.lock().debugger_state.add_breakpoint(&b)
+                    }
+                    DisableBreakpoint(b) => {
+                        self.base_client.lock().debugger_state.remove_breakpoint(&b)
+                    }
+                    KeyPress(key_event) => self.send_key(key_event.clone()),
+                    SetObservedMemory(range) => {
+                        self.base_client.lock().debugger_state.observed_mem = range.clone()
+                    }
+                };
+            }
         }
     }
 }
@@ -144,7 +164,10 @@ impl NonInteractiveClient for C64Client {
     fn get_cpu_state(&self) -> Result<Registers> {
         self.base_client.get_cpu_state()
     }
+
+    fn set_receiver(&mut self, r: Receiver<ClientEvent>) {
+        self.base_client.set_receiver(r);
+    }
 }
 
 impl Client for C64Client {}
-

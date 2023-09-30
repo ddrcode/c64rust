@@ -1,12 +1,12 @@
 extern crate colored;
 
-mod cli;
-mod client;
-mod debugger;
-mod error;
-mod machine;
-mod mos6502;
-mod utils;
+pub mod cli;
+pub mod client;
+pub mod debugger;
+pub mod error;
+pub mod machine;
+pub mod mos6502;
+pub mod utils;
 
 use crate::cli::{create_machine_from_cli_args, Args};
 use crate::client::{DirectClient, NonInteractiveClient};

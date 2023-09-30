@@ -15,12 +15,6 @@ pub fn get_file_as_byte_vec(filename: &PathBuf) -> Result<Vec<u8>> {
     Ok(buffer)
 }
 
-fn get_args_from_toml(file: PathBuf) -> Result<Args> {
-    let content = read_to_string(file)?;
-    let args: Args = toml::from_str(&content)?;
-    Ok(args)
-}
-
 pub fn get_profile(args: Args) -> Result<Profile> {
     if args.profile.is_none() {
         return Ok(Profile::from_args(&args));

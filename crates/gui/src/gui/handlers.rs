@@ -33,7 +33,7 @@ pub(crate) fn update_ui(state: &MachineState, s: &mut Cursive) {
     });
 
     update_asm_view(s, &state.last_op, &state.next_op);
-    update_variables_view(s, &state.variables);
+    update_variables_view(s, &state.debugger.variables);
 }
 
 pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {

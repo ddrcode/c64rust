@@ -4,6 +4,7 @@ use crate::machine::{Addr, Machine, MachineStatus, Memory};
 use crate::mos6502::Registers;
 use crate::utils::lock;
 // use crate::error::MachineError;
+use crossbeam_channel::Receiver;
 use runtime::Runtime;
 use std;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -17,6 +18,7 @@ type Result<T> = std::result::Result<T, MachineError>;
 pub struct DirectClient<T: Machine + Send + 'static> {
     machine_mtx: Arc<Mutex<T>>,
     handle: Option<thread::JoinHandle<()>>,
+    pub receiver: Option<Receiver<ClientEvent>>
 }
 
 impl<T: Machine + Send + 'static> DirectClient<T> {
@@ -24,6 +26,7 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
         DirectClient {
             machine_mtx: Arc::new(Mutex::new(machine)),
             handle: None,
+            receiver: None
         }
     }
 
@@ -117,4 +120,9 @@ impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
     fn get_cpu_state(&self) -> Result<Registers> {
         Ok(self.lock().cpu().registers.clone())
     }
+
+    fn set_receiver(&mut self, r: Receiver<ClientEvent>){
+        self.receiver = Some(r);
+    }
+
 }

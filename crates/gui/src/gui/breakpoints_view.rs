@@ -3,7 +3,11 @@ use cursive::{
     views::{Checkbox, LinearLayout, Panel, ResizedView, TextView},
     Cursive, View, With,
 };
-use machine::debugger::Breakpoint;
+use machine::{client::ClientEvent, debugger::Breakpoint};
+
+use crate::messaging::send_client_event;
+
+use super::UIState;
 
 pub fn init_breakpoints_view(s: &mut Cursive, bps: &Vec<Breakpoint>) {
     let content: Vec<Breakpoint> = bps
@@ -31,7 +35,13 @@ pub fn init_breakpoints_view(s: &mut Cursive, bps: &Vec<Breakpoint>) {
 
 fn get_checkbox(addr: u16) -> impl View {
     LinearLayout::horizontal()
-        .child(Checkbox::new().checked().on_change(|_c, _value| {}))
+        .child(Checkbox::new().checked().on_change(move |_c, value| {
+            send_client_event(if value {
+                ClientEvent::EnableBreakpoint(Breakpoint::Address(addr))
+            } else {
+                ClientEvent::DisableBreakpoint(Breakpoint::Address(addr))
+            });
+        }))
         .child(TextView::new(" "))
         .child(TextView::new(&format!("{:04x}", addr)))
 }

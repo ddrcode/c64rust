@@ -1,4 +1,3 @@
-use anyhow::Result;
 use serde_derive::Deserialize;
 
 use crate::debugger::{Breakpoint, DebuggerState, Variable};

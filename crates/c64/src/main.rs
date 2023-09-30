@@ -5,9 +5,9 @@ extern crate colored;
 use clap::Parser;
 use machine::cli::create_machine_from_cli_args;
 
-mod c64;
-mod client;
-mod key_utils;
+pub mod c64;
+pub mod client;
+pub mod key_utils;
 
 use crate::c64::C64;
 use crate::client::C64Client;

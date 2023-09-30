@@ -4,21 +4,21 @@ extern crate colored;
 extern crate cursive_hexview;
 extern crate log;
 
-mod config;
-mod gui;
-mod utils;
+pub mod config;
+pub mod gui;
+pub mod messaging;
+pub mod utils;
 
 use crate::gui::*;
+use crate::messaging::*;
 use anyhow;
 use c64::{C64Client, MachineState, C64};
-use cursive::{views::Dialog, Cursive};
+use config::CONFIG;
+use cursive::views::Dialog;
 use log::LevelFilter;
+use machine::client::ClientEvent;
 use machine::{
-    cli::create_machine_from_cli_args,
-    client::{InteractiveClient, NonInteractiveClient},
-    debugger::Breakpoint,
-    utils::lock,
-    MachineError,
+    cli::create_machine_from_cli_args, client::NonInteractiveClient, utils::lock, MachineError,
 };
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -30,11 +30,8 @@ fn main() -> anyhow::Result<()> {
     colored::control::set_override(false);
     init_log();
 
-    let c64_client = C64Client::new(create_machine_from_cli_args::<C64>()?);
-    let client = Arc::new(Mutex::new(c64_client));
+    let client = init_client()?;
     let mut siv = init_ui(client.clone());
-
-    lock(&client).start().unwrap_or_else(handle_error);
 
     let mut prev_state = MachineState::default();
     let mut runner = siv.runner();
@@ -54,7 +51,6 @@ fn main() -> anyhow::Result<()> {
                 runner.refresh();
                 prev_state = state;
             }
-            handle_user_data(client.clone(), &mut runner);
         }
         thread::sleep(GUI_REFRESH);
     }
@@ -63,16 +59,15 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn handle_user_data(client: Arc<Mutex<C64Client>>, s: &mut Cursive) {
-    if let Some(ud) = s.user_data::<UIState>() {
-        let mut state = lock(&client).get_debugger_state();
-        state.observed_mem = ud.addr_from..(ud.addr_from + 200);
-        lock(&client).set_debugger_state(state);
-        ud.key
-            .as_ref()
-            .map(|key| lock(&client).send_key(key.clone()));
-        ud.key = None;
-    }
+fn init_client() -> anyhow::Result<Arc<Mutex<C64Client>>> {
+    let mut c64_client = C64Client::new(create_machine_from_cli_args::<C64>()?);
+    connect_client(&mut c64_client);
+    let client = Arc::new(Mutex::new(c64_client));
+
+    lock(&client).start().unwrap_or_else(handle_error);
+    send_client_event(ClientEvent::SetObservedMemory(0..CONFIG.memory_view_size));
+
+    Ok(client)
 }
 
 fn init_log() {

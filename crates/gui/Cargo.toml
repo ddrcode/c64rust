@@ -19,6 +19,7 @@ log = "0.4.20"
 keyboard-types = { version="0.7", features=["webdriver"] }
 lazy_static = "1.4.0"
 anyhow = "1.0.75"
+crossbeam-channel = "0.5.8"
 
 [[bin]]
 name = "gui"

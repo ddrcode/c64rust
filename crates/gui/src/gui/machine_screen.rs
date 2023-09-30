@@ -1,16 +1,16 @@
 #![allow(non_camel_case_types)]
 
-use super::UIState;
-use crate::config::CONFIG;
+use crate::{config::CONFIG, messaging::send_client_event};
 use crate::utils::color::color;
 use crate::utils::keyboard::map_key_event;
 use c64::key_utils::screen_code_to_ascii;
 use cursive::{
-    event::{Callback, Event, EventResult, MouseButton, MouseEvent},
-    theme::{Color, ColorStyle},
+    event::{Event, EventResult, MouseEvent},
+    theme::{ColorStyle},
     Printer, Vec2, View, direction::Direction,
 };
 use keyboard_types::Key;
+use machine::client::ClientEvent;
 
 pub struct MachineScreen {
     state: Vec<u8>,
@@ -117,11 +117,8 @@ impl View for MachineScreen {
                 if event.key == Key::Unidentified {
                     EventResult::Ignored
                 } else {
-                    EventResult::Consumed(Some(Callback::from_fn_once(|s| {
-                        s.with_user_data(|data: &mut UIState| {
-                            data.key = Some(event);
-                        });
-                    })))
+                    send_client_event(ClientEvent::KeyPress(event));
+                    EventResult::Consumed(None)
                 }
             }
         }

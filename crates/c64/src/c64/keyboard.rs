@@ -1,6 +1,4 @@
-use std::collections::VecDeque;
-
-use crate::key_utils::{C64KeyCode, C64_SCAN_CODES};
+use crate::key_utils::C64_SCAN_CODES;
 
 pub struct Keyboard {
     last_keys: Vec<u8>,
