@@ -80,4 +80,8 @@ impl Memory for C64Memory {
         self.ram[idx] = low;
         self.ram[idx + 1] = high; // little endian!
     }
+
+    fn size(&self) -> usize {
+        self.ram.len()
+    }
 }

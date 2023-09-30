@@ -8,7 +8,6 @@ pub struct MOS6502Memory {
 impl MOS6502Memory {
     #[allow(dead_code)]
     pub fn new(size: usize) -> Self {
-        // let size: usize = 1 << 16;
         MOS6502Memory {
             ram: vec![0u8; size].into_boxed_slice(),
             rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
@@ -53,5 +52,9 @@ impl Memory for MOS6502Memory {
             self.rom[idx] = *byte;
             idx += 1;
         }
+    }
+
+    fn size(&self) -> usize {
+        self.ram.len()
     }
 }

@@ -54,6 +54,13 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
         }
     };
 
+    let reset_handler = {
+        let arc = client.clone();
+        move |s: &mut Cursive| {
+            lock(&arc).reset().unwrap_or_else(handle_error);
+        }
+    };
+
     let debug_handler = {
         use machine::MachineStatus::*;
         let arc = Arc::clone(&client);
@@ -88,16 +95,16 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
         .add_subtree(
             "Machine",
             menu::Tree::new()
-                .leaf("Pause", |_s| {})
-                .leaf("Restart", |_s| {})
-                .leaf("Stop interrupts", |_s| {}),
+                .leaf("Restart", reset_handler)
+                .leaf("Stop (and quit)", quit_handler.clone())
         )
         .add_subtree(
             "Debug",
             menu::Tree::new()
                 .leaf("Go to address [F6]", |s| s.add_layer(address_dialog()))
                 .leaf("Toggle debugging [F7]", debug_handler.clone())
-                .leaf("Next step [F8]", next_handler.clone()),
+                .leaf("Next step [F8]", next_handler.clone())
+                .leaf("Skip interrupts", |_s| {}),
         )
         .add_subtree(
             "View",

@@ -6,6 +6,7 @@ pub trait Memory {
     fn mem(&self, addr: Addr) -> &[u8];
     fn init_rom(&mut self, data: &[u8]);
     fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]);
+    fn size(&self) -> usize;
 
     fn get_byte(&self, addr: Addr) -> u8 {
         self.mem(addr)[addr as usize]

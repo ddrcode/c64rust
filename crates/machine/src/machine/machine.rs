@@ -6,6 +6,8 @@ use crate::mos6502::{
 };
 use crate::utils::if_else;
 use std::num::Wrapping;
+use std::thread;
+use std::time::Duration;
 
 pub type Cycles = u64;
 
@@ -121,7 +123,13 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     }
 
     fn reset(&mut self) {
-        panic!("Not implemented yet :-)");
+        if self.get_status() != MachineStatus::Stopped {
+            self.stop();
+        }
+        for i in 0..self.memory().size() {
+            self.set_byte(i as u16, 0);
+        }
+        self.start();
     }
 
     fn execute_operation(&mut self, op: &Operation) -> u8;

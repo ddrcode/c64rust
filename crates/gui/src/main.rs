@@ -16,8 +16,9 @@ use log::LevelFilter;
 use machine::{
     cli::create_machine_from_cli_args,
     client::{InteractiveClient, NonInteractiveClient},
+    debugger::Breakpoint,
     utils::lock,
-    MachineError, debugger::Breakpoint,
+    MachineError,
 };
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -46,13 +47,15 @@ fn main() -> anyhow::Result<()> {
         if !runner.is_running() {
             break;
         }
-        let state = lock(&client).step();
-        if state != prev_state {
-            update_ui(&state, &mut runner);
-            runner.refresh();
-            prev_state = state;
+        if lock(&client).is_running() {
+            let state = lock(&client).step();
+            if state != prev_state {
+                update_ui(&state, &mut runner);
+                runner.refresh();
+                prev_state = state;
+            }
+            handle_user_data(client.clone(), &mut runner);
         }
-        handle_user_data(client.clone(), &mut runner);
         thread::sleep(GUI_REFRESH);
     }
 
