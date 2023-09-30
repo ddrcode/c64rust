@@ -27,13 +27,13 @@ But for now, just hit:
 
 ### Running options:
 
-```
+```text
 Options:
   -r, --rom <ROM>
       --ram <RAM>
-      --ram-file-addr <RAM_FILE_ADDR>  [default: 0200]
+      --ram-file-addr <RAM_FILE_ADDR>
       --ram-size <RAM_SIZE>            [default: 65536]
-  -a, --start-addr <START_ADDR>        [default: fce2]
+  -a, --start-addr <START_ADDR>
   -s, --show-screen
       --show-status
   -d, --disassemble
@@ -42,6 +42,8 @@ Options:
       --stop-on-addr <STOP_ON_ADDR>
       --stop-on-brk
   -v, --verbose
+      --char-rom <CHARACTER_ROM>
+      --profile <PROFILE>
   -h, --help                           Print help
   -V, --version                        Print version
 ```
@@ -53,11 +55,12 @@ Options:
 - The emulator boots with provided C64 ROM (some cartridges work too)
 - Text client with keyboard emulation - possible to run BASIC commands
 - The client has integrated simple debugging features: memory view, disassembler, and processor state
-- Step-by-step debugging
+- Step-by-step debugging: including breakpoints, variables and dissassembler (see the screenshots
+  below)
 
 This is the result of running current version of the emulator:
 
-<img src="screenshots/disassembler.png?raw=true" width="800"/>
+<img src="screenshots/debugger.png?raw=true" width="800"/>
 
 ## Features and goals
 
@@ -86,6 +89,13 @@ This is the result of running current version of the emulator:
 
 ## Screenshots
 
+<img src="screenshots/full_debugger.png?raw=true" width="300"/>
+
+Debugger in its current full capabilities - memory view, disassembler, variables watch and
+breakpoints. Variables and breakpoints must be at this stage configured in
+a [profile file](profiles/hello-os.toml), but I debug my [HelloOS](/rom) that way,
+and it's usable, so - the first step towards MVP!
+
 <img src="screenshots/dead_test.png?raw=true" width="300"/>
 
 [The Dead Test cartridge](http://blog.worldofjani.com/?p=164) image executed quite fine, but the two timers
@@ -96,14 +106,14 @@ at all (apart keyboard support).
 <img src="screenshots/diagnostic.png?raw=true" width="300"/>
 
 Another diagnostic tool - this one - besides proving that I've found the right Unicode characters
-for C64 graphics keys, seems to be failing miserably. At least it's doing nithing (perhaps depends
+for C64 graphics characters, seems to be failing miserably. At least it's doing nothing (perhaps depends
 heavily on clock).
 
 <img src="screenshots/cli-emu.png?raw=true" width="300"/>
 
 This is how it looks like when run the raw 6502 "machine" emulator in CLI.
 It's configured as 1kB machine that starts loaded program at 0x200. The provided ROM
-is 6-byte jump vector setting the reset vector to 0x200. Some debugging
+is 6-byte jump vector setting the reset vector to 0x200. Some "static" debugging
 is possible that way.
 
 ## Credits
