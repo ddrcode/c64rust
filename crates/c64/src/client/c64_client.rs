@@ -14,6 +14,7 @@ type Result<T> = std::result::Result<T, MachineError>;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct MachineState {
+    pub status: MachineStatus,
     pub registers: Registers,
     pub last_op: String,
     pub memory_slice: Vec<u8>,
@@ -63,6 +64,7 @@ impl C64Client {
         let screen = c64.get_screen_memory();
         let character_set = c64.get_byte(0xd018); // https://www.c64-wiki.com/wiki/Character_set
         MachineState {
+            status: c64.get_status(),
             registers,
             last_op,
             memory_slice,

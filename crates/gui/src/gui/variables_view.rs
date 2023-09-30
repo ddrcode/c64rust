@@ -1,6 +1,6 @@
 use cursive::{
-    view::{Nameable, Resizable, Scrollable, SizeConstraint},
-    views::{HideableView, PaddedView, Panel, ResizedView, TextView},
+    view::{Nameable, Scrollable, SizeConstraint},
+    views::{Panel, ResizedView, TextView},
     Cursive, View, With,
 };
 use machine::debugger::Variable;

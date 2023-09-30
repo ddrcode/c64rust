@@ -6,7 +6,6 @@ pub struct MOS6502Memory {
 }
 
 impl MOS6502Memory {
-    #[allow(dead_code)]
     pub fn new(size: usize) -> Self {
         MOS6502Memory {
             ram: vec![0u8; size].into_boxed_slice(),

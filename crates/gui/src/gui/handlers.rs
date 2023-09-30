@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use c64::{C64Client, MachineState};
@@ -9,11 +10,17 @@ use cursive::{
     Cursive, CursiveRunnable,
 };
 use cursive_hexview::HexView;
+use machine::MachineStatus;
 use machine::{client::NonInteractiveClient, utils::lock, MachineError};
 
 use crate::gui::{address_dialog, main_screen, UIState};
 
 use super::{update_asm_view, update_variables_view, CpuState, MachineScreen};
+
+static FIRST_DEBUG: AtomicBool = AtomicBool::new(true);
+
+type AsmIsEasierThanThis = ResizedView<PaddedView<OnEventView<ScrollView<NamedView<TextView>>>>>;
+type OnceUponAMidnightDreary = PaddedView<LinearLayout>;
 
 pub(crate) fn update_ui(state: &MachineState, s: &mut Cursive) {
     let addr = s.user_data::<UIState>().map_or(0, |data| data.addr_from);
@@ -34,6 +41,12 @@ pub(crate) fn update_ui(state: &MachineState, s: &mut Cursive) {
 
     update_asm_view(s, &state.last_op, &state.next_op);
     update_variables_view(s, &state.debugger.variables);
+
+    if FIRST_DEBUG.load(Ordering::Relaxed) && state.status == MachineStatus::Debug {
+        FIRST_DEBUG.store(false, Ordering::Relaxed);
+        set_visible::<AsmIsEasierThanThis>(s, "asm_wrapper", true);
+        set_visible::<OnceUponAMidnightDreary>(s, "variables_panel", true);
+    }
 }
 
 pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
@@ -41,10 +54,6 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
     set_theme(&mut siv);
     siv.set_autorefresh(false);
     siv.set_autohide_menu(false);
-
-    type AsmIsEasierThanThis =
-        ResizedView<PaddedView<OnEventView<ScrollView<NamedView<TextView>>>>>;
-    type OnceUponAMidnightDreary = PaddedView<LinearLayout>;
 
     let quit_handler = {
         let arc = client.clone();
@@ -56,7 +65,7 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
 
     let reset_handler = {
         let arc = client.clone();
-        move |s: &mut Cursive| {
+        move |_s: &mut Cursive| {
             lock(&arc).reset().unwrap_or_else(handle_error);
         }
     };
@@ -96,7 +105,7 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
             "Machine",
             menu::Tree::new()
                 .leaf("Restart", reset_handler)
-                .leaf("Stop (and quit)", quit_handler.clone())
+                .leaf("Stop (and quit)", quit_handler.clone()),
         )
         .add_subtree(
             "Debug",
@@ -129,11 +138,11 @@ pub(crate) fn init_ui(client: Arc<Mutex<C64Client>>) -> CursiveRunnable {
     siv.add_global_callback(Key::F8, next_handler);
     siv.add_global_callback(Event::Char('`'), cursive::Cursive::toggle_debug_console);
     siv.add_global_callback(
-        Key::F2,
+        Key::F3,
         create_toggle_handler::<AsmIsEasierThanThis>("asm_wrapper"),
     );
     siv.add_global_callback(
-        Key::F3,
+        Key::F2,
         create_toggle_handler::<OnceUponAMidnightDreary>("variables_panel"),
     );
 

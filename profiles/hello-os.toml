@@ -18,5 +18,4 @@ variable = [
 
 breakpoint = [
     { Address = 0xe1d6 },
-    { Address = 0xfd41 },
 ]

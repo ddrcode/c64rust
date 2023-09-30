@@ -10,7 +10,9 @@ mod ui_state;
 mod variables_view;
 
 pub use {
-    address_dialog::address_dialog, asm_view::*, breakpoints_view::*, cpu_state::*, handlers::*,
+    address_dialog::address_dialog, asm_view::*, breakpoints_view::*, cpu_state::*,
     machine_screen::*, main_screen::main_screen, memory_view::*, ui_state::UIState,
     variables_view::*,
 };
+
+pub (crate) use handlers::*;

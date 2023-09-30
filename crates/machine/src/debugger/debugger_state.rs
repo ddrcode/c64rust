@@ -27,12 +27,38 @@ impl DebuggerState {
 
     pub fn remove_breakpoint(&mut self, bp: &Breakpoint) {
         log::info!("Calling remove_breakpoint with {:?}", bp);
-        self.breakpoints.retain(|b| *b==*bp);
+        self.breakpoints.retain(|b| b!=bp);
     }
 
     pub fn add_breakpoint(&mut self, bp: &Breakpoint) {
         if !self.breakpoints.contains(bp) {
             self.breakpoints.push(*bp);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_breakpoint() {
+        let mut state = DebuggerState::default();
+        state.add_breakpoint(&Breakpoint::Address(0xff));
+        assert_eq!(1, state.breakpoints.len());
+
+        state.add_breakpoint(&Breakpoint::Address(0xaa));
+        assert_eq!(2, state.breakpoints.len());
+
+        state.add_breakpoint(&Breakpoint::Address(0xff));
+        assert_eq!(2, state.breakpoints.len());
+    }
+
+    #[test]
+    fn test_remove_breakpoint() {
+        let mut state = DebuggerState::default();
+        state.add_breakpoint(&Breakpoint::Address(0xff));
+        state.remove_breakpoint(&Breakpoint::Address(0xaa));
+        assert_eq!(1, state.breakpoints.len());
     }
 }

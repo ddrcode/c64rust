@@ -104,8 +104,8 @@ impl View for MachineScreen {
     fn on_event(&mut self, event: Event) -> EventResult {
         match event {
             Event::Mouse {
-                offset,
-                position,
+                offset: _,
+                position: _,
                 event: MouseEvent::Press(_btn),
             } => {
                     // FIXME It doesn't work

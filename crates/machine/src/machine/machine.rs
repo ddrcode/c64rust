@@ -8,9 +8,9 @@ use std::num::Wrapping;
 
 pub type Cycles = u64;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub enum MachineStatus {
-    Stopped,
+    #[default] Stopped,
     Running,
     Debug,
 }
