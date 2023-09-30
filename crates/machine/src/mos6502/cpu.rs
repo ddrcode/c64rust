@@ -12,7 +12,7 @@ impl MOS6502 {
 
         MOS6502 {
             registers: Registers::new(),
-            operations: operations,
+            operations,
         }
     }
 }

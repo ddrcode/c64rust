@@ -1,41 +1,34 @@
 extern crate colored;
 
-mod cli;
-mod client;
-mod debugger;
-mod machine;
-mod mos6502;
-mod utils;
+pub mod cli;
+pub mod client;
+pub mod debugger;
+pub mod error;
+pub mod machine;
+pub mod mos6502;
+pub mod utils;
 
-use crate::cli::{get_file_as_byte_vec, load_profile_file, Args};
-use crate::client::{ClientError, DirectClient, NonInteractiveClient};
-use crate::machine::{MOS6502Machine, Machine, MachineConfig};
+use crate::cli::{create_machine_from_cli_args, Args};
+use crate::client::{DirectClient, NonInteractiveClient};
+use crate::machine::MOS6502Machine;
+use anyhow::Result;
 use clap::Parser;
 use env_logger;
-use std::io::Write;
 
-fn main() -> Result<(), ClientError> {
+fn main() -> Result<()> {
     env_logger::init();
+
     let args = Args::parse();
-    let mut machine = MOS6502Machine::new(MachineConfig::from(&args));
 
-    if let Some(rom_file) = args.rom {
-        let rom = get_file_as_byte_vec(&rom_file);
-        machine.memory_mut().init_rom(&rom[..]);
-    }
-
-    if let Some(ram_file) = args.ram {
-        let ram = get_file_as_byte_vec(&ram_file);
-        let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        machine.memory_mut().write(addr, &ram[..]);
-    }
-
+    let machine: MOS6502Machine = create_machine_from_cli_args()?;
     let mut client = DirectClient::new(machine);
+
     client.start_sync()?;
 
     if args.show_status {
         println!("{}", client.get_cpu_state()?);
     }
 
-    client.stop()
+    client.stop()?;
+    Ok(())
 }

@@ -1,0 +1,21 @@
+[config]
+rom = "./rom/hello.rom"
+
+[debug]
+
+variable = [
+    { name="irq cnt", address=0x16 },
+    { name="var a", address=0x10 },
+    { name="var b", address=0x11 },
+    { name="var c", address=0x12 },
+    { name="cur x", address=0x21 },
+    { name="cur y", address=0x22 },
+    { name="port a", address=0xdc00 },
+    { name="port b", address=0xdc01 },
+    { name="key cnt", address=0x58 },
+    { name="key tmp", address=0x59 },
+]
+
+breakpoint = [
+    { Address = 0xe1d6 },
+]

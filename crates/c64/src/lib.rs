@@ -1,9 +1,9 @@
 #[macro_use]
 extern crate lazy_static;
 
-mod c64;
-mod client;
+pub(crate) mod c64;
+pub(crate) mod client;
 pub mod key_utils;
 
-pub use c64::*;
-pub use client::*;
+pub use self::c64::*;
+pub use self::client::*;

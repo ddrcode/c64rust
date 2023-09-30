@@ -1,5 +1,6 @@
 #![allow(non_camel_case_types)]
 
+use super::C64Memory;
 use crate::key_utils::screen_code_to_ascii;
 use colored::*;
 use machine::Memory;
@@ -32,7 +33,7 @@ impl VIC_II {
         VIC_II { char_set: 0x14 }
     }
 
-    pub fn print_screen(&self, mem: &Box<dyn Memory + Send>) {
+    pub fn print_screen(&self, mem: &C64Memory) {
         let mut n = 0;
         println!();
         println!("{}", " ".repeat(44).on_truecolor(0x6c, 0x5e, 0xb5));
@@ -53,20 +54,5 @@ impl VIC_II {
         }
         println!("{}", " ".repeat(42).on_truecolor(0x6c, 0x5e, 0xb5));
         println!("              ");
-    }
-
-    // probably nonsense
-    pub fn ascii_to_petscii(ch: char) -> u8 {
-        let c = u64::from(ch) as u8;
-        if c >= 32 && c <= 93 {
-            return c;
-        }
-        if c == 13 || c == 10 {
-            return 13;
-        }
-        if c >= 97 && c <= 122 {
-            return c - 32;
-        }
-        0
     }
 }

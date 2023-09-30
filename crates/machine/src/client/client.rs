@@ -1,6 +1,9 @@
 use crate::machine::{Addr, MachineStatus};
 use crate::mos6502::Registers;
+use crossbeam_channel::Receiver;
 use keyboard_types::KeyboardEvent;
+
+use super::ClientEvent;
 
 pub trait NonInteractiveClient {
     type Error: std::error::Error + Send + Sync;
@@ -33,6 +36,8 @@ pub trait NonInteractiveClient {
     fn is_running(&self) -> bool {
         self.get_status() != MachineStatus::Stopped
     }
+
+    fn set_receiver(&mut self, r: Receiver<ClientEvent>);
 }
 
 pub trait InteractiveClient {

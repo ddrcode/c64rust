@@ -1,5 +1,5 @@
 use super::C64KeyCode;
-use keyboard_types::{Key, KeyState, KeyboardEvent, Modifiers};
+use keyboard_types::{Key, KeyState, KeyboardEvent};
 
 pub fn ui_event_to_c64_key_codes(ke: &KeyboardEvent) -> Vec<C64KeyCode> {
     let mut keys = Vec::new();

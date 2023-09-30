@@ -3,11 +3,14 @@ use super::{Addr, MachineConfig, Memory};
 use crate::mos6502::{
     AddressMode, Mnemonic, Operand, Operation, OperationDef, ProcessorStatus, MOS6502,
 };
+use crate::utils::if_else;
 use std::num::Wrapping;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+pub type Cycles = u64;
+
+#[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub enum MachineStatus {
-    Stopped,
+    #[default] Stopped,
     Running,
     Debug,
 }
@@ -20,13 +23,17 @@ pub trait RegSetter<T> {
 }
 
 pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
-    fn memory(&self) -> &Box<dyn Memory + Send + 'static>;
-    fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static>;
+    type MemoryImpl: Memory;
+
+    fn memory(&self) -> &Self::MemoryImpl;
+    fn memory_mut(&mut self) -> &mut Self::MemoryImpl;
     fn cpu(&self) -> &MOS6502;
     fn cpu_mut(&mut self) -> &mut MOS6502;
     fn get_config(&self) -> &MachineConfig;
     fn get_status(&self) -> MachineStatus;
     fn set_status(&mut self, status: MachineStatus);
+    fn get_cycles(&self) -> Cycles;
+    fn advance_cycles(&mut self, cycles: u8);
 
     // registry shortcuts
     fn A(&self) -> Wrapping<u8> {
@@ -73,6 +80,11 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         self.memory().get_byte(addr)
     }
 
+    fn get_word(&self, addr: Addr) -> u16 {
+        let bytes = [self.get_byte(addr), self.get_byte(addr.wrapping_add(1))];
+        u16::from_le_bytes(bytes)
+    }
+
     fn set_byte(&mut self, addr: Addr, val: u8) {
         self.memory_mut().set_byte(addr, val);
     }
@@ -87,7 +99,11 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
 
         // By default, after start, the PC is set to address from RST vector ($fffc)
         // http://wilsonminesco.com/6502primer/MemMapReqs.html
-        self.set_PC(self.memory().get_word(0xfffc));
+        let start_addr = self
+            .get_config()
+            .start_addr
+            .unwrap_or(self.memory().get_word(0xfffc));
+        self.set_PC(start_addr);
         self.set_status(MachineStatus::Running);
     }
 
@@ -104,7 +120,13 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     }
 
     fn reset(&mut self) {
-        panic!("Not implemented yet :-)");
+        if self.get_status() != MachineStatus::Stopped {
+            self.stop();
+        }
+        for i in 0..self.memory().size() {
+            self.set_byte(i as u16, 0);
+        }
+        self.start();
     }
 
     fn execute_operation(&mut self, op: &Operation) -> u8;
@@ -113,36 +135,48 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     where
         Self: Sized,
     {
-        let def = { self.decode_op() };
-        let operand = { self.decode_operand(&def) };
-        let address = operand
-            .as_ref()
-            .map_or(None, |o| self.decode_address(&def, &o));
-        let op = Operation::new(def.clone(), operand, address);
+        let op = self.decode_next();
+        self.set_PC(self.PC().wrapping_add(op.def.len().into()));
 
         self.pre_next(&op);
-        self.execute_operation(&op);
+        let cycles = self.execute_operation(&op);
+        self.advance_cycles(cycles);
         self.post_next(&op);
 
         self.get_status() != MachineStatus::Stopped
     }
 
+    fn decode_next(&self) -> Operation {
+        let def = { self.decode_op() };
+        let operand = { self.decode_operand(&def) };
+        let address = operand
+            .as_ref()
+            .map_or(None, |o| self.decode_address(&def, &o));
+        Operation::new(def.clone(), operand, address)
+    }
+
     fn pre_next(&mut self, op: &Operation) {
         if self.get_config().disassemble {
-            println!("{}", self.disassemble(op, self.get_config().verbose));
+            println!("{}", self.disassemble(op, self.get_config().verbose, false));
         }
 
         if self.get_config().exit_on_brk && matches!(op.def.mnemonic, Mnemonic::BRK) {
             self.stop();
         }
+        if let Some(max_cycles) = self.get_config().max_cycles {
+            if self.get_cycles() > max_cycles {
+                self.stop()
+            }
+        }
     }
 
-    fn post_next(&mut self, op: &Operation) {}
+    fn post_next(&mut self, _op: &Operation) {}
 
-    fn disassemble(&self, op: &Operation, verbose: bool) -> String {
+    fn disassemble(&self, op: &Operation, verbose: bool, next_op: bool) -> String {
         use std::fmt::Write;
         let mut out = String::new();
-        let addr = self.PC().wrapping_sub(op.def.len() as u16);
+        let addr_correction = if_else(next_op, 0u16, op.def.len().into());
+        let addr = self.PC().wrapping_sub(addr_correction);
         let val = match op.def.len() {
             2 => format!("{:02x}   ", self.get_byte(addr + 1)),
             3 => format!(
@@ -152,15 +186,16 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             ),
             _ => String::from("     "),
         };
-        write!(
+        let _ = write!(
             &mut out,
             "{:04x}: {:02x} {} | {}",
             addr, op.def.opcode, val, op
         );
-        if verbose {
-            write!(
+        if verbose && !next_op {
+            // can't have cpu state for non-executed op
+            let _ = write!(
                 &mut out,
-                "{}|  {}",
+                "{} ->  {}",
                 " ".repeat(13 - op.to_string().len()),
                 self.cpu().registers,
             );
@@ -168,40 +203,28 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
         out
     }
 
-    fn get_byte_and_inc_pc(&mut self) -> u8 {
-        let val = self.get_byte(self.PC());
-        self.inc_counter();
-        val
-    }
-
-    fn get_word_and_inc_pc(&mut self) -> u16 {
-        let val = self.memory().get_word(self.PC());
-        self.inc_counter();
-        self.inc_counter();
-        val
-    }
-
     fn inc_counter(&mut self) {
         self.set_PC(self.PC().wrapping_add(1));
     }
 
-    fn decode_op(&mut self) -> OperationDef {
-        let opcode = self.get_byte_and_inc_pc();
+    fn decode_op(&self) -> OperationDef {
+        let opcode = self.get_byte(self.PC());
         match self.cpu().operations.get(&opcode) {
             Some(op) => op.clone(),
             None => panic!(
                 "Opcode {:#04x} not found at address {:#06x}",
                 opcode,
-                self.PC().wrapping_sub(1)
+                self.PC()
             ),
         }
     }
 
-    fn decode_operand(&mut self, op: &OperationDef) -> Option<Operand> {
+    fn decode_operand(&self, op: &OperationDef) -> Option<Operand> {
+        let addr = self.PC().wrapping_add(1);
         match op.operand_len() {
             0 => None,
-            1 => Some(Operand::Byte(self.get_byte_and_inc_pc())),
-            2 => Some(Operand::Word(self.get_word_and_inc_pc())),
+            1 => Some(Operand::Byte(self.get_byte(addr))),
+            2 => Some(Operand::Word(self.get_word(addr))),
             _ => panic!("Invalid operand length"),
         }
     }
@@ -243,8 +266,9 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
             }
             AddressMode::Relative => {
                 //  TODO verify that - o must be signed int (check notation)
-                let (o, pc) = (operand.get_byte().unwrap() as i8, self.PC() as i64);
-                Some(((pc + o as i64) & 0xffff) as u16)
+                let o = operand.get_byte().unwrap() as i8;
+                let pc = self.PC().wrapping_add(op.len().into());
+                Some(((pc as i64 + o as i64) & 0xffff) as u16)
             }
             _ => None,
         }
@@ -297,9 +321,4 @@ pub trait Machine: RegSetter<u8> + RegSetter<Wrapping<u8>> {
     fn nmi(&mut self) {
         self.handle_interrupt(0xfffa);
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 }

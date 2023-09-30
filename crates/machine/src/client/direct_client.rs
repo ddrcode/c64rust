@@ -1,13 +1,16 @@
 use super::*;
-use crate::machine::{Addr, Machine, MachineStatus};
+use crate::error::MachineError;
+use crate::machine::{Addr, Machine, MachineStatus, Memory};
 use crate::mos6502::Registers;
 use crate::utils::lock;
+// use crate::error::MachineError;
+use crossbeam_channel::Receiver;
 use runtime::Runtime;
 use std;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
-type Result<T> = std::result::Result<T, ClientError>;
+type Result<T> = std::result::Result<T, MachineError>;
 
 /// DirectClient is an implementation of Client that runs
 /// the machine directly (in a thread) rather than
@@ -15,6 +18,7 @@ type Result<T> = std::result::Result<T, ClientError>;
 pub struct DirectClient<T: Machine + Send + 'static> {
     machine_mtx: Arc<Mutex<T>>,
     handle: Option<thread::JoinHandle<()>>,
+    pub receiver: Option<Receiver<ClientEvent>>
 }
 
 impl<T: Machine + Send + 'static> DirectClient<T> {
@@ -22,6 +26,7 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
         DirectClient {
             machine_mtx: Arc::new(Mutex::new(machine)),
             handle: None,
+            receiver: None
         }
     }
 
@@ -32,19 +37,22 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
     fn start_machine_in_thread(&mut self) {
         self.lock().start();
         let arc = self.machine_mtx.clone();
-        let handle = thread::spawn(move || {
-            let mut runtime = Runtime::<T>::new(arc);
-            runtime.machine_loop();
-        });
+        let handle = thread::Builder::new()
+            .name("MOS6502 Machine".to_string())
+            .spawn(move || {
+                let mut runtime = Runtime::<T>::new(arc);
+                runtime.machine_loop();
+            })
+            .unwrap();
         self.handle = Some(handle);
     }
 
     fn join(&mut self) -> Result<()> {
         if let Some(handle) = self.handle.take() {
             if !handle.is_finished() {
-                return handle
-                    .join()
-                    .or(Err(ClientError::new("Failed to join machine's thread")));
+                return handle.join().or(Err(MachineError::Client(
+                    "Failed to join machine's thread".to_string(),
+                )));
             }
         }
         Ok(())
@@ -61,7 +69,7 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
 }
 
 impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
-    type Error = ClientError;
+    type Error = MachineError;
 
     fn get_status(&self) -> MachineStatus {
         self.lock().get_status()
@@ -69,7 +77,9 @@ impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
 
     fn start(&mut self) -> Result<()> {
         if self.is_running() {
-            return Err(ClientError::new("Machine is already running"));
+            return Err(MachineError::Client(String::from(
+                "Machine is already running",
+            )));
         }
         self.start_machine_in_thread();
         Ok(())
@@ -110,4 +120,9 @@ impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
     fn get_cpu_state(&self) -> Result<Registers> {
         Ok(self.lock().cpu().registers.clone())
     }
+
+    fn set_receiver(&mut self, r: Receiver<ClientEvent>){
+        self.receiver = Some(r);
+    }
+
 }

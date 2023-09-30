@@ -18,6 +18,9 @@ log = "0.4.20"
 toml = "0.8.0"
 serde_derive = "1.0.188"
 serde = "1.0.188"
+thiserror = "1.0.49"
+anyhow = "1.0.75"
+crossbeam-channel = "0.5.8"
 
 [[bin]]
 name = "machine"

@@ -1,6 +1,6 @@
 mod client;
-mod client_error;
 mod direct_client;
 mod runtime;
+mod client_event;
 
-pub use {client::*, client_error::*, direct_client::*};
+pub use {client::*, direct_client::*, client_event::*};

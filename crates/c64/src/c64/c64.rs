@@ -3,21 +3,22 @@
 use super::{C64Memory, CIA1, CIA6526, VIC_II};
 use crate::key_utils::C64KeyCode;
 use machine::{
+    cli::{FromProfile, Profile},
     debugger::{DebugMachine, Debugger, DebuggerState},
-    impl_reg_setter,
+    impl_reg_setter, Cycles,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
+    Addr, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
 use std::num::Wrapping;
 
 pub struct C64 {
     config: MachineConfig,
     mos6510: MOS6502,
-    mem: Box<dyn Memory + Send>,
+    mem: C64Memory,
     gpu: VIC_II,
     pub cia1: CIA1,
     status: MachineStatus,
-    cycle: u128, // FIXME remove!
+    cycles: u64,
     pub debugger_state: DebuggerState,
     pub last_op: Operation,
 }
@@ -28,11 +29,11 @@ impl C64 {
         C64 {
             config,
             mos6510: MOS6502::new(),
-            mem: Box::new(C64Memory::new(size)),
+            mem: C64Memory::new(size),
             gpu: VIC_II::new(),
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,
-            cycle: 0,
+            cycles: 0,
             debugger_state: DebuggerState::default(),
             last_op: Operation::default(),
         }
@@ -85,11 +86,13 @@ impl C64 {
 impl_reg_setter!(C64);
 
 impl Machine for C64 {
-    fn memory(&self) -> &Box<dyn Memory + Send + 'static> {
+    type MemoryImpl = C64Memory;
+
+    fn memory(&self) -> &C64Memory {
         &self.mem
     }
 
-    fn memory_mut(&mut self) -> &mut Box<dyn Memory + Send + 'static> {
+    fn memory_mut(&mut self) -> &mut C64Memory {
         &mut self.mem
     }
 
@@ -113,9 +116,18 @@ impl Machine for C64 {
         self.status = status;
     }
 
+    fn get_cycles(&self) -> Cycles {
+        self.cycles
+    }
+
+    fn advance_cycles(&mut self, cycles: u8) {
+        self.cycles = self.cycles.wrapping_add(cycles.into());
+    }
+
     fn execute_operation(&mut self, op: &Operation) -> u8 {
+        let res = execute_operation(&op, self);
         self.last_op = op.clone();
-        execute_operation(&op, self)
+        res
     }
 
     fn get_byte(&self, addr: Addr) -> u8 {
@@ -139,23 +151,44 @@ impl Machine for C64 {
         // value at 0d012 represents currently scanned line
         // if not updated  - screen won't be refreshed
         // it should be implemented at VIC level
-        self.cycle = self.cycle.wrapping_add(1);
-        self.set_byte(0xd012, (self.cycle % 255) as u8);
+        self.set_byte(0xd012, (self.cycles % 255) as u8);
 
         if self.get_status() == MachineStatus::Running && self.should_pause(op) {
             self.start_debugging();
         }
+        self.update_debugger_state();
     }
 }
 
 impl Debugger for C64 {
+    type MachineImpl = C64;
+
     fn debugger_state(&self) -> &DebuggerState {
         &self.debugger_state
     }
 
-    fn machine(&self) -> &dyn Machine {
+    fn debugger_state_mut(&mut self) -> &mut DebuggerState {
+        &mut self.debugger_state
+    }
+    fn machine(&self) -> &C64 {
         self
     }
 }
 
 impl DebugMachine for C64 {}
+
+impl FromConfig for C64 {
+    fn from_config(config: MachineConfig) -> Self {
+        C64::new(config)
+    }
+}
+
+impl FromProfile for C64 {
+    fn from_profile(profile: &Profile) -> Self {
+        let mut c64 = C64::new((&profile.config).into());
+        if let Some(dc) = &profile.debug {
+            c64.debugger_state = DebuggerState::from(dc);
+        }
+        c64
+    }
+}

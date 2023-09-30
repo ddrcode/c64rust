@@ -3,41 +3,20 @@ extern crate lazy_static;
 extern crate colored;
 
 use clap::Parser;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
+use machine::cli::create_machine_from_cli_args;
 
-mod c64;
-mod client;
-mod key_utils;
+pub mod c64;
+pub mod client;
+pub mod key_utils;
 
 use crate::c64::C64;
 use crate::client::C64Client;
-use machine::client::{ClientError, NonInteractiveClient};
-use machine::{cli::Args, Machine, MachineConfig};
+use anyhow;
+use machine::{cli::Args, client::NonInteractiveClient};
 
-fn get_file_as_byte_vec(filename: &PathBuf) -> Vec<u8> {
-    let mut f = File::open(filename).expect("no file found");
-    let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer).expect("buffer overflow");
-    buffer
-}
-
-fn main() -> Result<(), ClientError> {
+fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    let mut c64 = C64::new(MachineConfig::from(&args));
-
-    if let Some(rom_file) = args.rom {
-        let rom = get_file_as_byte_vec(&rom_file);
-        c64.memory_mut().init_rom(&rom[..]);
-    }
-
-    if let Some(ram_file) = args.ram {
-        let ram = get_file_as_byte_vec(&ram_file);
-        let addr = u16::from_str_radix(&args.ram_file_addr, 16).unwrap();
-        c64.memory_mut().write(addr, &ram[..]);
-    }
-
+    let c64: C64 = create_machine_from_cli_args()?;
     let mut client = C64Client::new(c64);
     client.start_sync()?;
 
@@ -49,5 +28,6 @@ fn main() -> Result<(), ClientError> {
         client.mutex().lock().unwrap().print_screen();
     }
 
-    client.stop()
+    client.stop()?;
+    Ok(())
 }

@@ -1,7 +1,9 @@
+use serde_derive::Deserialize;
+
 use crate::machine::{Addr, Machine};
 use crate::mos6502::{Mnemonic, Operation};
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Deserialize)]
 pub enum Breakpoint {
     Address(Addr),
     Interrupt,
@@ -12,7 +14,7 @@ pub enum Breakpoint {
 }
 
 impl Breakpoint {
-    pub fn applies(&self, op: &Operation, machine: &dyn Machine) -> bool {
+    pub fn applies<M: Machine>(&self, op: &Operation, machine: &M) -> bool {
         match *self {
             Self::Address(a) => a == machine.PC(),
             Self::Interrupt => panic!("Interrupt breakpoint not implemented!"),
@@ -22,7 +24,6 @@ impl Breakpoint {
             Self::Byte((addr, val)) => {
                 addr == machine.PC() && val == machine.get_byte(machine.PC())
             }
-            _ => false,
         }
     }
 }

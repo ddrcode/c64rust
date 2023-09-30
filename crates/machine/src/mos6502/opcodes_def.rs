@@ -46,9 +46,9 @@ pub fn define_operations(o: &mut OpsMap) -> &OpsMap {
                 ops3.insert(
                     opcode,
                     OperationDef {
-                        opcode: opcode,
-                        mnemonic: mnemonic,
-                        cycles: cycles,
+                        opcode,
+                        mnemonic,
+                        cycles,
                         page_boundary_cycle: boundary,
                         address_mode: am,
                         fn_name: opfn.to_string(),

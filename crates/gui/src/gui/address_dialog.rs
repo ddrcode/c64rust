@@ -1,3 +1,5 @@
+use crate::{config::CONFIG, messaging::send_client_event};
+
 use super::UIState;
 use cursive::{
     event::Key,
@@ -5,6 +7,7 @@ use cursive::{
     views::{Dialog, EditView, OnEventView},
     Cursive,
 };
+use machine::client::ClientEvent;
 
 pub fn address_dialog() -> OnEventView<Dialog> {
     OnEventView::new(
@@ -33,8 +36,12 @@ pub fn address_dialog() -> OnEventView<Dialog> {
 fn on_submit(s: &mut Cursive, addr_str: &str) {
     match u16::from_str_radix(addr_str, 16) {
         Ok(addr) => {
+            let start_addr = std::cmp::min(addr - addr % 8, 0xffff - CONFIG.memory_view_size);
+            send_client_event(ClientEvent::SetObservedMemory(
+                start_addr..(start_addr + CONFIG.memory_view_size),
+            ));
             s.with_user_data(|data: &mut UIState| {
-                data.addr_from = std::cmp::min(addr - addr % 8, 0xffff - 200);
+                data.addr_from = start_addr;
             });
             s.pop_layer();
         }
