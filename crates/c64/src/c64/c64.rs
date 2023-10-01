@@ -9,7 +9,7 @@ use machine::{
     mos6502::{execute_operation, Operation, MOS6502},
     Addr, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
-use std::num::Wrapping;
+use std::{num::Wrapping, cell::RefCell};
 
 pub struct C64 {
     config: MachineConfig,

@@ -1,40 +1,61 @@
-// 00	0	0	0	0	0	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 01	0	0	0	0	1	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 02	0	0	0	1	0	RAM	RAM	RAM	CHI	RAM	CHR	KRN
-// 03	0	0	0	1	1	RAM	RAM	CLO	CHI	RAM	CHR	KRN
-// 04	0	0	1	0	0	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 05	0	0	1	0	1	RAM	RAM	RAM	RAM	RAM	I/O	RAM
-// 06	0	0	1	1	0	RAM	RAM	RAM	CHI	RAM	I/O	KRN
-// 07	0	0	1	1	1	RAM	RAM	CLO	CHI	RAM	I/O	KRN
-// 08	0	1	0	0	0	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 09	0	1	0	0	1	RAM	RAM	RAM	RAM	RAM	CHR	RAM
-// 10	0	1	0	1	0	RAM	RAM	RAM	RAM	RAM	CHR	KRN
-// 11	0	1	0	1	1	RAM	RAM	CLO	BSC	RAM	CHR	KRN
-// 12	0	1	1	0	0	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 13	0	1	1	0	1	RAM	RAM	RAM	RAM	RAM	I/O	RAM
-// 14	0	1	1	1	0	RAM	RAM	RAM	RAM	RAM	I/O	KRN
-// 15	0	1	1	1	1	RAM	RAM	CLO	BSC	RAM	I/O	KRN
-// 16	1	0	0	0	0	RAM	-	CLO	-	-	I/O	CHI
-// 17	1	0	0	0	1	RAM	-	CLO	-	-	I/O	CHI
-// 18	1	0	0	1	0	RAM	-	CLO	-	-	I/O	CHI
-// 19	1	0	0	1	1	RAM	-	CLO	-	-	I/O	CHI
-// 20	1	0	1	0	0	RAM	-	CLO	-	-	I/O	CHI
-// 21	1	0	1	0	1	RAM	-	CLO	-	-	I/O	CHI
-// 22	1	0	1	1	0	RAM	-	CLO	-	-	I/O	CHI
-// 23	1	0	1	1	1	RAM	-	CLO	-	-	I/O	CHI
-// 24	1	1	0	0	0	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 25	1	1	0	0	1	RAM	RAM	RAM	RAM	RAM	CHR	RAM
-// 26	1	1	0	1	0	RAM	RAM	RAM	RAM	RAM	CHR	KRN
-// 27	1	1	0	1	1	RAM	RAM	RAM	BSC	RAM	CHR	KRN
-// 28	1	1	1	0	0	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 29	1	1	1	0	1	RAM	RAM	RAM	RAM	RAM	I/O	RAM
-// 30	1	1	1	1	0	RAM	RAM	RAM	RAM	RAM	I/O	KRN
-// 31	1	1	1	1	1	RAM	RAM	RAM	BSC	RAM	I/O	KRN
+// Modified version of a table from
+// https://www.c64-wiki.com/wiki/Bank_Switching
+//
+// MODE         B0  B1  B2  B3  B4  B5  B6
+// -----------------------------------------
+// 00	00000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+// 01	00001	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+// 02	00010	RAM	RAM	RAM	CHI	RAM	CHR	KRN
+// 03	00011	RAM	RAM	CLO	CHI	RAM	CHR	KRN
+// 04	00100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+// 05	00101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
+// 06	00110	RAM	RAM	RAM	CHI	RAM	I/O	KRN
+// 07	00111	RAM	RAM	CLO	CHI	RAM	I/O	KRN
+// 08	01000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+// 09	01001	RAM	RAM	RAM	RAM	RAM	CHR	RAM
+// 10	01010	RAM	RAM	RAM	RAM	RAM	CHR	KRN
+// 11	01011	RAM	RAM	CLO	BSC	RAM	CHR	KRN
+// 12	01100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+// 13	01101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
+// 14	01110	RAM	RAM	RAM	RAM	RAM	I/O	KRN
+// 15	01111	RAM	RAM	CLO	BSC	RAM	I/O	KRN
+// 16	10000	RAM	-	CLO	-	-	I/O	CHI
+// 17	10001	RAM	-	CLO	-	-	I/O	CHI
+// 18	10010	RAM	-	CLO	-	-	I/O	CHI
+// 19	10011	RAM	-	CLO	-	-	I/O	CHI
+// 20	10100	RAM	-	CLO	-	-	I/O	CHI
+// 21	10101	RAM	-	CLO	-	-	I/O	CHI
+// 22	10110	RAM	-	CLO	-	-	I/O	CHI
+// 23	10111	RAM	-	CLO	-	-	I/O	CHI
+// 24	11000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+// 25	11001	RAM	RAM	RAM	RAM	RAM	CHR	RAM
+// 26	11010	RAM	RAM	RAM	RAM	RAM	CHR	KRN
+// 27	11011	RAM	RAM	RAM	BSC	RAM	CHR	KRN
+// 28	11100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+// 29	11101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
+// 30	11110	RAM	RAM	RAM	RAM	RAM	I/O	KRN
+// 31	11111	RAM	RAM	RAM	BSC	RAM	I/O	KRN
+//
+// B1: $0000 - $0fff
+// B2: $1000 - $7fff
+// B3: $8000 - $9fff
+// B4: $a000 - $bfff
+// B5: $c000 - $cfff
+// B5: $d000 - $dfff
+// B7: $e000 - $ffff
+//
+// RAM: RAM
+// CLO: Cartridge ROM (lo)
+// CHI: Character ROM
+// BSC: Basic ROM
+// I/O: CIA1 or CIA2
+// CHI: Cartridge ROM (hi)
+// KRN: Kernal ROM
 
 use lazy_static;
 
 use crate::{
-    emulator::abstractions::{Addr, AddressResolver, Addressable},
+    emulator::abstractions::{Addr, AddressResolver, Addressable, VecMemory},
     utils::if_else,
 };
 
@@ -132,7 +153,9 @@ impl<'a> Addressable for PLA_82S100<'a> {
         if id == 7 {
             return 0;
         } // TODO check what to do for this case
-        let opt_dev = self.devices[id as usize].as_ref().or(self.devices[0].as_ref()); // fallback to RAM
+        let opt_dev = self.devices[id as usize]
+            .as_ref()
+            .or(self.devices[0].as_ref()); // fallback to RAM
         if let Some(dev) = opt_dev {
             dev.read_byte(self.internal_addr(dev, addr))
         } else {
@@ -163,13 +186,21 @@ impl<'a> Addressable for PLA_82S100<'a> {
 
 impl<'a> AddressResolver for PLA_82S100<'a> {}
 
+
+
+struct Memory {
+
+}
+
+
+
 impl<'a> PLA_82S100<'a> {
     fn get_device_id(&self, addr: Addr) -> u8 {
-        // pin 8 and 9 are activated when cartridge is present
-        // regular cartrisge: pin 8
+        // pin 8 and 9 are set low (false) when cartridge is present and high (true) when not
+        // regular cartridge: pin 8
         // exrom: pin 8 and 9
-        let pin8 = self.has_device(1) || self.has_device(3);
-        let pin9 = self.has_device(3);
+        let pin8 = !self.has_device(1);
+        let pin9 = !self.has_device(3);
 
         // Because we are emulating addresses 0 and 1 with RAM
         // we can't continue when RAM is not present.
@@ -204,57 +235,131 @@ impl<'a> PLA_82S100<'a> {
         addr & (dev.address_width() - 1)
     }
 
-    pub (crate) fn link_dev(&mut self, id: usize, dev: &'a mut (dyn Addressable +'a)) {
+    pub(crate) fn link_dev(&mut self, id: usize, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
         let bx: Box<&mut (dyn Addressable + 'a)> = Box::new(dev);
         self.devices[id] = Some(bx);
+        self
+    }
+
+    pub(crate) fn set_mode(&mut self, mode: u8) {
+        self.write_byte(1, mode);
+    }
+
+    pub(crate) fn link_ram(&mut self, dev: &'a mut (dyn Addressable + 'a)) {
+       let _ = self.link_dev(0, dev);
+    }
+    pub(crate) fn link_basic(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+        self.link_dev(2, dev)
+    }
+    pub(crate) fn link_kernal(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+        self.link_dev(6, dev)
+    }
+    pub(crate) fn link_chargen(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+        self.link_dev(5, dev)
+    }
+    pub(crate) fn link_cartridge(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+        self.link_dev(1, dev)
+    }
+    pub(crate) fn link_io(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+        self.link_dev(4, dev)
     }
 }
 
+// struct Koza<'a> {
+//     ram: VecMemory,
+//     basic: VecMemory,
+//     pla: PLA_82S100<'a>,
+// }
+//
+// impl Koza<'_> {
+//     fn new() -> Self {
+//         let mut pla = PLA_82S100::default();
+//         let mut ram = VecMemory::new(0xffff, 16);
+//         // let k = Koza {
+//         //     basic: VecMemory::new(0xffff, 16),
+//         //     pla: pla,
+//         //     ram,
+//         // };
+//
+//         let b: Box<&mut (dyn Addressable )> = Box::new(&mut ram);
+//         // pla.link_ram(Box::new(&mut ram));
+//         k
+//     }
+// }
+
 #[cfg(test)]
-mod tests{
-    use std::sync::{Mutex, Arc};
-
-    use crate::emulator::abstractions::{RAM, Addressable};
-
+mod tests {
     use super::*;
+    use crate::emulator::abstractions::Addressable;
 
-    struct Ram {
+    struct Mem {
+        width: u16,
+        pub data: [u8; 0xffff],
     }
-    impl Addressable for Ram{
+
+    impl Addressable for Mem {
         fn read_byte(&self, addr: Addr) -> u8 {
-            42
+            self.data[addr as usize]
         }
 
         fn write_byte(&mut self, addr: Addr, value: u8) {
+            self.data[addr as usize] = value;
         }
 
         fn address_width(&self) -> u16 {
-            16
+            self.width
+        }
+    }
+
+    impl Mem {
+        fn new(width: u16) -> Self {
+            Mem {
+                width,
+                data: [0; 0xffff],
+            }
         }
     }
 
     #[test]
     fn test_creation() {
-        let mut ram = Ram{};
-        let pla = PLA_82S100 {
-            devices: [Some(Box::new(&mut ram)), None, None, None, None, None, None]
+        let mut ram = Mem::new(16);
+        let mut pla = PLA_82S100 {
+            devices: [Some(Box::new(&mut ram)), None, None, None, None, None, None],
         };
+        assert_eq!(0, pla.read_byte(0x33));
+        pla.write_byte(0x33, 42);
         assert_eq!(42, pla.read_byte(0x33));
-
-
-        let koza = &pla;
-        assert_eq!(42, koza.read_byte(0x33));
     }
 
-
     #[test]
-    fn test_mutex() {
-        let mut ram = Ram{};
-        let pla = PLA_82S100 {
-            devices: [Some(Box::new(&mut ram)), None, None, None, None, None, None]
-        };
-        let xtr = Arc::new(Mutex::new(pla));
-        assert_eq!(42, xtr.lock().unwrap().read_byte(0x200));
-        assert_eq!((), xtr.lock().unwrap().write_byte(0x200, 42));
+    fn test_operations() {
+        let mut ram = Mem::new(16);
+        let mut basic = Mem::new(16);
+        let mut chargen = Mem::new(16);
+        let mut kernal = Mem::new(16);
+
+        let mut pla = PLA_82S100::default();
+        pla.link_dev(0, &mut ram);
+        pla.link_dev(2, &mut basic); // basic rom
+        pla.link_dev(5, &mut chargen); // char rom
+        pla.link_dev(6, &mut kernal); // kernal
+
+        // read/write ram
+        assert_eq!(0, pla.read_byte(0x33));
+        pla.write_byte(0x33, 42);
+        assert_eq!(42, pla.read_byte(0x33));
+
+        // read/write basic rom
+        pla.set_mode(0);
+        pla.write_byte(0xa000, 42); // write to basic scope
+                                    // try to read from basic scope, but in mode 0 there is ram
+        assert_eq!(42, pla.read_byte(0xa000));
+
+        pla.set_mode(0b11111); // switch to mode 31
+        assert_eq!(0, pla.read_byte(0xa000)); // now we read from rom
+        pla.write_byte(0xa000, 66); // but we can still write to ram
+        assert_eq!(0, pla.read_byte(0xa000));
+        pla.set_mode(0);
+        assert_eq!(66, pla.read_byte(0xa000));
     }
 }
