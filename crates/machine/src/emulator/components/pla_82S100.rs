@@ -52,7 +52,11 @@
 // CHI: Cartridge ROM (hi)
 // KRN: Kernal ROM
 
-use std::{cell::RefCell, rc::Rc, sync::{Mutex, Arc}};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 use lazy_static;
 
@@ -144,7 +148,7 @@ lazy_static! {
 // Fallback to 0 woudld let to spot problems with missing devices.
 // I somehow sense (can't prove) the latter is closer to reality.
 
-type Cell = Arc<Mutex<Box<dyn Addressable+Send>>>;
+type Cell = Box<dyn Addressable + Send>;
 type OptCell = Option<Cell>;
 
 #[derive(Default)]
@@ -162,7 +166,7 @@ impl Addressable for PLA_82S100 {
         let opt_dev = self.devices.from_id(real_id);
         if let Some(dev) = opt_dev {
             let real_addr = self.internal_addr(&dev, addr, real_id);
-            dev.lock().unwrap().read_byte(real_addr)
+            dev.read_byte(real_addr)
         } else {
             0
         }
@@ -179,8 +183,8 @@ impl Addressable for PLA_82S100 {
                 let dev = self.devices.from_id(real_id).unwrap();
                 self.internal_addr(&dev, addr, real_id)
             };
-            let dev_mut = self.devices.from_id(real_id).unwrap();
-            dev_mut.lock().unwrap().write_byte(internal_addr, value);
+            let dev_mut = self.devices.from_id_mut(real_id).unwrap();
+            dev_mut.write_byte(internal_addr, value);
         }
     }
 
@@ -203,17 +207,29 @@ struct MemoryLinks {
 }
 
 impl MemoryLinks {
-    pub(crate) fn from_id(&self, id: u8) -> OptCell {
-        match id {
-            0 => self.ram.clone(),
-            1 => self.cartridge_lo.clone(),
-            2 => self.basic.clone(),
-            3 => self.cartridge_hi.clone(),
-            4 => self.io.clone(),
-            5 => self.chargen.clone(),
-            6 => self.kernal.clone(),
-            _ => None,
-        }
+    pub(crate) fn from_id(&self, id: u8) -> Option<&Cell> {
+        let x=match id {
+            0 => &self.ram,
+            1 => &self.cartridge_lo,
+            2 => &self.basic,
+            3 => &self.cartridge_hi,
+            4 => &self.io,
+            5 => &self.chargen,
+            6 => &self.kernal,
+            _ => &None,
+        };
+        x.as_ref()
+    }
+    pub(crate) fn from_id_mut(&mut self, id: u8) -> Option<&mut Cell> {
+        (match id {
+            1 => &mut self.cartridge_lo,
+            2 => &mut self.basic,
+            3 => &mut self.cartridge_hi,
+            4 => &mut self.io,
+            5 => &mut self.chargen,
+            6 => &mut self.kernal,
+            _ => &mut self.ram,
+        }).as_mut()
     }
 }
 
@@ -235,7 +251,7 @@ impl PLA_82S100 {
         // and values from pin8 and 9, that act here as bit 4 and 5
         // that gives 32 combinations (although some of them are redundant, so
         // effectively there is 14)
-        let mut flag = self.devices.from_id(0).unwrap().lock().unwrap().read_byte(0x0001);
+        let mut flag = self.devices.from_id(0).unwrap().read_byte(0x0001);
 
         flag = (flag & 0b111) | (u8::from(pin8) << 3) | (u8::from(pin9) << 4);
         let bank = &BANKS[flag as usize];
@@ -256,10 +272,14 @@ impl PLA_82S100 {
 
     fn internal_addr(&self, dev: &Cell, addr: Addr, id: u8) -> Addr {
         let mut a = addr;
-        if id == 2 { a -= 0xa000 }
-        else if id == 5 { a-=0xd000 }
-        else if id == 6 { a -= 0xe000}
-        // a & (dev.lock().unwrap().address_width() - 0)
+        if id == 2 {
+            a -= 0xa000
+        } else if id == 5 {
+            a -= 0xd000
+        } else if id == 6 {
+            a -= 0xe000
+        }
+        // a & (dev.address_width() - 0)
         a
     }
 
@@ -267,8 +287,12 @@ impl PLA_82S100 {
         self.write_byte(1, mode);
     }
 
-    pub(crate) fn link_dev(&mut self, id: usize, dev: impl Addressable+Send+'static) -> &mut Self {
-        let bx: Cell = Arc::new(Mutex::new(Box::new(dev)));
+    pub(crate) fn link_dev(
+        &mut self,
+        id: usize,
+        dev: impl Addressable + Send + 'static,
+    ) -> &mut Self {
+        let bx: Cell = Box::new(dev);
         match id {
             0 => self.devices.ram = Some(bx),
             1 => self.devices.cartridge_lo = Some(bx),
@@ -282,7 +306,7 @@ impl PLA_82S100 {
         self
     }
 
-    pub fn link_ram(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self{
+    pub fn link_ram(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
         self.link_dev(0, dev)
     }
     pub fn link_basic(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
@@ -344,7 +368,6 @@ mod tests {
     //     pla.write_byte(0x33, 42);
     //     assert_eq!(42, pla.read_byte(0x33));
     // }
-
     #[test]
     fn test_operations() {
         let ram = Mem::new(16);
