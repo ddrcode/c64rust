@@ -146,8 +146,13 @@ impl<'a> Addressable for PLA_82S100<'a> {
 
         let id = self.get_device_id(addr);
         let real_id = if_else(id == 4, 4, 0); // if not i/o, write to ram
-        if let Some(dev) = &self.devices[real_id] {
-            // dev.write_byte(self.internal_addr(&mut dev, addr), value);
+        if self.devices[real_id].is_some() {
+            let internal_addr = {
+                let dev = &self.devices[real_id].as_ref().unwrap();
+                self.internal_addr(dev, addr)
+            };
+            let dev_mut = self.devices[real_id].as_mut().unwrap();
+            dev_mut.write_byte(internal_addr, value);
         }
     }
 
@@ -195,8 +200,13 @@ impl<'a> PLA_82S100<'a> {
         self.devices[dev_id].is_some()
     }
 
-    fn internal_addr(&self, dev: &Box<&dyn Addressable>, addr: Addr) -> Addr {
+    fn internal_addr(&self, dev: &Box<&mut dyn Addressable>, addr: Addr) -> Addr {
         addr & (dev.address_width() - 1)
+    }
+
+    pub (crate) fn link_dev(&mut self, id: usize, dev: &'a mut (dyn Addressable +'a)) {
+        let bx: Box<&mut (dyn Addressable + 'a)> = Box::new(dev);
+        self.devices[id] = Some(bx);
     }
 }
 
@@ -216,7 +226,6 @@ mod tests{
         }
 
         fn write_byte(&mut self, addr: Addr, value: u8) {
-            todo!()
         }
 
         fn address_width(&self) -> u16 {
@@ -226,21 +235,26 @@ mod tests{
 
     #[test]
     fn test_creation() {
-        let ram = Ram{};
+        let mut ram = Ram{};
         let pla = PLA_82S100 {
-            devices: [Some(Box::new(&ram)), None, None, None, None, None, None]
+            devices: [Some(Box::new(&mut ram)), None, None, None, None, None, None]
         };
         assert_eq!(42, pla.read_byte(0x33));
+
+
+        let koza = &pla;
+        assert_eq!(42, koza.read_byte(0x33));
     }
 
 
     #[test]
     fn test_mutex() {
-        let ram = Ram{};
+        let mut ram = Ram{};
         let pla = PLA_82S100 {
-            devices: [Some(Box::new(&ram)), None, None, None, None, None, None]
+            devices: [Some(Box::new(&mut ram)), None, None, None, None, None, None]
         };
         let xtr = Arc::new(Mutex::new(pla));
         assert_eq!(42, xtr.lock().unwrap().read_byte(0x200));
+        assert_eq!((), xtr.lock().unwrap().write_byte(0x200, 42));
     }
 }
