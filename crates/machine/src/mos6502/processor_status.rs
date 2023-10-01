@@ -40,7 +40,14 @@ impl Into<u8> for ProcessorStatus {
 
 impl From<&ProcessorStatus> for u8 {
     fn from(status: &ProcessorStatus) -> Self {
-        status.into()
+        status.carry as u8
+            | bool_to_bit(&status.zero, 1)
+            | (status.interrupt_disable as u8) << 2
+            | (status.decimal_mode as u8) << 3
+            | (status.break_command as u8) << 4
+            | 1 << 5
+            | (status.overflow as u8) << 6
+            | (status.negative as u8) << 7
     }
 }
 

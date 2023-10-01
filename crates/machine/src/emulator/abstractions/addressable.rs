@@ -3,12 +3,10 @@ use core::num::Wrapping;
 pub type Addr = u16;
 
 pub trait Addressable {
-    fn writeable() -> bool
-    where
-        Self: Sized;
 
     fn read_byte(&self, addr: Addr) -> u8;
     fn write_byte(&mut self, addr: Addr, value: u8);
+    fn address_width(&self) -> u16;
 
     fn read_byte_wrapping(&self, addr: Addr) -> Wrapping<u8> {
         Wrapping(self.read_byte(addr))
@@ -16,24 +14,18 @@ pub trait Addressable {
 }
 
 pub trait RAM: Addressable {
-    fn writeable() -> bool
-    where
-        Self: Sized,
-    {
-        true
-    }
+    fn address_width(&self) -> u16 { 16 }
 }
 
 pub trait ROM: Addressable {
     fn init(data: &[u8]) -> Self;
 
-    fn writeable() -> bool {
-        false
+    fn write_byte(&mut self, _addr: Addr) {
+        // any attempt to write will be simply ignored
+        // no error is needed
     }
 
-    fn write_byte(&mut self, addr: Addr) {
-        panic!("Attempt to write write-only addressable device (at addr {addr})");
-    }
+    fn address_width(&self) -> u16 { 16 }
 }
 
 /// BankSwitch should NEVER expose any of Addressables it switches betweenop
