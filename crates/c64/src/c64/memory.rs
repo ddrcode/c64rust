@@ -1,4 +1,7 @@
-use machine::{Addr, Memory};
+use machine::{
+    emulator::{abstractions::{VecMemory, Addressable, AddressResolver}, components::PLA_82S100},
+    Addr, Memory,
+};
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
@@ -17,17 +20,29 @@ use machine::{Addr, Memory};
 /// The emulator provides 64kB of RAM and 64kB of ROM, but no extra memory for
 /// cartridges - it simply overrides ROM for cartridges (TBC whether such simplification
 /// is sufficient).
+
+// pub struct C64Memory {
+//     ram: Box<[u8]>,
+//     rom: Box<[u8]>,
+// }
+//
 pub struct C64Memory {
     ram: Box<[u8]>,
     rom: Box<[u8]>,
+    pla: PLA_82S100,
 }
-
 impl C64Memory {
     pub fn new(size: usize) -> Self {
         // let size: usize = 1 << 16;
+        let mut pla = PLA_82S100::default();
+        pla.link_ram(VecMemory::new(0xffff, 16));
+
+        // pla.link_ram(&rram);
+
         C64Memory {
             ram: vec![0u8; size].into_boxed_slice(),
             rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
+            pla,
         }
     }
 }
@@ -54,6 +69,9 @@ impl Memory for C64Memory {
         let len = data.len();
         if len == 16384 {
             // the size of original rom
+            self.pla.link_basic(VecMemory::from_data(&data[..8192], 16));
+            self.pla
+                .link_kernal(VecMemory::from_data(&data[8192..], 16));
             self.init_rom_at_addr(0xa000, &data[..8192]);
             self.init_rom_at_addr(0xe000, &data[8192..]);
         } else {
@@ -64,6 +82,7 @@ impl Memory for C64Memory {
     }
 
     fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
+        self.pla.link_chargen(VecMemory::from_data(&data, 16));
         let mut idx = addr as usize;
         for byte in data.iter() {
             self.rom[idx] = *byte;
@@ -71,7 +90,23 @@ impl Memory for C64Memory {
         }
     }
     fn set_byte(&mut self, addr: Addr, val: u8) {
-        self.ram[addr as usize] = val;
+        // self.ram[addr as usize] = val;
+        self.pla.write_byte(addr, val);
+    }
+    fn get_byte(&self, addr: Addr) -> u8 {
+        self.pla.read_byte(addr)
+    }
+
+    fn fragment(&self, from: Addr, to: Addr) -> Vec<u8> {
+        let mut vec = Vec::<u8>::with_capacity((to - from) as usize);
+        let range = std::ops::Range {
+            start: from,
+            end: to,
+        };
+        for i in range {
+            vec.push(self.get_byte(i));
+        }
+        vec
     }
 
     fn set_word(&mut self, addr: Addr, val: u16) {
@@ -83,5 +118,8 @@ impl Memory for C64Memory {
 
     fn size(&self) -> usize {
         self.ram.len()
+    }
+    fn get_word(&self, addr: Addr) -> u16 {
+        self.pla.read_word(addr)
     }
 }

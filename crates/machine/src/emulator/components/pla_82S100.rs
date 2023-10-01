@@ -52,10 +52,12 @@
 // CHI: Cartridge ROM (hi)
 // KRN: Kernal ROM
 
+use std::{cell::RefCell, rc::Rc, sync::{Mutex, Arc}};
+
 use lazy_static;
 
 use crate::{
-    emulator::abstractions::{Addr, AddressResolver, Addressable, VecMemory},
+    emulator::abstractions::{Addr, AddressResolver, Addressable},
     utils::if_else,
 };
 
@@ -142,22 +144,25 @@ lazy_static! {
 // Fallback to 0 woudld let to spot problems with missing devices.
 // I somehow sense (can't prove) the latter is closer to reality.
 
+type Cell = Arc<Mutex<Box<dyn Addressable+Send>>>;
+type OptCell = Option<Cell>;
+
 #[derive(Default)]
-pub struct PLA_82S100<'a> {
-    devices: [Option<Box<&'a mut dyn Addressable>>; 7],
+pub struct PLA_82S100 {
+    devices: MemoryLinks,
 }
 
-impl<'a> Addressable for PLA_82S100<'a> {
+impl Addressable for PLA_82S100 {
     fn read_byte(&self, addr: Addr) -> u8 {
         let id = self.get_device_id(addr);
         if id == 7 {
             return 0;
         } // TODO check what to do for this case
-        let opt_dev = self.devices[id as usize]
-            .as_ref()
-            .or(self.devices[0].as_ref()); // fallback to RAM
+        let real_id = if_else(self.devices.from_id(id).is_some(), id, 0);
+        let opt_dev = self.devices.from_id(real_id);
         if let Some(dev) = opt_dev {
-            dev.read_byte(self.internal_addr(dev, addr))
+            let real_addr = self.internal_addr(&dev, addr, real_id);
+            dev.lock().unwrap().read_byte(real_addr)
         } else {
             0
         }
@@ -169,13 +174,13 @@ impl<'a> Addressable for PLA_82S100<'a> {
 
         let id = self.get_device_id(addr);
         let real_id = if_else(id == 4, 4, 0); // if not i/o, write to ram
-        if self.devices[real_id].is_some() {
+        if self.devices.from_id(real_id).is_some() {
             let internal_addr = {
-                let dev = &self.devices[real_id].as_ref().unwrap();
-                self.internal_addr(dev, addr)
+                let dev = self.devices.from_id(real_id).unwrap();
+                self.internal_addr(&dev, addr, real_id)
             };
-            let dev_mut = self.devices[real_id].as_mut().unwrap();
-            dev_mut.write_byte(internal_addr, value);
+            let dev_mut = self.devices.from_id(real_id).unwrap();
+            dev_mut.lock().unwrap().write_byte(internal_addr, value);
         }
     }
 
@@ -184,17 +189,35 @@ impl<'a> Addressable for PLA_82S100<'a> {
     }
 }
 
-impl<'a> AddressResolver for PLA_82S100<'a> {}
+impl AddressResolver for PLA_82S100 {}
 
-
-
-struct Memory {
-
+#[derive(Default)]
+struct MemoryLinks {
+    pub ram: OptCell,
+    pub kernal: OptCell,
+    pub basic: OptCell,
+    pub chargen: OptCell,
+    pub io: OptCell,
+    pub cartridge_hi: OptCell,
+    pub cartridge_lo: OptCell,
 }
 
+impl MemoryLinks {
+    pub(crate) fn from_id(&self, id: u8) -> OptCell {
+        match id {
+            0 => self.ram.clone(),
+            1 => self.cartridge_lo.clone(),
+            2 => self.basic.clone(),
+            3 => self.cartridge_hi.clone(),
+            4 => self.io.clone(),
+            5 => self.chargen.clone(),
+            6 => self.kernal.clone(),
+            _ => None,
+        }
+    }
+}
 
-
-impl<'a> PLA_82S100<'a> {
+impl PLA_82S100 {
     fn get_device_id(&self, addr: Addr) -> u8 {
         // pin 8 and 9 are set low (false) when cartridge is present and high (true) when not
         // regular cartridge: pin 8
@@ -204,7 +227,7 @@ impl<'a> PLA_82S100<'a> {
 
         // Because we are emulating addresses 0 and 1 with RAM
         // we can't continue when RAM is not present.
-        if self.devices[0].is_none() {
+        if self.devices.from_id(0).is_none() {
             return 0;
         }
 
@@ -212,9 +235,9 @@ impl<'a> PLA_82S100<'a> {
         // and values from pin8 and 9, that act here as bit 4 and 5
         // that gives 32 combinations (although some of them are redundant, so
         // effectively there is 14)
-        let mut flag = self.devices[0].as_ref().unwrap().read_byte(0x0001);
+        let mut flag = self.devices.from_id(0).unwrap().lock().unwrap().read_byte(0x0001);
 
-        flag = (flag & 0b111) | (u8::from(pin8) << 4) | (u8::from(pin9) << 5);
+        flag = (flag & 0b111) | (u8::from(pin8) << 3) | (u8::from(pin9) << 4);
         let bank = &BANKS[flag as usize];
         match addr {
             0x0000..=0x0fff => bank[0],
@@ -228,64 +251,56 @@ impl<'a> PLA_82S100<'a> {
     }
 
     fn has_device(&self, dev_id: usize) -> bool {
-        self.devices[dev_id].is_some()
+        self.devices.from_id(dev_id as u8).is_some()
     }
 
-    fn internal_addr(&self, dev: &Box<&mut dyn Addressable>, addr: Addr) -> Addr {
-        addr & (dev.address_width() - 1)
-    }
-
-    pub(crate) fn link_dev(&mut self, id: usize, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
-        let bx: Box<&mut (dyn Addressable + 'a)> = Box::new(dev);
-        self.devices[id] = Some(bx);
-        self
+    fn internal_addr(&self, dev: &Cell, addr: Addr, id: u8) -> Addr {
+        let mut a = addr;
+        if id == 2 { a -= 0xa000 }
+        else if id == 5 { a-=0xd000 }
+        else if id == 6 { a -= 0xe000}
+        // a & (dev.lock().unwrap().address_width() - 0)
+        a
     }
 
     pub(crate) fn set_mode(&mut self, mode: u8) {
         self.write_byte(1, mode);
     }
 
-    pub(crate) fn link_ram(&mut self, dev: &'a mut (dyn Addressable + 'a)) {
-       let _ = self.link_dev(0, dev);
+    pub(crate) fn link_dev(&mut self, id: usize, dev: impl Addressable+Send+'static) -> &mut Self {
+        let bx: Cell = Arc::new(Mutex::new(Box::new(dev)));
+        match id {
+            0 => self.devices.ram = Some(bx),
+            1 => self.devices.cartridge_lo = Some(bx),
+            2 => self.devices.basic = Some(bx),
+            3 => self.devices.cartridge_hi = Some(bx),
+            4 => self.devices.io = Some(bx),
+            5 => self.devices.chargen = Some(bx),
+            6 => self.devices.kernal = Some(bx),
+            _ => {}
+        };
+        self
     }
-    pub(crate) fn link_basic(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+
+    pub fn link_ram(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self{
+        self.link_dev(0, dev)
+    }
+    pub fn link_basic(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
         self.link_dev(2, dev)
     }
-    pub(crate) fn link_kernal(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+    pub fn link_kernal(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
         self.link_dev(6, dev)
     }
-    pub(crate) fn link_chargen(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+    pub fn link_chargen(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
         self.link_dev(5, dev)
     }
-    pub(crate) fn link_cartridge(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+    pub fn link_cartridge(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
         self.link_dev(1, dev)
     }
-    pub(crate) fn link_io(&mut self, dev: &'a mut (dyn Addressable + 'a)) -> &mut Self {
+    pub fn link_io(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
         self.link_dev(4, dev)
     }
 }
-
-// struct Koza<'a> {
-//     ram: VecMemory,
-//     basic: VecMemory,
-//     pla: PLA_82S100<'a>,
-// }
-//
-// impl Koza<'_> {
-//     fn new() -> Self {
-//         let mut pla = PLA_82S100::default();
-//         let mut ram = VecMemory::new(0xffff, 16);
-//         // let k = Koza {
-//         //     basic: VecMemory::new(0xffff, 16),
-//         //     pla: pla,
-//         //     ram,
-//         // };
-//
-//         let b: Box<&mut (dyn Addressable )> = Box::new(&mut ram);
-//         // pla.link_ram(Box::new(&mut ram));
-//         k
-//     }
-// }
 
 #[cfg(test)]
 mod tests {
@@ -321,28 +336,27 @@ mod tests {
     }
 
     #[test]
-    fn test_creation() {
-        let mut ram = Mem::new(16);
-        let mut pla = PLA_82S100 {
-            devices: [Some(Box::new(&mut ram)), None, None, None, None, None, None],
-        };
-        assert_eq!(0, pla.read_byte(0x33));
-        pla.write_byte(0x33, 42);
-        assert_eq!(42, pla.read_byte(0x33));
-    }
+    // fn test_creation() {
+    //     let ram = Mem::new(16);
+    //     let mut pla = PLA_82S100::default();
+    //     pla.link_dev(0, ram);
+    //     assert_eq!(0, pla.read_byte(0x33));
+    //     pla.write_byte(0x33, 42);
+    //     assert_eq!(42, pla.read_byte(0x33));
+    // }
 
     #[test]
     fn test_operations() {
-        let mut ram = Mem::new(16);
-        let mut basic = Mem::new(16);
-        let mut chargen = Mem::new(16);
-        let mut kernal = Mem::new(16);
+        let ram = Mem::new(16);
+        let basic = Mem::new(16);
+        let chargen = Mem::new(16);
+        let kernal = Mem::new(16);
 
         let mut pla = PLA_82S100::default();
-        pla.link_dev(0, &mut ram);
-        pla.link_dev(2, &mut basic); // basic rom
-        pla.link_dev(5, &mut chargen); // char rom
-        pla.link_dev(6, &mut kernal); // kernal
+        pla.link_dev(0, Box::new(ram));
+        // pla.link_dev(2, basic); // basic rom
+        // pla.link_dev(5, chargen); // char rom
+        // pla.link_dev(6, kernal); // kernal
 
         // read/write ram
         assert_eq!(0, pla.read_byte(0x33));

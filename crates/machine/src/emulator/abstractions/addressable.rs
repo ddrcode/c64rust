@@ -57,10 +57,11 @@ pub struct VecMemory {
 
 impl VecMemory {
     pub fn new(size: usize, width: u16) -> Self {
-        VecMemory {
-            cells:Vec::with_capacity(size),
-            width
-        }
+        // VecMemory {
+        //     cells:Vec::with_capacity(size),
+        //     width
+        // }
+        VecMemory::from_data(&[0u8;1<<16], width)
     }
 
     pub fn from_data(data: &[u8], width: u16) -> Self {
