@@ -123,7 +123,7 @@ lazy_static! {
 
 #[derive(Default)]
 pub struct PLA_82S100<'a> {
-    devices: [Option<Box<&'a dyn Addressable>>; 7],
+    devices: [Option<Box<&'a mut dyn Addressable>>; 7],
 }
 
 impl<'a> Addressable for PLA_82S100<'a> {
