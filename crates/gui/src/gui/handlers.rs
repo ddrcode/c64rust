@@ -157,7 +157,7 @@ fn set_theme(siv: &mut CursiveRunnable) {
     use cursive::theme::*;
     let mut theme = siv.current_theme().clone();
     theme.shadow = true;
-    theme.borders = BorderStyle::None;
+    theme.borders = BorderStyle::Simple;
     theme.palette[PaletteColor::Background] = Color::TerminalDefault;
     theme.palette[PaletteColor::View] = Color::Dark(BaseColor::White);
     theme.palette[PaletteColor::View] = Color::Rgb(0x9c, 0xa5, 0xb5);

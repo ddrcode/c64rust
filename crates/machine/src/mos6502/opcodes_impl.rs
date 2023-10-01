@@ -274,9 +274,9 @@ fn op_plp(op: &Operation, machine: &mut impl Machine) -> u8 {
 }
 
 fn op_push(op: &Operation, machine: &mut impl Machine) -> u8 {
-    let val = match op.def.mnemonic {
+    let val: u8 = match op.def.mnemonic {
         PHA => machine.A8(),
-        PHP => u8::from(&machine.P()),
+        PHP => machine.P().into(),
         _ => panic!("{} is not a push operation", op.def.mnemonic),
     };
     let addr = machine.stack_addr();

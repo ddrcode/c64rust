@@ -15,7 +15,7 @@ pub trait Memory {
     fn get_word(&self, addr: Addr) -> u16 {
         let idx = addr as usize;
         let mem = self.mem(addr);
-        (mem[idx] as u16) | ((mem[idx + 1] as u16) << 8)
+        (mem[idx] as u16) | ((mem[addr.wrapping_add(1) as usize] as u16) << 8)
     }
 
     fn set_byte(&mut self, addr: Addr, val: u8);
