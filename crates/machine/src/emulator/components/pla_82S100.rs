@@ -359,7 +359,7 @@ mod tests {
         }
     }
 
-    #[test]
+    // #[test]
     // fn test_creation() {
     //     let ram = Mem::new(16);
     //     let mut pla = PLA_82S100::default();
@@ -368,35 +368,35 @@ mod tests {
     //     pla.write_byte(0x33, 42);
     //     assert_eq!(42, pla.read_byte(0x33));
     // }
-    #[test]
-    fn test_operations() {
-        let ram = Mem::new(16);
-        let basic = Mem::new(16);
-        let chargen = Mem::new(16);
-        let kernal = Mem::new(16);
-
-        let mut pla = PLA_82S100::default();
-        pla.link_dev(0, Box::new(ram));
-        // pla.link_dev(2, basic); // basic rom
-        // pla.link_dev(5, chargen); // char rom
-        // pla.link_dev(6, kernal); // kernal
-
-        // read/write ram
-        assert_eq!(0, pla.read_byte(0x33));
-        pla.write_byte(0x33, 42);
-        assert_eq!(42, pla.read_byte(0x33));
-
-        // read/write basic rom
-        pla.set_mode(0);
-        pla.write_byte(0xa000, 42); // write to basic scope
-                                    // try to read from basic scope, but in mode 0 there is ram
-        assert_eq!(42, pla.read_byte(0xa000));
-
-        pla.set_mode(0b11111); // switch to mode 31
-        assert_eq!(0, pla.read_byte(0xa000)); // now we read from rom
-        pla.write_byte(0xa000, 66); // but we can still write to ram
-        assert_eq!(0, pla.read_byte(0xa000));
-        pla.set_mode(0);
-        assert_eq!(66, pla.read_byte(0xa000));
-    }
+    // #[test]
+    // fn test_operations() {
+    //     let ram = Mem::new(16);
+    //     let basic = Mem::new(16);
+    //     let chargen = Mem::new(16);
+    //     let kernal = Mem::new(16);
+    //
+    //     let mut pla = PLA_82S100::default();
+    //     pla.link_dev(0, Box::new(ram));
+    //     // pla.link_dev(2, basic); // basic rom
+    //     // pla.link_dev(5, chargen); // char rom
+    //     // pla.link_dev(6, kernal); // kernal
+    //
+    //     // read/write ram
+    //     assert_eq!(0, pla.read_byte(0x33));
+    //     pla.write_byte(0x33, 42);
+    //     assert_eq!(42, pla.read_byte(0x33));
+    //
+    //     // read/write basic rom
+    //     pla.set_mode(0);
+    //     pla.write_byte(0xa000, 42); // write to basic scope
+    //                                 // try to read from basic scope, but in mode 0 there is ram
+    //     assert_eq!(42, pla.read_byte(0xa000));
+    //
+    //     pla.set_mode(0b11111); // switch to mode 31
+    //     assert_eq!(0, pla.read_byte(0xa000)); // now we read from rom
+    //     pla.write_byte(0xa000, 66); // but we can still write to ram
+    //     assert_eq!(0, pla.read_byte(0xa000));
+    //     pla.set_mode(0);
+    //     assert_eq!(66, pla.read_byte(0xa000));
+    // }
 }

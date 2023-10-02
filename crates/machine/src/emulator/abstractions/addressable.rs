@@ -1,5 +1,6 @@
 use core::num::Wrapping;
 use std::ops::Index;
+use super::device::*;
 
 pub type Addr = u16;
 
@@ -46,6 +47,23 @@ pub trait AddressResolver: Addressable {
 
     fn read_word(&self, addr: Addr) -> u16 {
         u16::from_le_bytes([self.read_byte(addr), self.read_byte(addr.wrapping_add(1))])
+    }
+}
+
+pub trait AddressableDevice : DeviceTrait + Addressable {}
+
+
+impl<T: AddressableDevice> Addressable for Device<T> {
+    fn read_byte(&self, addr: Addr) -> u8 {
+        self.access().read_byte(addr)
+    }
+
+    fn write_byte(&mut self, addr: Addr, value: u8) {
+        self.access().write_byte(addr, value)
+    }
+
+    fn address_width(&self) -> u16 {
+        self.access().address_width()
     }
 }
 
