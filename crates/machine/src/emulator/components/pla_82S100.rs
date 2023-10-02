@@ -52,8 +52,8 @@
 // CHI: Cartridge ROM (hi)
 // KRN: Kernal ROM
 
-
 use lazy_static;
+use std::sync::{Arc, Mutex};
 
 use crate::{
     emulator::abstractions::{Addr, AddressResolver, Addressable, AddressableDevice},
@@ -143,12 +143,13 @@ lazy_static! {
 // Fallback to 0 woudld let to spot problems with missing devices.
 // I somehow sense (can't prove) the latter is closer to reality.
 
-type Cell = Box<dyn AddressableDevice + Send>;
+type Cell = Arc<Mutex<dyn Addressable + Send>>;
 type OptCell = Option<Cell>;
 
 #[derive(Default)]
 pub struct PLA_82S100 {
     devices: MemoryLinks,
+    devices2: [OptCell; 7],
 }
 
 impl Addressable for PLA_82S100 {
@@ -161,7 +162,7 @@ impl Addressable for PLA_82S100 {
         let opt_dev = self.devices.from_id(real_id);
         if let Some(dev) = opt_dev {
             let real_addr = self.internal_addr(&dev, addr, real_id);
-            dev.read_byte(real_addr)
+            dev.lock().unwrap().read_byte(real_addr)
         } else {
             0
         }
@@ -179,7 +180,7 @@ impl Addressable for PLA_82S100 {
                 self.internal_addr(&dev, addr, real_id)
             };
             let dev_mut = self.devices.from_id_mut(real_id).unwrap();
-            dev_mut.write_byte(internal_addr, value);
+            dev_mut.lock().unwrap().write_byte(internal_addr, value);
         }
     }
 
@@ -247,7 +248,13 @@ impl PLA_82S100 {
         // and values from pin8 and 9, that act here as bit 4 and 5
         // that gives 32 combinations (although some of them are redundant, so
         // effectively there is 14)
-        let mut flag = self.devices.from_id(0).unwrap().read_byte(0x0001);
+        let mut flag = self
+            .devices
+            .from_id(0)
+            .unwrap()
+            .lock()
+            .unwrap()
+            .read_byte(0x0001);
 
         flag = (flag & 0b111) | (u8::from(pin8) << 3) | (u8::from(pin9) << 4);
         let bank = &BANKS[flag as usize];
@@ -283,41 +290,37 @@ impl PLA_82S100 {
         self.write_byte(1, mode);
     }
 
-    pub(crate) fn link_dev(
-        &mut self,
-        id: usize,
-        dev: impl AddressableDevice + Send + 'static,
-    ) -> &mut Self {
-        let bx: Cell = Box::new(dev);
+    pub(crate) fn link_dev(&mut self, id: usize, dev: Cell) -> &mut Self {
+        self.devices2[id] = Some(dev.clone());
         match id {
-            0 => self.devices.ram = Some(bx),
-            1 => self.devices.cartridge_lo = Some(bx),
-            2 => self.devices.basic = Some(bx),
-            3 => self.devices.cartridge_hi = Some(bx),
-            4 => self.devices.io = Some(bx),
-            5 => self.devices.chargen = Some(bx),
-            6 => self.devices.kernal = Some(bx),
+            0 => self.devices.ram = Some(dev),
+            1 => self.devices.cartridge_lo = Some(dev),
+            2 => self.devices.basic = Some(dev),
+            3 => self.devices.cartridge_hi = Some(dev),
+            4 => self.devices.io = Some(dev),
+            5 => self.devices.chargen = Some(dev),
+            6 => self.devices.kernal = Some(dev),
             _ => {}
         };
         self
     }
 
-    pub fn link_ram(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
+    pub fn link_ram(&mut self, dev: Cell) -> &mut Self {
         self.link_dev(0, dev)
     }
-    pub fn link_basic(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
+    pub fn link_basic(&mut self, dev: Cell) -> &mut Self {
         self.link_dev(2, dev)
     }
-    pub fn link_kernal(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
+    pub fn link_kernal(&mut self, dev: Cell) -> &mut Self {
         self.link_dev(6, dev)
     }
-    pub fn link_chargen(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
+    pub fn link_chargen(&mut self, dev: Cell) -> &mut Self {
         self.link_dev(5, dev)
     }
-    pub fn link_cartridge(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
+    pub fn link_cartridge(&mut self, dev: Cell) -> &mut Self {
         self.link_dev(1, dev)
     }
-    pub fn link_io(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
+    pub fn link_io(&mut self, dev: Cell) -> &mut Self {
         self.link_dev(4, dev)
     }
 }

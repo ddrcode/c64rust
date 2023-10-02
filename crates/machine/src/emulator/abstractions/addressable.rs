@@ -32,7 +32,6 @@ pub trait AddressResolver: Addressable {
     }
 }
 
-
 impl<T: DeviceTrait + Addressable> Addressable for Device<T> {
     fn read_byte(&self, addr: Addr) -> u8 {
         self.lock().read_byte(addr)
@@ -47,8 +46,8 @@ impl<T: DeviceTrait + Addressable> Addressable for Device<T> {
     }
 }
 
-pub trait AddressableDevice: Addressable {}
-impl<T: Addressable+DeviceTrait> AddressableDevice for Device<T> {}
+pub trait AddressableDevice<T: DeviceTrait>: Addressable + Accessor<T> {}
+impl<T: Addressable+DeviceTrait> AddressableDevice<T> for Device<T> {}
 
 /// Simple implementation of Array built on top of u8 array.
 pub struct ArrayMemory {

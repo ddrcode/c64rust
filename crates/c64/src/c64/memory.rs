@@ -1,6 +1,6 @@
 use machine::{
     emulator::{
-        abstractions::{AddressResolver, Addressable, ArrayMemory, Device, AddressableDevice, DeviceTrait},
+        abstractions::{AddressResolver, Addressable, ArrayMemory, Device, AddressableDevice, DeviceTrait, Accessor},
         components::PLA_82S100,
     },
     Addr, Memory,
@@ -35,7 +35,8 @@ pub struct C64Memory {
 impl C64Memory {
     pub fn new() -> Self {
         let mut pla = PLA_82S100::default();
-        pla.link_ram(Device::from(ArrayMemory::new(0xffff, 16)));
+        let ram = Device::from(ArrayMemory::new(0xffff, 16));
+        pla.link_ram(ram.mutex());
 
         C64Memory { pla }
     }
@@ -54,9 +55,9 @@ impl Memory for C64Memory {
         if len == 16384 {
             // the size of original rom
             self.pla
-                .link_basic(Device::from(ArrayMemory::from_data(&data[..8192], 16)));
+                .link_basic(Device::from(ArrayMemory::from_data(&data[..8192], 16)).mutex());
             self.pla
-                .link_kernal(Device::from(ArrayMemory::from_data(&data[8192..], 16)));
+                .link_kernal(Device::from(ArrayMemory::from_data(&data[8192..], 16)).mutex());
         } else {
             // custom rom
             let addr: usize = 0x10000 - len;
@@ -65,7 +66,7 @@ impl Memory for C64Memory {
     }
 
     fn init_rom_at_addr(&mut self, _addr: Addr, data: &[u8]) {
-        self.pla.link_chargen(Device::from(ArrayMemory::from_data(&data, 16)));
+        self.pla.link_chargen(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
     }
     fn set_byte(&mut self, addr: Addr, val: u8) {
         self.pla.write_byte(addr, val);

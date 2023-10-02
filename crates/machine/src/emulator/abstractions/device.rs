@@ -73,7 +73,7 @@ mod tests {
         }
 
         let m = Machine::new();
-        m.gpu.access().ram.access().0 = 0xff;
-        assert_eq!(0xff, m.ram.access().0);
+        m.gpu.lock().ram.lock().0 = 0xff;
+        assert_eq!(0xff, m.ram.lock().0);
     }
 }
