@@ -5,11 +5,11 @@ use crate::key_utils::C64KeyCode;
 use machine::{
     cli::{FromProfile, Profile},
     debugger::{DebugMachine, Debugger, DebuggerState},
-    impl_reg_setter, Cycles,
+    impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
+    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
-use std::{num::Wrapping, cell::RefCell};
+use std::num::Wrapping;
 
 pub struct C64 {
     config: MachineConfig,
@@ -25,11 +25,10 @@ pub struct C64 {
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
-        let size = config.ram_size.clone();
         C64 {
             config,
             mos6510: MOS6502::new(),
-            mem: C64Memory::new(size),
+            mem: C64Memory::new(),
             gpu: VIC_II::new(),
             cia1: CIA1::new(0xdc00),
             status: MachineStatus::Stopped,

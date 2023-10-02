@@ -1,5 +1,8 @@
 use machine::{
-    emulator::{abstractions::{VecMemory, Addressable, AddressResolver}, components::PLA_82S100},
+    emulator::{
+        abstractions::{AddressResolver, Addressable, ArrayMemory, Device, AddressableDevice, DeviceTrait},
+        components::PLA_82S100,
+    },
     Addr, Memory,
 };
 
@@ -27,23 +30,14 @@ use machine::{
 // }
 //
 pub struct C64Memory {
-    ram: Box<[u8]>,
-    rom: Box<[u8]>,
     pla: PLA_82S100,
 }
 impl C64Memory {
-    pub fn new(size: usize) -> Self {
-        // let size: usize = 1 << 16;
+    pub fn new() -> Self {
         let mut pla = PLA_82S100::default();
-        pla.link_ram(VecMemory::new(0xffff, 16));
+        pla.link_ram(Device::from(ArrayMemory::new(0xffff, 16)));
 
-        // pla.link_ram(&rram);
-
-        C64Memory {
-            ram: vec![0u8; size].into_boxed_slice(),
-            rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
-            pla,
-        }
+        C64Memory { pla }
     }
 }
 
@@ -51,29 +45,18 @@ impl Memory for C64Memory {
     // TODO: Must check whether the three corresponding its at addr 0x00 are 1
     // check https://www.c64-wiki.com/wiki/Bank_Switching for details
     #[allow(unused_comparisons)]
-    fn mem(&self, addr: Addr) -> &[u8] {
-        let flag = self.ram[1] & 0b00000111;
-        if flag & 1 > 0 && addr >= 0xa000 && addr <= 0xbfff {
-            return &self.rom;
-        };
-        if flag & 2 > 0 && addr >= 0xe000 && addr <= 0xffff {
-            return &self.rom;
-        };
-        if flag & 4 == 0 && addr >= 0xd000 && addr <= 0xdfff {
-            return &self.rom;
-        };
-        &self.ram
+    fn mem(&self, _addr: Addr) -> &[u8] {
+        panic!("shuldnt use");
     }
 
     fn init_rom(&mut self, data: &[u8]) {
         let len = data.len();
         if len == 16384 {
             // the size of original rom
-            self.pla.link_basic(VecMemory::from_data(&data[..8192], 16));
             self.pla
-                .link_kernal(VecMemory::from_data(&data[8192..], 16));
-            self.init_rom_at_addr(0xa000, &data[..8192]);
-            self.init_rom_at_addr(0xe000, &data[8192..]);
+                .link_basic(Device::from(ArrayMemory::from_data(&data[..8192], 16)));
+            self.pla
+                .link_kernal(Device::from(ArrayMemory::from_data(&data[8192..], 16)));
         } else {
             // custom rom
             let addr: usize = 0x10000 - len;
@@ -81,16 +64,10 @@ impl Memory for C64Memory {
         }
     }
 
-    fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
-        self.pla.link_chargen(VecMemory::from_data(&data, 16));
-        let mut idx = addr as usize;
-        for byte in data.iter() {
-            self.rom[idx] = *byte;
-            idx += 1;
-        }
+    fn init_rom_at_addr(&mut self, _addr: Addr, data: &[u8]) {
+        self.pla.link_chargen(Device::from(ArrayMemory::from_data(&data, 16)));
     }
     fn set_byte(&mut self, addr: Addr, val: u8) {
-        // self.ram[addr as usize] = val;
         self.pla.write_byte(addr, val);
     }
     fn get_byte(&self, addr: Addr) -> u8 {
@@ -109,15 +86,12 @@ impl Memory for C64Memory {
         vec
     }
 
-    fn set_word(&mut self, addr: Addr, val: u16) {
-        let idx = addr as usize;
-        let [high, low] = val.to_be_bytes();
-        self.ram[idx] = low;
-        self.ram[idx + 1] = high; // little endian!
+    fn set_word(&mut self, _addr: Addr, _val: u16) {
+        panic!("shuldnt use");
     }
 
     fn size(&self) -> usize {
-        self.ram.len()
+        panic!("shuldnt use");
     }
     fn get_word(&self, addr: Addr) -> u16 {
         self.pla.read_word(addr)

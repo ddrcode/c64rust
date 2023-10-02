@@ -1,11 +1,9 @@
-use core::num::Wrapping;
-use std::ops::Index;
 use super::device::*;
+use core::num::Wrapping;
 
 pub type Addr = u16;
 
 pub trait Addressable {
-
     fn read_byte(&self, addr: Addr) -> u8;
     fn write_byte(&mut self, addr: Addr, value: u8);
     fn address_width(&self) -> u16;
@@ -14,22 +12,6 @@ pub trait Addressable {
         Wrapping(self.read_byte(addr))
     }
 }
-
-pub trait IndexedAddressible<T>: Addressable+Index<T, Output=u8> {
-}
-
-// impl<T: IndexedAddressible<T>> Addressable for T {
-//     fn address_width(&self) -> u16 { 16 }
-//
-//     fn read_byte(&self, addr: Addr) -> u8 {
-//         *self.index(addr as usize)
-//     }
-//
-//     fn write_byte(&mut self, addr: Addr, value: u8) {
-//         todo!()
-//     }
-// }
-
 
 /// BankSwitch should NEVER expose any of Addressables it switches betweenop
 pub trait AddressResolver: Addressable {
@@ -50,47 +32,47 @@ pub trait AddressResolver: Addressable {
     }
 }
 
-pub trait AddressableDevice : DeviceTrait + Addressable {}
 
-
-impl<T: AddressableDevice> Addressable for Device<T> {
+impl<T: DeviceTrait + Addressable> Addressable for Device<T> {
     fn read_byte(&self, addr: Addr) -> u8 {
-        self.access().read_byte(addr)
+        self.lock().read_byte(addr)
     }
 
     fn write_byte(&mut self, addr: Addr, value: u8) {
-        self.access().write_byte(addr, value)
+        self.lock().write_byte(addr, value)
     }
 
     fn address_width(&self) -> u16 {
-        self.access().address_width()
+        self.lock().address_width()
     }
 }
 
+pub trait AddressableDevice: Addressable {}
+impl<T: Addressable+DeviceTrait> AddressableDevice for Device<T> {}
 
-pub struct VecMemory {
-    cells: Vec<u8>,
-    width: u16
+/// Simple implementation of Array built on top of u8 array.
+pub struct ArrayMemory {
+    cells: Box<[u8]>,
+    width: u16,
 }
 
-impl VecMemory {
+impl ArrayMemory {
     pub fn new(size: usize, width: u16) -> Self {
-        // VecMemory {
-        //     cells:Vec::with_capacity(size),
-        //     width
-        // }
-        VecMemory::from_data(&[0u8;1<<16], width)
+        ArrayMemory {
+            cells: vec![0u8; size].into_boxed_slice(),
+            width,
+        }
     }
 
     pub fn from_data(data: &[u8], width: u16) -> Self {
-        VecMemory {
-            cells: Vec::from(data),
-            width
+        ArrayMemory {
+            cells: Vec::from(data).into_boxed_slice(),
+            width,
         }
     }
 }
 
-impl Addressable for VecMemory {
+impl Addressable for ArrayMemory {
     fn read_byte(&self, addr: Addr) -> u8 {
         self.cells[addr as usize]
     }
@@ -103,3 +85,5 @@ impl Addressable for VecMemory {
         self.width
     }
 }
+
+impl DeviceTrait for ArrayMemory {}

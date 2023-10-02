@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex, MutexGuard};
-
 use crate::utils::lock;
 
 pub trait DeviceTrait {}
@@ -9,7 +8,7 @@ pub struct Device<T: DeviceTrait>(Arc<Mutex<T>>);
 
 pub trait Accessor<T: DeviceTrait> {
     fn mutex(&self) -> Arc<Mutex<T>>;
-    fn access(&self) -> MutexGuard<T>;
+    fn lock(&self) -> MutexGuard<T>;
 }
 
 impl<T: DeviceTrait> Accessor<T> for Device<T> {
@@ -17,7 +16,7 @@ impl<T: DeviceTrait> Accessor<T> for Device<T> {
         self.0.clone()
     }
 
-    fn access(&self) -> MutexGuard<T> {
+    fn lock(&self) -> MutexGuard<T> {
         lock(&self.0)
     }
 }
@@ -27,7 +26,6 @@ impl<T: DeviceTrait> From<T> for Device<T> {
         Device(Arc::new(Mutex::new(device)))
     }
 }
-
 
 #[cfg(test)]
 mod tests {

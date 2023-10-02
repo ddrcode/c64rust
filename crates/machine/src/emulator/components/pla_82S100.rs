@@ -52,16 +52,11 @@
 // CHI: Cartridge ROM (hi)
 // KRN: Kernal ROM
 
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
 
 use lazy_static;
 
 use crate::{
-    emulator::abstractions::{Addr, AddressResolver, Addressable},
+    emulator::abstractions::{Addr, AddressResolver, Addressable, AddressableDevice},
     utils::if_else,
 };
 
@@ -148,7 +143,7 @@ lazy_static! {
 // Fallback to 0 woudld let to spot problems with missing devices.
 // I somehow sense (can't prove) the latter is closer to reality.
 
-type Cell = Box<dyn Addressable + Send>;
+type Cell = Box<dyn AddressableDevice + Send>;
 type OptCell = Option<Cell>;
 
 #[derive(Default)]
@@ -208,7 +203,7 @@ struct MemoryLinks {
 
 impl MemoryLinks {
     pub(crate) fn from_id(&self, id: u8) -> Option<&Cell> {
-        let x=match id {
+        let x = match id {
             0 => &self.ram,
             1 => &self.cartridge_lo,
             2 => &self.basic,
@@ -229,7 +224,8 @@ impl MemoryLinks {
             5 => &mut self.chargen,
             6 => &mut self.kernal,
             _ => &mut self.ram,
-        }).as_mut()
+        })
+        .as_mut()
     }
 }
 
@@ -290,7 +286,7 @@ impl PLA_82S100 {
     pub(crate) fn link_dev(
         &mut self,
         id: usize,
-        dev: impl Addressable + Send + 'static,
+        dev: impl AddressableDevice + Send + 'static,
     ) -> &mut Self {
         let bx: Cell = Box::new(dev);
         match id {
@@ -306,22 +302,22 @@ impl PLA_82S100 {
         self
     }
 
-    pub fn link_ram(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
+    pub fn link_ram(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
         self.link_dev(0, dev)
     }
-    pub fn link_basic(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
+    pub fn link_basic(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
         self.link_dev(2, dev)
     }
-    pub fn link_kernal(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
+    pub fn link_kernal(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
         self.link_dev(6, dev)
     }
-    pub fn link_chargen(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
+    pub fn link_chargen(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
         self.link_dev(5, dev)
     }
-    pub fn link_cartridge(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
+    pub fn link_cartridge(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
         self.link_dev(1, dev)
     }
-    pub fn link_io(&mut self, dev: impl Addressable + Send + 'static) -> &mut Self {
+    pub fn link_io(&mut self, dev: impl AddressableDevice + Send + 'static) -> &mut Self {
         self.link_dev(4, dev)
     }
 }
