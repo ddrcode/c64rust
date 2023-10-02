@@ -148,8 +148,8 @@ type OptCell = Option<Cell>;
 
 #[derive(Default)]
 pub struct PLA_82S100 {
-    devices: MemoryLinks,
-    devices2: [OptCell; 7],
+    devices2: MemoryLinks,
+    devices: [OptCell; 7],
 }
 
 impl Addressable for PLA_82S100 {
@@ -158,8 +158,8 @@ impl Addressable for PLA_82S100 {
         if id == 7 {
             return 0;
         } // TODO check what to do for this case
-        let real_id = if_else(self.devices.from_id(id).is_some(), id, 0);
-        let opt_dev = self.devices.from_id(real_id);
+        let real_id = if_else(self.devices[id as usize].is_some(), id, 0);
+        let opt_dev = &self.devices[real_id as usize];
         if let Some(dev) = opt_dev {
             let real_addr = self.internal_addr(&dev, addr, real_id);
             dev.lock().unwrap().read_byte(real_addr)
@@ -174,12 +174,12 @@ impl Addressable for PLA_82S100 {
 
         let id = self.get_device_id(addr);
         let real_id = if_else(id == 4, 4, 0); // if not i/o, write to ram
-        if self.devices.from_id(real_id).is_some() {
+        if self.devices[real_id as usize].is_some() {
             let internal_addr = {
-                let dev = self.devices.from_id(real_id).unwrap();
+                let dev = self.devices[real_id as usize].unwrap();
                 self.internal_addr(&dev, addr, real_id)
             };
-            let dev_mut = self.devices.from_id_mut(real_id).unwrap();
+            let dev_mut = self.devices[real_id as usize].unwrap();
             dev_mut.lock().unwrap().write_byte(internal_addr, value);
         }
     }
@@ -240,7 +240,7 @@ impl PLA_82S100 {
 
         // Because we are emulating addresses 0 and 1 with RAM
         // we can't continue when RAM is not present.
-        if self.devices.from_id(0).is_none() {
+        if self.devices[0].is_none() {
             return 0;
         }
 
@@ -249,8 +249,7 @@ impl PLA_82S100 {
         // that gives 32 combinations (although some of them are redundant, so
         // effectively there is 14)
         let mut flag = self
-            .devices
-            .from_id(0)
+            .devices[0]
             .unwrap()
             .lock()
             .unwrap()
@@ -270,7 +269,7 @@ impl PLA_82S100 {
     }
 
     fn has_device(&self, dev_id: usize) -> bool {
-        self.devices.from_id(dev_id as u8).is_some()
+        self.devices[dev_id].is_some()
     }
 
     fn internal_addr(&self, dev: &Cell, addr: Addr, id: u8) -> Addr {
@@ -291,17 +290,17 @@ impl PLA_82S100 {
     }
 
     pub(crate) fn link_dev(&mut self, id: usize, dev: Cell) -> &mut Self {
-        self.devices2[id] = Some(dev.clone());
-        match id {
-            0 => self.devices.ram = Some(dev),
-            1 => self.devices.cartridge_lo = Some(dev),
-            2 => self.devices.basic = Some(dev),
-            3 => self.devices.cartridge_hi = Some(dev),
-            4 => self.devices.io = Some(dev),
-            5 => self.devices.chargen = Some(dev),
-            6 => self.devices.kernal = Some(dev),
-            _ => {}
-        };
+        self.devices[id] = Some(dev.clone());
+        // match id {
+        //     0 => self.devices.ram = Some(dev),
+        //     1 => self.devices.cartridge_lo = Some(dev),
+        //     2 => self.devices.basic = Some(dev),
+        //     3 => self.devices.cartridge_hi = Some(dev),
+        //     4 => self.devices.io = Some(dev),
+        //     5 => self.devices.chargen = Some(dev),
+        //     6 => self.devices.kernal = Some(dev),
+        //     _ => {}
+        // };
         self
     }
 
