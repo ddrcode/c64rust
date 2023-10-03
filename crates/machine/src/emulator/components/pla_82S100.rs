@@ -96,6 +96,8 @@ lazy_static! {
         [0, 0, 0, 0, 0, 4, 6],
         [0, 0, 0, 2, 0, 4, 6],
     ];
+
+    // start address per memory device:   RAM  CART LO  BASIC  CART HI     IO CHARGEN KERNAL
     static ref START_ADDR: [u16; 7] = [0x0000, 0x8000, 0xa000, 0xa000, 0xd000, 0xd000, 0xe000];
 }
 
@@ -138,9 +140,9 @@ const INVALID: usize = 7;
 // No U1 (CIA1) - Screen fine, no cursor (as no IRQs)
 // No U2 (CIA2) - OK
 // No U1/U2 - Random characters on the screen
-// No U4 (???) - Blank screen
+// No U4 (KERNAL) - Blank screen
 // No U5 (CharROM) - blue screen with borders
-// No U18(???) - OK
+// No U18(SID) - OK
 //
 // We know (source?) that write operation always fallsback to RAM
 // (whether addressed device present or not - the only exception is writing
@@ -164,7 +166,6 @@ pub struct PLA_82S100 {
 }
 
 impl Addressable for PLA_82S100 {
-
     fn read_byte(&self, addr: Addr) -> u8 {
         let (byte0, byte1, ram) = self.get_state();
         let id = self.get_device_id(addr, byte0, byte1);
@@ -174,7 +175,7 @@ impl Addressable for PLA_82S100 {
             return 0;
         }
 
-        let real_id = if_else(self.devices[id as usize].is_some(), id, 0);
+        let real_id = if_else(self.has_device(id), id, 0);
 
         // optimization - if read is from RAM no further checks are required
         // so we can skip further mutex locking
@@ -211,7 +212,7 @@ impl Addressable for PLA_82S100 {
         }
 
         drop(ram);
-        if self.devices[real_id as usize].is_some() {
+        if self.has_device(real_id) {
             let internal_addr = {
                 let dev = self.devices[real_id as usize].as_ref().unwrap();
                 self.internal_addr(&dev, addr, real_id)
@@ -230,7 +231,7 @@ impl AddressResolver for PLA_82S100 {}
 
 impl PLA_82S100 {
     fn get_state(&self) -> (u8, u8, MutexGuard<dyn Addressable + Send + 'static>) {
-        if self.devices[RAM].is_none() {
+        if !self.has_device(RAM) {
             panic!("RAM is mandatory");
         }
         let ram = lock(self.devices[RAM].as_ref().unwrap());
@@ -277,7 +278,7 @@ impl PLA_82S100 {
 
     fn internal_addr(&self, _dev: &Cell, addr: Addr, id: usize) -> Addr {
         if id == IO && (addr >= 0xdc00 || addr <= 0xdcff) {
-            return addr-0xdc00;
+            return addr - 0xdc00;
         }
         // a & (dev.address_width() - 0)
         addr - START_ADDR[id]
@@ -388,4 +389,3 @@ mod tests {
         assert_eq!(66, pla.read_byte(0xa000));
     }
 }
-
