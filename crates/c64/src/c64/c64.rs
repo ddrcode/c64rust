@@ -7,7 +7,7 @@ use machine::{
     debugger::{DebugMachine, Debugger, DebuggerState},
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
+    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter, emulator::abstractions::{Device, Accessor},
 };
 use std::num::Wrapping;
 
@@ -16,7 +16,7 @@ pub struct C64 {
     mos6510: MOS6502,
     mem: C64Memory,
     gpu: VIC_II,
-    pub cia1: CIA1,
+    pub cia1: Device<CIA1>,
     status: MachineStatus,
     cycles: u64,
     pub debugger_state: DebuggerState,
@@ -25,12 +25,13 @@ pub struct C64 {
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
+        let cia1 = Device::from(CIA1::new(0xdc00));
         C64 {
             config,
             mos6510: MOS6502::new(),
-            mem: C64Memory::new(),
+            mem: C64Memory::new(&cia1),
             gpu: VIC_II::new(),
-            cia1: CIA1::new(0xdc00),
+            cia1,
             status: MachineStatus::Stopped,
             cycles: 0,
             debugger_state: DebuggerState::default(),
@@ -51,7 +52,7 @@ impl C64 {
     }
 
     pub fn key_down(&mut self, ck: C64KeyCode) {
-        self.cia1.keyboard.key_down(ck as u8);
+        self.cia1.lock().keyboard.key_down(ck as u8);
 
         // let sc = VIC_II::ascii_to_petscii(ch);
         // self.memory_mut().set_byte(0x0277, sc);
@@ -63,7 +64,7 @@ impl C64 {
     }
 
     pub fn key_up(&mut self, ck: C64KeyCode) {
-        self.cia1.keyboard.key_up(ck as u8);
+        self.cia1.lock().keyboard.key_up(ck as u8);
     }
 
     pub fn send_keys(&mut self, vec: &Vec<C64KeyCode>, is_down: bool) {
@@ -127,22 +128,6 @@ impl Machine for C64 {
         let res = execute_operation(&op, self);
         self.last_op = op.clone();
         res
-    }
-
-    fn get_byte(&self, addr: Addr) -> u8 {
-        if self.is_io(addr) {
-            self.cia1.get_byte(addr)
-        } else {
-            self.memory().get_byte(addr)
-        }
-    }
-
-    fn set_byte(&mut self, addr: Addr, val: u8) {
-        if self.is_io(addr) {
-            self.cia1.set_byte(addr, val)
-        } else {
-            self.memory_mut().set_byte(addr, val)
-        }
     }
 
     fn post_next(&mut self, op: &Operation) {

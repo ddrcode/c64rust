@@ -1,5 +1,5 @@
 use super::Keyboard;
-use machine::Addr;
+use machine::{Addr, emulator::abstractions::{Addressable, Device, DeviceTrait}};
 
 pub struct CIA1 {
     address: Addr,
@@ -70,3 +70,19 @@ impl CIA6526 for CIA1 {
         self.mem_mut()[address] = val;
     }
 }
+
+impl Addressable for CIA1 {
+    fn read_byte(&self, addr: Addr) -> u8 {
+        self.get_byte(addr)
+    }
+
+    fn write_byte(&mut self, addr: Addr, value: u8) {
+        self.set_byte(addr, value);
+    }
+
+    fn address_width(&self) -> u16 {
+        5
+    }
+}
+
+impl DeviceTrait for CIA1 {}

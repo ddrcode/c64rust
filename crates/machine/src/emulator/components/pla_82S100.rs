@@ -148,7 +148,6 @@ type OptCell = Option<Cell>;
 
 #[derive(Default)]
 pub struct PLA_82S100 {
-    devices2: MemoryLinks,
     devices: [OptCell; 7],
 }
 
@@ -176,10 +175,10 @@ impl Addressable for PLA_82S100 {
         let real_id = if_else(id == 4, 4, 0); // if not i/o, write to ram
         if self.devices[real_id as usize].is_some() {
             let internal_addr = {
-                let dev = self.devices[real_id as usize].unwrap();
+                let dev = self.devices[real_id as usize].as_ref().unwrap();
                 self.internal_addr(&dev, addr, real_id)
             };
-            let dev_mut = self.devices[real_id as usize].unwrap();
+            let dev_mut = self.devices[real_id as usize].as_mut().unwrap();
             dev_mut.lock().unwrap().write_byte(internal_addr, value);
         }
     }
@@ -191,44 +190,6 @@ impl Addressable for PLA_82S100 {
 
 impl AddressResolver for PLA_82S100 {}
 
-#[derive(Default)]
-struct MemoryLinks {
-    pub ram: OptCell,
-    pub kernal: OptCell,
-    pub basic: OptCell,
-    pub chargen: OptCell,
-    pub io: OptCell,
-    pub cartridge_hi: OptCell,
-    pub cartridge_lo: OptCell,
-}
-
-impl MemoryLinks {
-    pub(crate) fn from_id(&self, id: u8) -> Option<&Cell> {
-        let x = match id {
-            0 => &self.ram,
-            1 => &self.cartridge_lo,
-            2 => &self.basic,
-            3 => &self.cartridge_hi,
-            4 => &self.io,
-            5 => &self.chargen,
-            6 => &self.kernal,
-            _ => &None,
-        };
-        x.as_ref()
-    }
-    pub(crate) fn from_id_mut(&mut self, id: u8) -> Option<&mut Cell> {
-        (match id {
-            1 => &mut self.cartridge_lo,
-            2 => &mut self.basic,
-            3 => &mut self.cartridge_hi,
-            4 => &mut self.io,
-            5 => &mut self.chargen,
-            6 => &mut self.kernal,
-            _ => &mut self.ram,
-        })
-        .as_mut()
-    }
-}
 
 impl PLA_82S100 {
     fn get_device_id(&self, addr: Addr) -> u8 {
@@ -248,8 +209,8 @@ impl PLA_82S100 {
         // and values from pin8 and 9, that act here as bit 4 and 5
         // that gives 32 combinations (although some of them are redundant, so
         // effectively there is 14)
-        let mut flag = self
-            .devices[0]
+        let mut flag = self.devices[0]
+            .as_ref()
             .unwrap()
             .lock()
             .unwrap()
@@ -257,7 +218,7 @@ impl PLA_82S100 {
 
         flag = (flag & 0b111) | (u8::from(pin8) << 3) | (u8::from(pin9) << 4);
         let bank = &BANKS[flag as usize];
-        match addr {
+        let dev_id = match addr {
             0x0000..=0x0fff => bank[0],
             0x1000..=0x7fff => bank[1],
             0x8000..=0x9fff => bank[2],
@@ -265,7 +226,16 @@ impl PLA_82S100 {
             0xc000..=0xcfff => bank[4],
             0xd000..=0xdfff => bank[5],
             0xe000..=0xffff => bank[6],
+        };
+
+        // FIXME! as currently only CIA1 is implemented
+        // we fallback to ram for other devices
+        if dev_id == 4 && (addr < 0xdc00 || addr > 0xdcff) {
+            return 0;
         }
+
+        dev_id
+
     }
 
     fn has_device(&self, dev_id: usize) -> bool {
@@ -291,16 +261,6 @@ impl PLA_82S100 {
 
     pub(crate) fn link_dev(&mut self, id: usize, dev: Cell) -> &mut Self {
         self.devices[id] = Some(dev.clone());
-        // match id {
-        //     0 => self.devices.ram = Some(dev),
-        //     1 => self.devices.cartridge_lo = Some(dev),
-        //     2 => self.devices.basic = Some(dev),
-        //     3 => self.devices.cartridge_hi = Some(dev),
-        //     4 => self.devices.io = Some(dev),
-        //     5 => self.devices.chargen = Some(dev),
-        //     6 => self.devices.kernal = Some(dev),
-        //     _ => {}
-        // };
         self
     }
 

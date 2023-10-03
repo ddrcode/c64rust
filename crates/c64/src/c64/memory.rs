@@ -6,6 +6,8 @@ use machine::{
     Addr, Memory,
 };
 
+use crate::CIA1;
+
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
 // and this: https://www.reddit.com/r/rust/comments/c4zdue/newbie_question_array_in_a_struct/
@@ -33,10 +35,13 @@ pub struct C64Memory {
     pla: PLA_82S100,
 }
 impl C64Memory {
-    pub fn new() -> Self {
+    pub fn new(cia1: &Device<CIA1>) -> Self {
         let mut pla = PLA_82S100::default();
         let ram = Device::from(ArrayMemory::new(0xffff, 16));
         pla.link_ram(ram.mutex());
+
+        // FIXME careful - there is hardcoded address inside the PLA
+        pla.link_io(cia1.mutex());
 
         C64Memory { pla }
     }
