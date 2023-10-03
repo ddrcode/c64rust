@@ -5,8 +5,7 @@ use machine::{
     },
     Addr, Memory,
 };
-
-use crate::c64::cia6526::CIA1;
+use super::{io::C64IO, cia6526::CIA1};
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
@@ -40,8 +39,13 @@ impl C64Memory {
         let ram = Device::from(ArrayMemory::new(0xffff, 16));
         pla.link_ram(ram.mutex());
 
+        let io = Device::from(C64IO {
+            ram: ram.mutex(),
+            cia1 : cia1.mutex()
+        });
+
         // FIXME careful - there is hardcoded address inside the PLA
-        pla.link_io(cia1.mutex());
+        pla.link_io(io.mutex());
 
         C64Memory { pla }
     }

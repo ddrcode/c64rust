@@ -1,57 +1,3 @@
-// Modified version of a table from
-// https://www.c64-wiki.com/wiki/Bank_Switching
-//
-// MODE         B0  B1  B2  B3  B4  B5  B6
-// -----------------------------------------
-// 00	00000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 01	00001	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 02	00010	RAM	RAM	RAM	CHI	RAM	CHR	KRN
-// 03	00011	RAM	RAM	CLO	CHI	RAM	CHR	KRN
-// 04	00100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 05	00101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
-// 06	00110	RAM	RAM	RAM	CHI	RAM	I/O	KRN
-// 07	00111	RAM	RAM	CLO	CHI	RAM	I/O	KRN
-// 08	01000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 09	01001	RAM	RAM	RAM	RAM	RAM	CHR	RAM
-// 10	01010	RAM	RAM	RAM	RAM	RAM	CHR	KRN
-// 11	01011	RAM	RAM	CLO	BSC	RAM	CHR	KRN
-// 12	01100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 13	01101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
-// 14	01110	RAM	RAM	RAM	RAM	RAM	I/O	KRN
-// 15	01111	RAM	RAM	CLO	BSC	RAM	I/O	KRN
-// 16	10000	RAM	-	CLO	-	-	I/O	CHI
-// 17	10001	RAM	-	CLO	-	-	I/O	CHI
-// 18	10010	RAM	-	CLO	-	-	I/O	CHI
-// 19	10011	RAM	-	CLO	-	-	I/O	CHI
-// 20	10100	RAM	-	CLO	-	-	I/O	CHI
-// 21	10101	RAM	-	CLO	-	-	I/O	CHI
-// 22	10110	RAM	-	CLO	-	-	I/O	CHI
-// 23	10111	RAM	-	CLO	-	-	I/O	CHI
-// 24	11000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 25	11001	RAM	RAM	RAM	RAM	RAM	CHR	RAM
-// 26	11010	RAM	RAM	RAM	RAM	RAM	CHR	KRN
-// 27	11011	RAM	RAM	RAM	BSC	RAM	CHR	KRN
-// 28	11100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
-// 29	11101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
-// 30	11110	RAM	RAM	RAM	RAM	RAM	I/O	KRN
-// 31	11111	RAM	RAM	RAM	BSC	RAM	I/O	KRN
-//
-// B1: $0000 - $0fff
-// B2: $1000 - $7fff
-// B3: $8000 - $9fff
-// B4: $a000 - $bfff
-// B5: $c000 - $cfff
-// B5: $d000 - $dfff
-// B7: $e000 - $ffff
-//
-// RAM: RAM
-// CLO: Cartridge ROM (lo)
-// CHI: Character ROM
-// BSC: Basic ROM
-// I/O: CIA1 or CIA2
-// CHI: Cartridge ROM (hi)
-// KRN: Kernal ROM
-
 use crate::utils::lock;
 use lazy_static;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -62,6 +8,62 @@ use crate::{
 };
 
 lazy_static! {
+
+    /// Modified version of a table from
+    /// [Bank switching](https:///www.c64-wiki.com/wiki/Bank_Switching)
+    ///
+    /// ```text
+    /// MODE         B0  B1  B2  B3  B4  B5  B6
+    /// -----------------------------------------
+    /// 00	00000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+    /// 01	00001	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+    /// 02	00010	RAM	RAM	RAM	CHI	RAM	CHR	KRN
+    /// 03	00011	RAM	RAM	CLO	CHI	RAM	CHR	KRN
+    /// 04	00100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+    /// 05	00101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
+    /// 06	00110	RAM	RAM	RAM	CHI	RAM	I/O	KRN
+    /// 07	00111	RAM	RAM	CLO	CHI	RAM	I/O	KRN
+    /// 08	01000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+    /// 09	01001	RAM	RAM	RAM	RAM	RAM	CHR	RAM
+    /// 10	01010	RAM	RAM	RAM	RAM	RAM	CHR	KRN
+    /// 11	01011	RAM	RAM	CLO	BSC	RAM	CHR	KRN
+    /// 12	01100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+    /// 13	01101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
+    /// 14	01110	RAM	RAM	RAM	RAM	RAM	I/O	KRN
+    /// 15	01111	RAM	RAM	CLO	BSC	RAM	I/O	KRN
+    /// 16	10000	RAM	-	CLO	-	-	I/O	CHI
+    /// 17	10001	RAM	-	CLO	-	-	I/O	CHI
+    /// 18	10010	RAM	-	CLO	-	-	I/O	CHI
+    /// 19	10011	RAM	-	CLO	-	-	I/O	CHI
+    /// 20	10100	RAM	-	CLO	-	-	I/O	CHI
+    /// 21	10101	RAM	-	CLO	-	-	I/O	CHI
+    /// 22	10110	RAM	-	CLO	-	-	I/O	CHI
+    /// 23	10111	RAM	-	CLO	-	-	I/O	CHI
+    /// 24	11000	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+    /// 25	11001	RAM	RAM	RAM	RAM	RAM	CHR	RAM
+    /// 26	11010	RAM	RAM	RAM	RAM	RAM	CHR	KRN
+    /// 27	11011	RAM	RAM	RAM	BSC	RAM	CHR	KRN
+    /// 28	11100	RAM	RAM	RAM	RAM	RAM	RAM	RAM
+    /// 29	11101	RAM	RAM	RAM	RAM	RAM	I/O	RAM
+    /// 30	11110	RAM	RAM	RAM	RAM	RAM	I/O	KRN
+    /// 31	11111	RAM	RAM	RAM	BSC	RAM	I/O	KRN
+    ///
+    /// B1: $0000 - $0fff
+    /// B2: $1000 - $7fff
+    /// B3: $8000 - $9fff
+    /// B4: $a000 - $bfff
+    /// B5: $c000 - $cfff
+    /// B5: $d000 - $dfff
+    /// B7: $e000 - $ffff
+    ///
+    /// RAM: RAM
+    /// CLO: Cartridge ROM (lo)
+    /// CHI: Character ROM
+    /// BSC: Basic ROM
+    /// I/O: CIA1 or CIA2
+    /// CHI: Cartridge ROM (hi)
+    /// KRN: Kernal ROM
+    /// ```
     static ref BANKS: [[u8; 7]; 32] = [
         [0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0],
@@ -260,12 +262,6 @@ impl PLA_82S100 {
             0xe000..=0xffff => bank[6],
         } as usize;
 
-        // FIXME! as currently only CIA1 is implemented
-        // we fallback to ram for other devices
-        if dev_id == IO && (addr < 0xdc00 || addr > 0xdcff) {
-            return 0;
-        }
-
         dev_id
     }
 
@@ -273,10 +269,15 @@ impl PLA_82S100 {
         self.devices[dev_id].is_some()
     }
 
+    /// Converts provided address into "local address" (think of array cell id)
+    /// of a specific addressable device.
+    /// I.e. BASIC ROM has only 8kB, but it operates in the address space starting
+    /// at $A000. Means we need a mechanism that maps such addresses into 8kB
+    /// memory cells of BASIC ROM. In practice it's just subtraction.
     fn internal_addr(&self, _dev: &Cell, addr: Addr, id: usize) -> Addr {
-        if id == IO && (addr >= 0xdc00 || addr <= 0xdcff) {
-            return addr - 0xdc00;
-        }
+        // if id == IO && (addr >= 0xdc00 || addr <= 0xdcff) {
+        //     return addr - 0xdc00;
+        // }
         // a & (dev.address_width() - 0)
         addr - START_ADDR[id]
     }
