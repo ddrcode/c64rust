@@ -56,7 +56,7 @@ use lazy_static;
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    emulator::abstractions::{Addr, AddressResolver, Addressable, AddressableDevice},
+    emulator::abstractions::{Addr, AddressResolver, Addressable},
     utils::if_else,
 };
 
@@ -96,6 +96,15 @@ lazy_static! {
         [0, 0, 0, 2, 0, 4, 6],
     ];
 }
+
+const RAM: usize = 0;
+const CARTRIDGE_LO: usize = 1;
+const BASIC: usize = 2;
+const CARTRIDGE_HI: usize = 3;
+const IO: usize = 4;
+const CHARGEN: usize = 5;
+const KERNAL: usize = 6;
+const INVALID: usize = 7;
 
 /// It's a generic implementation (hence an array of Addressables),
 /// but in C64 the structure is as follows
@@ -146,6 +155,7 @@ lazy_static! {
 type Cell = Arc<Mutex<dyn Addressable + Send>>;
 type OptCell = Option<Cell>;
 
+#[allow(non_camel_case_types)]
 #[derive(Default)]
 pub struct PLA_82S100 {
     devices: [OptCell; 7],
@@ -154,7 +164,7 @@ pub struct PLA_82S100 {
 impl Addressable for PLA_82S100 {
     fn read_byte(&self, addr: Addr) -> u8 {
         let id = self.get_device_id(addr);
-        if id == 7 {
+        if id == INVALID {
             return 0;
         } // TODO check what to do for this case
         let real_id = if_else(self.devices[id as usize].is_some(), id, 0);
@@ -190,18 +200,17 @@ impl Addressable for PLA_82S100 {
 
 impl AddressResolver for PLA_82S100 {}
 
-
 impl PLA_82S100 {
-    fn get_device_id(&self, addr: Addr) -> u8 {
+    fn get_device_id(&self, addr: Addr) -> usize {
         // pin 8 and 9 are set low (false) when cartridge is present and high (true) when not
         // regular cartridge: pin 8
         // exrom: pin 8 and 9
-        let pin8 = !self.has_device(1);
-        let pin9 = !self.has_device(3);
+        let pin8 = !self.has_device(CARTRIDGE_LO);
+        let pin9 = !self.has_device(CARTRIDGE_HI);
 
         // Because we are emulating addresses 0 and 1 with RAM
         // we can't continue when RAM is not present.
-        if self.devices[0].is_none() {
+        if self.devices[RAM].is_none() {
             return 0;
         }
 
@@ -209,7 +218,7 @@ impl PLA_82S100 {
         // and values from pin8 and 9, that act here as bit 4 and 5
         // that gives 32 combinations (although some of them are redundant, so
         // effectively there is 14)
-        let mut flag = self.devices[0]
+        let mut flag = self.devices[RAM]
             .as_ref()
             .unwrap()
             .lock()
@@ -234,15 +243,14 @@ impl PLA_82S100 {
             return 0;
         }
 
-        dev_id
-
+        dev_id.into()
     }
 
     fn has_device(&self, dev_id: usize) -> bool {
         self.devices[dev_id].is_some()
     }
 
-    fn internal_addr(&self, dev: &Cell, addr: Addr, id: u8) -> Addr {
+    fn internal_addr(&self, _dev: &Cell, addr: Addr, id: usize) -> Addr {
         let mut a = addr;
         if id == 2 {
             a -= 0xa000
@@ -255,6 +263,7 @@ impl PLA_82S100 {
         a
     }
 
+    #[cfg(test)]
     pub(crate) fn set_mode(&mut self, mode: u8) {
         self.write_byte(1, mode);
     }
@@ -265,22 +274,22 @@ impl PLA_82S100 {
     }
 
     pub fn link_ram(&mut self, dev: Cell) -> &mut Self {
-        self.link_dev(0, dev)
+        self.link_dev(RAM, dev)
     }
     pub fn link_basic(&mut self, dev: Cell) -> &mut Self {
-        self.link_dev(2, dev)
+        self.link_dev(BASIC, dev)
     }
     pub fn link_kernal(&mut self, dev: Cell) -> &mut Self {
-        self.link_dev(6, dev)
+        self.link_dev(KERNAL, dev)
     }
     pub fn link_chargen(&mut self, dev: Cell) -> &mut Self {
-        self.link_dev(5, dev)
+        self.link_dev(CHARGEN, dev)
     }
     pub fn link_cartridge(&mut self, dev: Cell) -> &mut Self {
-        self.link_dev(1, dev)
+        self.link_dev(CARTRIDGE_LO, dev)
     }
     pub fn link_io(&mut self, dev: Cell) -> &mut Self {
-        self.link_dev(4, dev)
+        self.link_dev(IO, dev)
     }
 }
 
@@ -317,44 +326,45 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn test_creation() {
-    //     let ram = Mem::new(16);
-    //     let mut pla = PLA_82S100::default();
-    //     pla.link_dev(0, ram);
-    //     assert_eq!(0, pla.read_byte(0x33));
-    //     pla.write_byte(0x33, 42);
-    //     assert_eq!(42, pla.read_byte(0x33));
-    // }
-    // #[test]
-    // fn test_operations() {
-    //     let ram = Mem::new(16);
-    //     let basic = Mem::new(16);
-    //     let chargen = Mem::new(16);
-    //     let kernal = Mem::new(16);
-    //
-    //     let mut pla = PLA_82S100::default();
-    //     pla.link_dev(0, Box::new(ram));
-    //     // pla.link_dev(2, basic); // basic rom
-    //     // pla.link_dev(5, chargen); // char rom
-    //     // pla.link_dev(6, kernal); // kernal
-    //
-    //     // read/write ram
-    //     assert_eq!(0, pla.read_byte(0x33));
-    //     pla.write_byte(0x33, 42);
-    //     assert_eq!(42, pla.read_byte(0x33));
-    //
-    //     // read/write basic rom
-    //     pla.set_mode(0);
-    //     pla.write_byte(0xa000, 42); // write to basic scope
-    //                                 // try to read from basic scope, but in mode 0 there is ram
-    //     assert_eq!(42, pla.read_byte(0xa000));
-    //
-    //     pla.set_mode(0b11111); // switch to mode 31
-    //     assert_eq!(0, pla.read_byte(0xa000)); // now we read from rom
-    //     pla.write_byte(0xa000, 66); // but we can still write to ram
-    //     assert_eq!(0, pla.read_byte(0xa000));
-    //     pla.set_mode(0);
-    //     assert_eq!(66, pla.read_byte(0xa000));
-    // }
+    #[test]
+    fn test_creation() {
+        let ram = Mem::new(16);
+        let mut pla = PLA_82S100::default();
+        pla.link_ram(Arc::new(Mutex::new(ram)));
+        assert_eq!(0, pla.read_byte(0x33));
+        pla.write_byte(0x33, 42);
+        assert_eq!(42, pla.read_byte(0x33));
+    }
+
+    #[test]
+    fn test_operations() {
+        let ram = Mem::new(16);
+        let basic = Mem::new(16);
+        let chargen = Mem::new(16);
+        let kernal = Mem::new(16);
+
+        let mut pla = PLA_82S100::default();
+        pla.link_dev(RAM, Arc::new(Mutex::new(ram)));
+        pla.link_dev(BASIC, Arc::new(Mutex::new(basic))); // basic rom
+        pla.link_dev(CHARGEN, Arc::new(Mutex::new(chargen))); // char rom
+        pla.link_dev(KERNAL, Arc::new(Mutex::new(kernal))); // kernal
+
+        // read/write ram
+        assert_eq!(0, pla.read_byte(0x33));
+        pla.write_byte(0x33, 42);
+        assert_eq!(42, pla.read_byte(0x33));
+
+        // read/write basic rom
+        pla.set_mode(0);
+        pla.write_byte(0xa000, 42); // write to basic scope
+                                    // try to read from basic scope, but in mode 0 there is ram
+        assert_eq!(42, pla.read_byte(0xa000));
+
+        pla.set_mode(0b11111); // switch to mode 31
+        assert_eq!(0, pla.read_byte(0xa000)); // now we read from rom
+        pla.write_byte(0xa000, 66); // but we can still write to ram
+        assert_eq!(0, pla.read_byte(0xa000));
+        pla.set_mode(0);
+        assert_eq!(66, pla.read_byte(0xa000));
+    }
 }

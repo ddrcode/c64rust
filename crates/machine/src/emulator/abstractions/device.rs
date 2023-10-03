@@ -56,7 +56,6 @@ mod tests {
 
         struct Machine {
             ram: Device<Ram>,
-            rom: Device<Rom>,
             gpu: Device<Gpu>,
         }
 
@@ -66,7 +65,6 @@ mod tests {
                 let gpu = Device::from(Gpu { ram: ram.clone() });
                 Machine {
                     ram,
-                    rom: Device::from(Rom {}),
                     gpu,
                 }
             }

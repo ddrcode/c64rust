@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use super::{C64Memory, CIA1, CIA6526, VIC_II};
+use super::{C64Memory, CIA1, VIC_II};
 use crate::key_utils::C64KeyCode;
 use machine::{
     cli::{FromProfile, Profile},

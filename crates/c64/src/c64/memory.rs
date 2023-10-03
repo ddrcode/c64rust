@@ -1,12 +1,12 @@
 use machine::{
     emulator::{
-        abstractions::{AddressResolver, Addressable, ArrayMemory, Device, AddressableDevice, DeviceTrait, Accessor},
+        abstractions::{AddressResolver, Addressable, ArrayMemory, Device, Accessor},
         components::PLA_82S100,
     },
     Addr, Memory,
 };
 
-use crate::CIA1;
+use crate::c64::cia6526::CIA1;
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/

@@ -13,7 +13,7 @@ pub trait Addressable {
     }
 }
 
-/// BankSwitch should NEVER expose any of Addressables it switches betweenop
+/// BankSwitch should NEVER expose any of Addressables, it switches between
 pub trait AddressResolver: Addressable {
     fn fragment(&self, from: Addr, to: Addr) -> Vec<u8> {
         let mut vec = Vec::<u8>::with_capacity((to - from) as usize);
@@ -22,6 +22,8 @@ pub trait AddressResolver: Addressable {
             end: to,
         };
         for i in range {
+            // this is quite suboptimal as mutex locking
+            // is involved in every read
             vec.push(self.read_byte(i));
         }
         vec

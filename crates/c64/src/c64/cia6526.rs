@@ -1,5 +1,5 @@
 use super::Keyboard;
-use machine::{Addr, emulator::abstractions::{Addressable, Device, DeviceTrait}};
+use machine::{Addr, emulator::abstractions::{Addressable, DeviceTrait}};
 
 pub struct CIA1 {
     address: Addr,
