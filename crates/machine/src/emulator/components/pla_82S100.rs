@@ -193,13 +193,10 @@ impl Addressable for PLA_82S100 {
     }
 
     fn write_byte(&mut self, addr: Addr, value: u8) {
-        // TODO I think byte 0 may prevent writing at all - TBC
-        // let byte0 = self.device(0).read_byte(0x0000);
-
         let (byte0, byte1, mut ram) = self.get_state();
         let id = self.get_device_id(addr, byte0, byte1);
-        if id == INVALID {
-            // TODO check what to do in such this case
+        if id == INVALID || !self.can_write(addr, byte0) {
+            // TODO check what to do in case of INVALID
             return ();
         }
 
@@ -282,6 +279,30 @@ impl PLA_82S100 {
         }
         // a & (dev.address_width() - 0)
         addr - START_ADDR[id]
+    }
+
+    // byte0 (Address $0000) determines whether some processor lines
+    // are available as input, means read-only (0) or output, means R/W (1).
+    // In practice each bit of $0000 coresponds to bits on $0001
+    // From the context of PLA82S100 it means
+    // bit 0: controls LORAM, so BASIC area ($A000-$BFFF)
+    // bit 1: controls HIRAM, so KERNAL area ($E000-$FFFF)
+    // bit 2: controls IO area ($D000-$DFFF)
+    // Of course for the purpose of write we can skip BASIC
+    // or KERNAL ROMs, but if RAM or IO is available under these
+    // areas, the the bits from byte0 control the write access.
+    // At leasr if I got it right based on
+    // 1. https://www.c64-wiki.com/wiki/Zeropage
+    // 2. https://www.pagetable.com/c64ref/c64mem/
+    fn can_write(&self, addr: Addr, byte0: u8) -> bool {
+        if ((byte0 & 0b001) == 0 && (0xa000..=0xbfff).contains(&addr))
+            || ((byte0 & 0b010) == 0 && (0xe000..=0xffff).contains(&addr))
+            || ((byte0 & 0b100) == 0 && (0xd000..=0xdfff).contains(&addr))
+        {
+            false
+        } else {
+            true
+        }
     }
 
     #[cfg(test)]
