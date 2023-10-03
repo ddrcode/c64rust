@@ -53,7 +53,8 @@
 // KRN: Kernal ROM
 
 use lazy_static;
-use std::sync::{Arc, Mutex};
+use crate::utils::lock;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::{
     emulator::abstractions::{Addr, AddressResolver, Addressable},
@@ -95,6 +96,7 @@ lazy_static! {
         [0, 0, 0, 0, 0, 4, 6],
         [0, 0, 0, 2, 0, 4, 6],
     ];
+    static ref START_ADDR: [u16; 7] = [0x0000, 0x8000, 0xa000, 0xa000, 0xd000, 0xd000, 0xe000];
 }
 
 const RAM: usize = 0;
@@ -163,7 +165,8 @@ pub struct PLA_82S100 {
 
 impl Addressable for PLA_82S100 {
     fn read_byte(&self, addr: Addr) -> u8 {
-        let id = self.get_device_id(addr);
+        let (byte0, byte1 ) = self.get_state();
+        let id = self.get_device_id(addr, byte1);
         if id == INVALID {
             return 0;
         } // TODO check what to do for this case
@@ -181,7 +184,8 @@ impl Addressable for PLA_82S100 {
         // TODO I think byte 0 may prevent writing at all - TBC
         // let byte0 = self.device(0).read_byte(0x0000);
 
-        let id = self.get_device_id(addr);
+        let byte1 = lock(self.devices[RAM].as_ref().unwrap()).read_byte(1);
+        let id = self.get_device_id(addr, byte1);
         let real_id = if_else(id == 4, 4, 0); // if not i/o, write to ram
         if self.devices[real_id as usize].is_some() {
             let internal_addr = {
@@ -201,31 +205,28 @@ impl Addressable for PLA_82S100 {
 impl AddressResolver for PLA_82S100 {}
 
 impl PLA_82S100 {
-    fn get_device_id(&self, addr: Addr) -> usize {
+    fn get_state(&self) -> (u8, u8){//, MutexGuard<dyn Addressable + Send + 'static>) {
+        if self.devices[RAM].is_none() {
+            panic!("RAM is mandatory");
+        }
+        let ram = lock(self.devices[RAM].as_ref().unwrap());
+        let byte0 = ram.read_byte(0);
+        let byte1 = ram.read_byte(1);
+        (byte0, byte1 )
+    }
+
+    fn get_device_id(&self, addr: Addr, byte1: u8) -> usize {
         // pin 8 and 9 are set low (false) when cartridge is present and high (true) when not
         // regular cartridge: pin 8
         // exrom: pin 8 and 9
         let pin8 = !self.has_device(CARTRIDGE_LO);
         let pin9 = !self.has_device(CARTRIDGE_HI);
 
-        // Because we are emulating addresses 0 and 1 with RAM
-        // we can't continue when RAM is not present.
-        if self.devices[RAM].is_none() {
-            return 0;
-        }
-
         // flag is a combination of 3 youngest bits from processor port 0x01
         // and values from pin8 and 9, that act here as bit 4 and 5
         // that gives 32 combinations (although some of them are redundant, so
         // effectively there is 14)
-        let mut flag = self.devices[RAM]
-            .as_ref()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .read_byte(0x0001);
-
-        flag = (flag & 0b111) | (u8::from(pin8) << 3) | (u8::from(pin9) << 4);
+        let flag = (byte1 & 0b111) | (u8::from(pin8) << 3) | (u8::from(pin9) << 4);
         let bank = &BANKS[flag as usize];
         let dev_id = match addr {
             0x0000..=0x0fff => bank[0],
@@ -235,15 +236,15 @@ impl PLA_82S100 {
             0xc000..=0xcfff => bank[4],
             0xd000..=0xdfff => bank[5],
             0xe000..=0xffff => bank[6],
-        };
+        } as usize;
 
         // FIXME! as currently only CIA1 is implemented
         // we fallback to ram for other devices
-        if dev_id == 4 && (addr < 0xdc00 || addr > 0xdcff) {
+        if dev_id == IO && (addr < 0xdc00 || addr > 0xdcff) {
             return 0;
         }
 
-        dev_id.into()
+        dev_id
     }
 
     fn has_device(&self, dev_id: usize) -> bool {
@@ -251,16 +252,11 @@ impl PLA_82S100 {
     }
 
     fn internal_addr(&self, _dev: &Cell, addr: Addr, id: usize) -> Addr {
-        let mut a = addr;
-        if id == 2 {
-            a -= 0xa000
-        } else if id == 5 {
-            a -= 0xd000
-        } else if id == 6 {
-            a -= 0xe000
+        if id == IO && (addr >= 0xdc00 || addr <= 0xdcff) {
+            return addr-0xdc00;
         }
         // a & (dev.address_width() - 0)
-        a
+        addr - START_ADDR[id]
     }
 
     #[cfg(test)]
