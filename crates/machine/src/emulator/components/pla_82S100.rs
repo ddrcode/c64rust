@@ -52,8 +52,8 @@
 // CHI: Cartridge ROM (hi)
 // KRN: Kernal ROM
 
-use lazy_static;
 use crate::utils::lock;
+use lazy_static;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::{
@@ -164,13 +164,24 @@ pub struct PLA_82S100 {
 }
 
 impl Addressable for PLA_82S100 {
+
     fn read_byte(&self, addr: Addr) -> u8 {
-        let (byte0, byte1 ) = self.get_state();
-        let id = self.get_device_id(addr, byte1);
+        let (byte0, byte1, ram) = self.get_state();
+        let id = self.get_device_id(addr, byte0, byte1);
+
         if id == INVALID {
+            // TODO check what to do in such this case
             return 0;
-        } // TODO check what to do for this case
+        }
+
         let real_id = if_else(self.devices[id as usize].is_some(), id, 0);
+
+        // optimization - if read is from RAM no further checks are required
+        // so we can skip further mutex locking
+        if real_id == RAM || real_id == IO {
+            return ram.read_byte(addr);
+        }
+
         let opt_dev = &self.devices[real_id as usize];
         if let Some(dev) = opt_dev {
             let real_addr = self.internal_addr(&dev, addr, real_id);
@@ -184,9 +195,22 @@ impl Addressable for PLA_82S100 {
         // TODO I think byte 0 may prevent writing at all - TBC
         // let byte0 = self.device(0).read_byte(0x0000);
 
-        let byte1 = lock(self.devices[RAM].as_ref().unwrap()).read_byte(1);
-        let id = self.get_device_id(addr, byte1);
-        let real_id = if_else(id == 4, 4, 0); // if not i/o, write to ram
+        let (byte0, byte1, mut ram) = self.get_state();
+        let id = self.get_device_id(addr, byte0, byte1);
+        if id == INVALID {
+            // TODO check what to do in such this case
+            return ();
+        }
+
+        let real_id = if_else(id == IO, IO, RAM); // if not i/o, write to ram
+
+        // optimization - if write is to RAM, no further checks are required
+        // so we can avoid additional mutex locking
+        if real_id == RAM {
+            return ram.write_byte(addr, value);
+        }
+
+        drop(ram);
         if self.devices[real_id as usize].is_some() {
             let internal_addr = {
                 let dev = self.devices[real_id as usize].as_ref().unwrap();
@@ -205,17 +229,17 @@ impl Addressable for PLA_82S100 {
 impl AddressResolver for PLA_82S100 {}
 
 impl PLA_82S100 {
-    fn get_state(&self) -> (u8, u8){//, MutexGuard<dyn Addressable + Send + 'static>) {
+    fn get_state(&self) -> (u8, u8, MutexGuard<dyn Addressable + Send + 'static>) {
         if self.devices[RAM].is_none() {
             panic!("RAM is mandatory");
         }
         let ram = lock(self.devices[RAM].as_ref().unwrap());
         let byte0 = ram.read_byte(0);
         let byte1 = ram.read_byte(1);
-        (byte0, byte1 )
+        (byte0, byte1, ram)
     }
 
-    fn get_device_id(&self, addr: Addr, byte1: u8) -> usize {
+    fn get_device_id(&self, addr: Addr, _byte0: u8, byte1: u8) -> usize {
         // pin 8 and 9 are set low (false) when cartridge is present and high (true) when not
         // regular cartridge: pin 8
         // exrom: pin 8 and 9
@@ -364,3 +388,4 @@ mod tests {
         assert_eq!(66, pla.read_byte(0xa000));
     }
 }
+
