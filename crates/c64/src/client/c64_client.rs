@@ -111,13 +111,13 @@ impl InteractiveClient for C64Client {
         c64.send_keys(&ui_event_to_c64_key_codes(&event), true);
 
         // key up (simulated with timeout)
-        let mut up_event = event.clone();
-        up_event.state = KeyState::Up;
-        let arc = self.base_client.mutex();
-        thread::spawn(move || {
-            thread::sleep(Duration::from_millis(125));
-            lock::<C64>(&arc).send_keys(&ui_event_to_c64_key_codes(&up_event), false);
-        });
+        // let mut up_event = event.clone();
+        // up_event.state = KeyState::Up;
+        // let arc = self.base_client.mutex();
+        // thread::spawn(move || {
+        //     thread::sleep(Duration::from_millis(125));
+        //     lock::<C64>(&arc).send_keys(&ui_event_to_c64_key_codes(&up_event), false);
+        // });
     }
 
     fn get_screen_memory(&self) -> Result<Vec<u8>> {

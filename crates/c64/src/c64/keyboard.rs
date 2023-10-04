@@ -5,12 +5,14 @@ pub struct Keyboard {
     cycle: u8,
 }
 
-// see https://c64os.com/post/howthekeyboardworks
+// see
+// https://c64os.com/post/howthekeyboardworks
+// https://www.c64-wiki.com/wiki/Keyboard
 impl Keyboard {
     pub fn new() -> Self {
         Keyboard {
             last_keys: Vec::with_capacity(5),
-            cycle: 5,
+            cycle: 8,
         }
     }
 
@@ -44,13 +46,13 @@ impl Keyboard {
             .map_or(0xff, |sc| sc.row)
     }
 
-    pub fn scan(&self, dc00: u8, dc01: u8) -> u8 {
+    pub fn scan(&mut self, dc00: u8, dc01: u8) -> u8 {
         if self.last_keys.is_empty() {
             return 0xff;
         }
 
         if dc00 == 0 {
-            // self.cycle -= 1;
+            self.cycle = 8;
             return 0;
         };
         if !self.is_column_scan(dc00) {
@@ -65,14 +67,12 @@ impl Keyboard {
                 .reduce(|x, y| x & y)
                 .unwrap()
         };
-
-        if self.cycle == 0 {
-            // self.last_keys.remove(0);
-            // self.cycle = 3;
+        if self.cycle > 0 {
+            self.cycle -= 1;
         }
-
-        if val != 0xff {
-            log::info!("scan {:02x} {:02x} {:02x}", dc00, dc01, val);
+        if self.cycle == 0 {
+            self.last_keys.remove(0);
+            // self.cycle = 3;
         }
 
         val
