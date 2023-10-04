@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use super::{C64Memory, CIA1, VIC_II};
+use super::{C64Memory, CIA1, CIA2, VIC_II};
 use crate::key_utils::C64KeyCode;
 use machine::{
     cli::{FromProfile, Profile},
@@ -26,10 +26,11 @@ pub struct C64 {
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
         let cia1 = Device::from(CIA1::new(0xdc00));
+        let cia2 = Device::from(CIA2::new(0xdd00));
         C64 {
             config,
             mos6510: MOS6502::new(),
-            mem: C64Memory::new(&cia1),
+            mem: C64Memory::new(&cia1, &cia2),
             gpu: VIC_II::new(),
             cia1,
             status: MachineStatus::Stopped,

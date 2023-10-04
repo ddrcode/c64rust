@@ -1,11 +1,14 @@
+use super::{
+    cia6526::{CIA1, CIA2},
+    io::C64IO,
+};
 use machine::{
     emulator::{
-        abstractions::{AddressResolver, Addressable, ArrayMemory, Device, Accessor},
+        abstractions::{Accessor, AddressResolver, Addressable, ArrayMemory, Device},
         components::PLA_82S100,
     },
     Addr, Memory,
 };
-use super::{io::C64IO, cia6526::CIA1};
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
@@ -34,14 +37,15 @@ pub struct C64Memory {
     pla: PLA_82S100,
 }
 impl C64Memory {
-    pub fn new(cia1: &Device<CIA1>) -> Self {
+    pub fn new(cia1: &Device<CIA1>, cia2: &Device<CIA2>) -> Self {
         let mut pla = PLA_82S100::default();
         let ram = Device::from(ArrayMemory::new(0xffff, 16));
         pla.link_ram(ram.mutex());
 
         let io = Device::from(C64IO {
             ram: ram.mutex(),
-            cia1 : cia1.mutex()
+            cia1: cia1.mutex(),
+            cia2: cia2.mutex(),
         });
 
         // FIXME careful - there is hardcoded address inside the PLA
@@ -71,12 +75,14 @@ impl Memory for C64Memory {
             // custom rom
             let addr: usize = 0x10000 - len;
             //self.init_rom_at_addr(addr as u16, data);
-            self.pla.link_kernal(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
+            self.pla
+                .link_kernal(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
         }
     }
 
     fn init_rom_at_addr(&mut self, _addr: Addr, data: &[u8]) {
-        self.pla.link_chargen(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
+        self.pla
+            .link_chargen(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
     }
     fn set_byte(&mut self, addr: Addr, val: u8) {
         self.pla.write_byte(addr, val);
