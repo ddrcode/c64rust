@@ -63,11 +63,25 @@ impl CIA6526 for CIA1 {
 
     fn set_byte(&mut self, addr: Addr, val: u8) {
         let address = self.get_addr(addr);
+        // if addr == 0xdc00 {
+        //     let code = self.keyboard.scan(val, self.get_byte(0xdc01));
+        //     self.mem_mut()[address + 1] = code;
+        // }
         if addr == 0xdc00 {
-            let code = self.keyboard.scan(val, self.get_byte(0xdc01));
-            self.mem_mut()[address + 1] = code;
+            self.data[0] = val;
+            let code = self.keyboard.scan(val, self.data[1]);// self.get_byte(0xdc01));
+            self.data[1] = code;
+            return ();
         }
         self.mem_mut()[address] = val;
+    }
+    fn get_byte(&self, addr: Addr) -> u8 {
+        let address = self.get_addr(addr);
+        // if addr == 0xdc01 {
+        //     let code = self.keyboard.scan(self.data[0], self.data[1]);// self.get_byte(0xdc01));
+        //     return code;
+        // }
+        self.mem()[address]
     }
 }
 

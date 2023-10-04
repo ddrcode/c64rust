@@ -14,7 +14,7 @@ impl Addressable for C64IO {
     // addr is relative to $D000
     fn read_byte(&self, addr: Addr) -> u8 {
         let addr = addr+0xd000;
-        if (0xc00..0xc0f).contains(&addr) {
+        if (0xdc00..=0xdc0f).contains(&addr) {
             return lock::<CIA1>(&self.cia1).read_byte(addr);
         }
         lock::<ArrayMemory>(&self.ram).read_byte(addr)
@@ -22,10 +22,11 @@ impl Addressable for C64IO {
 
     fn write_byte(&mut self, addr: Addr, value: u8) {
         let addr = addr+0xd000;
-        if (0xc00..0xc0f).contains(&addr) {
+        if (0xdc00..=0xdc0f).contains(&addr) {
             return lock::<CIA1>(&self.cia1).write_byte(addr, value);
         }
         lock::<ArrayMemory>(&self.ram).write_byte(addr, value);
+
     }
 
     fn address_width(&self) -> u16 {

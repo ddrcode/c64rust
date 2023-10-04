@@ -44,19 +44,18 @@ impl Keyboard {
             .map_or(0xff, |sc| sc.row)
     }
 
-    pub fn scan(&mut self, dc00: u8, dc01: u8) -> u8 {
+    pub fn scan(&self, dc00: u8, dc01: u8) -> u8 {
         if self.last_keys.is_empty() {
             return 0xff;
         }
 
         if dc00 == 0 {
-            self.cycle -= 1;
+            // self.cycle -= 1;
             return 0;
         };
         if !self.is_column_scan(dc00) {
             return dc01;
         };
-
         let val = if self.last_keys.len() < 2 {
             self.get_row_code(self.last_keys[0], dc00)
         } else {
@@ -68,8 +67,12 @@ impl Keyboard {
         };
 
         if self.cycle == 0 {
-            self.last_keys.remove(0);
-            self.cycle = 3;
+            // self.last_keys.remove(0);
+            // self.cycle = 3;
+        }
+
+        if val != 0xff {
+            log::info!("scan {:02x} {:02x} {:02x}", dc00, dc01, val);
         }
 
         val

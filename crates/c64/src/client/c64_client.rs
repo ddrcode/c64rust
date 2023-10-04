@@ -110,14 +110,12 @@ impl InteractiveClient for C64Client {
         let mut c64 = self.base_client.lock();
         c64.send_keys(&ui_event_to_c64_key_codes(&event), true);
 
-        log::info!("key ec {:?}", event);
-
         // key up (simulated with timeout)
         let mut up_event = event.clone();
         up_event.state = KeyState::Up;
         let arc = self.base_client.mutex();
         thread::spawn(move || {
-            thread::sleep(Duration::from_millis(80));
+            thread::sleep(Duration::from_millis(125));
             lock::<C64>(&arc).send_keys(&ui_event_to_c64_key_codes(&up_event), false);
         });
     }

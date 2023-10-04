@@ -179,12 +179,17 @@ impl Addressable for PLA_82S100 {
 
         let real_id = if_else(self.has_device(id), id, 0);
 
+        if addr == 0xdc00 || addr == 0xdc01 {
+            // log::info!("IO (read)?? {:04x}, id={}, real_id={}", addr, id, real_id);
+        }
+
         // optimization - if read is from RAM no further checks are required
         // so we can skip further mutex locking
-        if real_id == RAM || real_id == IO {
+        if real_id == RAM {
             return ram.read_byte(addr);
         }
 
+        drop(ram);
         let opt_dev = &self.devices[real_id as usize];
         if let Some(dev) = opt_dev {
             let real_addr = self.internal_addr(&dev, addr, real_id);
@@ -308,7 +313,8 @@ impl PLA_82S100 {
 
     #[cfg(test)]
     pub(crate) fn set_mode(&mut self, mode: u8) {
-        self.write_byte(1, mode);
+        // self.write_byte(1, mode);
+        self.devices[RAM].as_mut().unwrap().lock().unwrap().write_byte(1, mode);
     }
 
     pub(crate) fn link_dev(&mut self, id: usize, dev: Cell) -> &mut Self {
@@ -369,6 +375,13 @@ mod tests {
         }
     }
 
+    fn create_ram() -> Mem {
+        let mut ram = Mem::new(16);
+        ram.write_byte(0, 0b00101111);
+        ram.write_byte(1, 0b00110111);
+        ram
+    }
+
     #[test]
     fn test_creation() {
         let ram = Mem::new(16);
@@ -381,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_operations() {
-        let ram = Mem::new(16);
+        let ram = create_ram();
         let basic = Mem::new(16);
         let chargen = Mem::new(16);
         let kernal = Mem::new(16);
@@ -399,12 +412,11 @@ mod tests {
 
         // read/write basic rom
         pla.set_mode(0);
-        pla.write_byte(0xa000, 42); // write to basic scope
-                                    // try to read from basic scope, but in mode 0 there is ram
-        assert_eq!(42, pla.read_byte(0xa000));
+        pla.write_byte(0xa000, 42); // attempt to write to BASIC scope, makes to write to RAM
+        assert_eq!(42, pla.read_byte(0xa000)); // try to read from BASIC scope, but in mode 0 there is RAM
 
         pla.set_mode(0b11111); // switch to mode 31
-        assert_eq!(0, pla.read_byte(0xa000)); // now we read from rom
+        assert_eq!(0, pla.read_byte(0xa000)); // now we read from ROM
         pla.write_byte(0xa000, 66); // but we can still write to ram
         assert_eq!(0, pla.read_byte(0xa000));
         pla.set_mode(0);
