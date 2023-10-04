@@ -62,7 +62,7 @@ impl C64Client {
             c64.debugger_state.observed_mem.end,
         );
         let screen = c64.get_screen_memory();
-        let character_set = c64.get_byte(0xd018); // https://www.c64-wiki.com/wiki/Character_set
+        let character_set = c64.read_byte(0xd018); // https://www.c64-wiki.com/wiki/Character_set
         MachineState {
             status: c64.get_status(),
             registers,

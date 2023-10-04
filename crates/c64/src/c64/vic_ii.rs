@@ -39,7 +39,7 @@ impl VIC_II {
         println!("{}", " ".repeat(44).on_truecolor(0x6c, 0x5e, 0xb5));
         print!("{}", "  ".on_truecolor(0x6c, 0x5e, 0xb5));
         for i in 0x0400..0x07e8 {
-            let sc = mem.get_byte(i);
+            let sc = mem.read_byte(i);
             print!(
                 "{}",
                 format!("{}", screen_code_to_ascii(&sc, self.char_set))

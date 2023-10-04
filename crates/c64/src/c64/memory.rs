@@ -84,10 +84,10 @@ impl Memory for C64Memory {
         self.pla
             .link_chargen(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
     }
-    fn set_byte(&mut self, addr: Addr, val: u8) {
+    fn write_byte(&mut self, addr: Addr, val: u8) {
         self.pla.write_byte(addr, val);
     }
-    fn get_byte(&self, addr: Addr) -> u8 {
+    fn read_byte(&self, addr: Addr) -> u8 {
         self.pla.read_byte(addr)
     }
 
@@ -98,19 +98,15 @@ impl Memory for C64Memory {
             end: to,
         };
         for i in range {
-            vec.push(self.get_byte(i));
+            vec.push(self.read_byte(i));
         }
         vec
-    }
-
-    fn set_word(&mut self, _addr: Addr, _val: u16) {
-        panic!("shuldnt use");
     }
 
     fn size(&self) -> usize {
         panic!("shuldnt use");
     }
-    fn get_word(&self, addr: Addr) -> u16 {
+    fn read_word(&self, addr: Addr) -> u16 {
         self.pla.read_word(addr)
     }
 }

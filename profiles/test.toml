@@ -1,0 +1,11 @@
+# Runs a single test from /tests folder
+
+[config]
+rom = "./tests//target/rom.p"
+ram = "./tests/target/add-sub-16bit.p"
+ram_file_addr = "0200"
+stop_on_brk = true
+disassemble = true
+show_status = true
+verbode = true
+

@@ -22,7 +22,7 @@ impl Breakpoint {
             Self::BRK => op.def.mnemonic == Mnemonic::BRK,
             Self::Opcode(o) => op.def.opcode == o,
             Self::Byte((addr, val)) => {
-                addr == machine.PC() && val == machine.get_byte(machine.PC())
+                addr == machine.PC() && val == machine.read_byte(machine.PC())
             }
         }
     }

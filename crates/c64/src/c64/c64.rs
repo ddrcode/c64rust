@@ -56,12 +56,12 @@ impl C64 {
         self.cia1.lock().keyboard.key_down(ck as u8);
 
         // let sc = VIC_II::ascii_to_petscii(ch);
-        // self.memory_mut().set_byte(0x0277, sc);
-        // self.memory_mut().set_byte(0x00c6, 1); // number of keys in the keyboard buffer
-        // self.memory_mut().set_byte(0xffe4, 22);
+        // self.memory_mut().write_byte(0x0277, sc);
+        // self.memory_mut().write_byte(0x00c6, 1); // number of keys in the keyboard buffer
+        // self.memory_mut().write_byte(0xffe4, 22);
 
-        // self.machine.memory_mut().set_byte(0xc5, 2);
-        // self.machine.memory_mut().set_byte(0xcb, 3);
+        // self.machine.memory_mut().write_byte(0xc5, 2);
+        // self.machine.memory_mut().write_byte(0xcb, 3);
     }
 
     pub fn key_up(&mut self, ck: C64KeyCode) {
@@ -79,7 +79,7 @@ impl C64 {
     }
 
     pub fn is_io(&self, addr: Addr) -> bool {
-        let flag = self.memory().get_byte(1) & 0b00000111;
+        let flag = self.memory().read_byte(1) & 0b00000111;
         flag & 0b100 > 0 && flag & 11 > 0 && addr >= 0xdc00 && addr <= 0xdc0f
     }
 }
@@ -136,7 +136,7 @@ impl Machine for C64 {
         // value at 0d012 represents currently scanned line
         // if not updated  - screen won't be refreshed
         // it should be implemented at VIC level
-        self.set_byte(0xd012, (self.cycles % 255) as u8);
+        self.write_byte(0xd012, (self.cycles % 255) as u8);
 
         if self.get_status() == MachineStatus::Running && self.should_pause(op) {
             self.start_debugging();

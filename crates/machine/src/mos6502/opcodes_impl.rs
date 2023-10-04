@@ -36,7 +36,7 @@ pub fn execute_operation<T: Machine>(op: &Operation, machine: &mut T) -> u8 {
 
 fn get_val(op: &Operation, machine: &impl Machine) -> Option<u8> {
     if let Some(addr) = op.address {
-        Some(machine.get_byte(addr))
+        Some(machine.read_byte(addr))
     } else if op.def.address_mode == Immediate {
         op.operand.as_ref().unwrap().get_byte()
     } else if op.def.address_mode == Accumulator {
@@ -48,7 +48,7 @@ fn get_val(op: &Operation, machine: &impl Machine) -> Option<u8> {
 
 fn set_val(val: u8, op: &Operation, machine: &mut impl Machine) {
     if let Some(addr) = op.address {
-        machine.set_byte(addr, val)
+        machine.write_byte(addr, val)
     } else if op.def.address_mode == Accumulator {
         machine.set_A(val)
     } else {
@@ -57,7 +57,7 @@ fn set_val(val: u8, op: &Operation, machine: &mut impl Machine) {
 }
 
 fn store_byte(val: u8, op: &Operation, machine: &mut impl Machine) -> u8 {
-    machine.set_byte(op.address.unwrap(), val);
+    machine.write_byte(op.address.unwrap(), val);
     op.def.cycles
 }
 
@@ -280,7 +280,7 @@ fn op_push(op: &Operation, machine: &mut impl Machine) -> u8 {
         _ => panic!("{} is not a push operation", op.def.mnemonic),
     };
     let addr = machine.stack_addr();
-    machine.set_byte(addr, val);
+    machine.write_byte(addr, val);
     machine.cpu_mut().registers.stack -= 1;
     op.def.cycles
 }
