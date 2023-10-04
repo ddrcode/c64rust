@@ -126,7 +126,6 @@ const INVALID: usize = 7;
 // TODO
 // Corrections are still required  for addresses 0x0000 and 0x0001
 // as they are not in RAM, but are internal CPU states
-// see here:
 //
 // CONSIDERATIONS
 // Proper behavior should be defined for som devices being missing
@@ -179,10 +178,6 @@ impl Addressable for PLA_82S100 {
 
         let real_id = if_else(self.has_device(id), id, 0);
 
-        if addr == 0xdc00 || addr == 0xdc01 {
-            // log::info!("IO (read)?? {:04x}, id={}, real_id={}", addr, id, real_id);
-        }
-
         // optimization - if read is from RAM no further checks are required
         // so we can skip further mutex locking
         if real_id == RAM {
@@ -190,6 +185,7 @@ impl Addressable for PLA_82S100 {
         }
 
         drop(ram);
+
         let opt_dev = &self.devices[real_id as usize];
         if let Some(dev) = opt_dev {
             let real_addr = self.internal_addr(&dev, addr, real_id);
@@ -216,6 +212,7 @@ impl Addressable for PLA_82S100 {
         }
 
         drop(ram);
+
         if self.has_device(real_id) {
             let internal_addr = {
                 let dev = self.devices[real_id as usize].as_ref().unwrap();

@@ -17,6 +17,7 @@ pub struct C64 {
     mem: C64Memory,
     gpu: VIC_II,
     pub cia1: Device<CIA1>,
+    cia2: Device<CIA2>,
     status: MachineStatus,
     cycles: u64,
     pub debugger_state: DebuggerState,
@@ -25,14 +26,15 @@ pub struct C64 {
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
-        let cia1 = Device::from(CIA1::new(0xdc00));
-        let cia2 = Device::from(CIA2::new(0xdd00));
+        let cia1 = Device::from(CIA1::new());
+        let cia2 = Device::from(CIA2::new());
         C64 {
             config,
             mos6510: MOS6502::new(),
             mem: C64Memory::new(&cia1, &cia2),
             gpu: VIC_II::new(),
             cia1,
+            cia2,
             status: MachineStatus::Stopped,
             cycles: 0,
             debugger_state: DebuggerState::default(),
