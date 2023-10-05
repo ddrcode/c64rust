@@ -1,5 +1,5 @@
 use super::{
-    cia6526::{CIA1, CIA2},
+    cia::{CIA1, CIA2},
     io::C64IO,
 };
 use machine::{
@@ -35,6 +35,7 @@ use machine::{
 //
 pub struct C64Memory {
     pla: PLA_82S100,
+    ram: Device<ArrayMemory>
 }
 impl C64Memory {
     pub fn new(cia1: &Device<CIA1>, cia2: &Device<CIA2>) -> Self {
@@ -51,7 +52,7 @@ impl C64Memory {
         // FIXME careful - there is hardcoded address inside the PLA
         pla.link_io(io.mutex());
 
-        C64Memory { pla }
+        C64Memory { pla, ram }
     }
 }
 
@@ -104,8 +105,9 @@ impl Memory for C64Memory {
     }
 
     fn size(&self) -> usize {
-        panic!("shuldnt use");
+        self.ram.lock().len()
     }
+
     fn read_word(&self, addr: Addr) -> u16 {
         self.pla.read_word(addr)
     }

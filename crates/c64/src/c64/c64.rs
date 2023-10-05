@@ -7,7 +7,7 @@ use machine::{
     debugger::{DebugMachine, Debugger, DebuggerState},
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter, emulator::abstractions::{Device, Accessor},
+    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter, emulator::{abstractions::{Device, Accessor}, components::CIA_6526},
 };
 use std::num::Wrapping;
 
@@ -16,7 +16,7 @@ pub struct C64 {
     mos6510: MOS6502,
     mem: C64Memory,
     gpu: VIC_II,
-    pub cia1: Device<CIA1>,
+    cia1: Device<CIA1>,
     cia2: Device<CIA2>,
     status: MachineStatus,
     cycles: u64,
@@ -139,6 +139,9 @@ impl Machine for C64 {
         // if not updated  - screen won't be refreshed
         // it should be implemented at VIC level
         self.write_byte(0xd012, (self.cycles % 255) as u8);
+
+        self.cia1.lock().tick_times(op.def.len());
+        self.cia2.lock().tick_times(op.def.len());
 
         if self.get_status() == MachineStatus::Running && self.should_pause(op) {
             self.start_debugging();

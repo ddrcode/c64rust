@@ -71,6 +71,10 @@ impl ArrayMemory {
             width,
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.cells.len()
+    }
 }
 
 impl Addressable for ArrayMemory {

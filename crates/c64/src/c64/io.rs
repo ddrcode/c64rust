@@ -30,9 +30,12 @@ impl Addressable for C64IO {
 
     fn write_byte(&mut self, addr: Addr, value: u8) {
         if (0xc00..=0xc0f).contains(&addr) {
-            return lock::<CIA1>(&self.cia1).write_byte(addr - 0xc00, value);
+            return lock::<CIA1>(&self.cia1).write_byte((addr - 0xc00) & 0x000f, value);
+        } else if (0xc00..=0xc0f).contains(&addr) {
+            return lock::<CIA2>(&self.cia2).write_byte((addr - 0xd00) & 0x000f, value);
+        } else {
+            lock::<ArrayMemory>(&self.ram).write_byte(addr + 0xd000, value);
         }
-        lock::<ArrayMemory>(&self.ram).write_byte(addr+0xd000, value);
     }
 
     fn address_width(&self) -> u16 {

@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 /// was 1/60s.
 /// See:
 /// https://dustlayer.com/machine-coding-tutorials/2013/4/8/episode-2-3-did-i-interrupt-you
+/// (it's always 1/60 of a second ,regardless whether it's PAL or NTSC)
 const JIFFY: Duration = Duration::from_millis(1000/60);
 
 pub struct Runtime<M: Machine> {

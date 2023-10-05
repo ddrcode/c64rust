@@ -22,6 +22,8 @@ thiserror = "1.0.49"
 anyhow = "1.0.75"
 crossbeam-channel = "0.5.8"
 lazy_static = "1.4.0"
+chrono = "0.4.31"
+bcd-numbers = "1.0.11"
 
 [[bin]]
 name = "machine"
