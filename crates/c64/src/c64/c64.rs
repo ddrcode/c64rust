@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 
-use super::{C64Memory, CIA1, CIA6526, VIC_II};
+use super::{C64Memory, CIA1, CIA2, VIC_II};
 use crate::key_utils::C64KeyCode;
 use machine::{
     cli::{FromProfile, Profile},
     debugger::{DebugMachine, Debugger, DebuggerState},
-    impl_reg_setter, Cycles,
+    impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
+    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter, emulator::{abstractions::{Device, Accessor}, components::CIA_6526},
 };
 use std::num::Wrapping;
 
@@ -16,7 +16,8 @@ pub struct C64 {
     mos6510: MOS6502,
     mem: C64Memory,
     gpu: VIC_II,
-    pub cia1: CIA1,
+    cia1: Device<CIA1>,
+    cia2: Device<CIA2>,
     status: MachineStatus,
     cycles: u64,
     pub debugger_state: DebuggerState,
@@ -25,13 +26,15 @@ pub struct C64 {
 
 impl C64 {
     pub fn new(config: MachineConfig) -> Self {
-        let size = config.ram_size.clone();
+        let cia1 = Device::from(CIA1::new());
+        let cia2 = Device::from(CIA2::new());
         C64 {
             config,
             mos6510: MOS6502::new(),
-            mem: C64Memory::new(size),
+            mem: C64Memory::new(&cia1, &cia2),
             gpu: VIC_II::new(),
-            cia1: CIA1::new(0xdc00),
+            cia1,
+            cia2,
             status: MachineStatus::Stopped,
             cycles: 0,
             debugger_state: DebuggerState::default(),
@@ -52,19 +55,19 @@ impl C64 {
     }
 
     pub fn key_down(&mut self, ck: C64KeyCode) {
-        self.cia1.keyboard.key_down(ck as u8);
+        self.cia1.lock().keyboard.key_down(ck as u8);
 
         // let sc = VIC_II::ascii_to_petscii(ch);
-        // self.memory_mut().set_byte(0x0277, sc);
-        // self.memory_mut().set_byte(0x00c6, 1); // number of keys in the keyboard buffer
-        // self.memory_mut().set_byte(0xffe4, 22);
+        // self.memory_mut().write_byte(0x0277, sc);
+        // self.memory_mut().write_byte(0x00c6, 1); // number of keys in the keyboard buffer
+        // self.memory_mut().write_byte(0xffe4, 22);
 
-        // self.machine.memory_mut().set_byte(0xc5, 2);
-        // self.machine.memory_mut().set_byte(0xcb, 3);
+        // self.machine.memory_mut().write_byte(0xc5, 2);
+        // self.machine.memory_mut().write_byte(0xcb, 3);
     }
 
     pub fn key_up(&mut self, ck: C64KeyCode) {
-        self.cia1.keyboard.key_up(ck as u8);
+        self.cia1.lock().keyboard.key_up(ck as u8);
     }
 
     pub fn send_keys(&mut self, vec: &Vec<C64KeyCode>, is_down: bool) {
@@ -78,7 +81,7 @@ impl C64 {
     }
 
     pub fn is_io(&self, addr: Addr) -> bool {
-        let flag = self.memory().get_byte(1) & 0b00000111;
+        let flag = self.memory().read_byte(1) & 0b00000111;
         flag & 0b100 > 0 && flag & 11 > 0 && addr >= 0xdc00 && addr <= 0xdc0f
     }
 }
@@ -130,28 +133,15 @@ impl Machine for C64 {
         res
     }
 
-    fn get_byte(&self, addr: Addr) -> u8 {
-        if self.is_io(addr) {
-            self.cia1.get_byte(addr)
-        } else {
-            self.memory().get_byte(addr)
-        }
-    }
-
-    fn set_byte(&mut self, addr: Addr, val: u8) {
-        if self.is_io(addr) {
-            self.cia1.set_byte(addr, val)
-        } else {
-            self.memory_mut().set_byte(addr, val)
-        }
-    }
-
     fn post_next(&mut self, op: &Operation) {
         // FIXME this is an ugly workaround to fix screen scannig
         // value at 0d012 represents currently scanned line
         // if not updated  - screen won't be refreshed
         // it should be implemented at VIC level
-        self.set_byte(0xd012, (self.cycles % 255) as u8);
+        self.write_byte(0xd012, (self.cycles % 255) as u8);
+
+        self.cia1.lock().tick_times(op.def.len());
+        self.cia2.lock().tick_times(op.def.len());
 
         if self.get_status() == MachineStatus::Running && self.should_pause(op) {
             self.start_debugging();

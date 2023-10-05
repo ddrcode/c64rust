@@ -34,15 +34,8 @@ impl Memory for MOS6502Memory {
         self.init_rom_at_addr(addr as u16, data);
     }
 
-    fn set_byte(&mut self, addr: Addr, val: u8) {
+    fn write_byte(&mut self, addr: Addr, val: u8) {
         self.ram[addr as usize] = val;
-    }
-
-    fn set_word(&mut self, addr: Addr, val: u16) {
-        let idx = addr as usize;
-        let [high, low] = val.to_be_bytes();
-        self.ram[idx] = low;
-        self.ram[idx + 1] = high; // little endian!
     }
 
     fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {

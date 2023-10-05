@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate colored;
 
 pub mod cli;
@@ -7,6 +9,7 @@ mod error;
 mod machine;
 pub mod mos6502;
 pub mod utils;
+pub mod emulator;
 
 pub use crate::error::MachineError;
 pub use crate::machine::*;

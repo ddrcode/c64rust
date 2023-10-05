@@ -8,23 +8,22 @@ pub trait Memory {
     fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]);
     fn size(&self) -> usize;
 
-    fn get_byte(&self, addr: Addr) -> u8 {
+    fn read_byte(&self, addr: Addr) -> u8 {
         self.mem(addr)[addr as usize]
     }
 
-    fn get_word(&self, addr: Addr) -> u16 {
+    fn read_word(&self, addr: Addr) -> u16 {
         let idx = addr as usize;
         let mem = self.mem(addr);
-        (mem[idx] as u16) | ((mem[idx + 1] as u16) << 8)
+        (mem[idx] as u16) | ((mem[addr.wrapping_add(1) as usize] as u16) << 8)
     }
 
-    fn set_byte(&mut self, addr: Addr, val: u8);
-    fn set_word(&mut self, addr: Addr, val: u16);
+    fn write_byte(&mut self, addr: Addr, val: u8);
 
     fn write(&mut self, addr: Addr, data: &[u8]) {
         let mut idx = addr;
         for byte in data.iter() {
-            self.set_byte(idx, *byte);
+            self.write_byte(idx, *byte);
             idx = idx.wrapping_add(1);
         }
     }
@@ -35,7 +34,7 @@ pub trait Memory {
             end: to,
         };
         for i in range {
-            print!("{}", char::from(self.get_byte(i)));
+            print!("{}", char::from(self.read_byte(i)));
             // print!("{:04x}: {:02x} ", i, self.get_byte(i));
         }
         println!();
@@ -48,7 +47,7 @@ pub trait Memory {
             end: to,
         };
         for i in range {
-            vec.push(self.get_byte(i));
+            vec.push(self.read_byte(i));
         }
         vec
     }

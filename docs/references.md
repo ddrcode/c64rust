@@ -42,6 +42,7 @@ cover much broader topics.
 ### Bank switching
 
 - [Bank switching on C64 wiki](https://www.c64-wiki.com/wiki/Bank_Switching)
+- [C64 PLA Dissected](http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/c64/C64_PLA_Dissected.pdf)
 
 ## Reset / Boot sequence
 
@@ -56,9 +57,10 @@ cover much broader topics.
 
 - [Double IRQ Explained](https://codebase64.org/doku.php?id=base:double_irq_explained)
 
-## Keyboard
+## Keyboard, Keymaps, PETSCII, etc
 
 - [How the C64 Keyboard Works](https://www.c64os.com/post/howthekeyboardworks)
+- [Key Map to Screen editor](https://c64os.com/post/keymap_toscreeneditor)
 
 ## Online emulators (for testing instructions behaviour)
 

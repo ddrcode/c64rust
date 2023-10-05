@@ -25,6 +25,19 @@ impl ProcessorStatus {
     }
 }
 
+impl Into<u8> for ProcessorStatus {
+    fn into(self) -> u8 {
+        self.carry as u8
+            | bool_to_bit(&self.zero, 1)
+            | (self.interrupt_disable as u8) << 2
+            | (self.decimal_mode as u8) << 3
+            | (self.break_command as u8) << 4
+            | 1 << 5
+            | (self.overflow as u8) << 6
+            | (self.negative as u8) << 7
+    }
+}
+
 impl From<&ProcessorStatus> for u8 {
     fn from(status: &ProcessorStatus) -> Self {
         status.carry as u8

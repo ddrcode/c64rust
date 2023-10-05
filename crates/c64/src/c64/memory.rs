@@ -1,4 +1,14 @@
-use machine::{Addr, Memory};
+use super::{
+    cia::{CIA1, CIA2},
+    io::C64IO,
+};
+use machine::{
+    emulator::{
+        abstractions::{Accessor, AddressResolver, Addressable, ArrayMemory, Device},
+        components::PLA_82S100,
+    },
+    Addr, Memory,
+};
 
 // TODO consider better way of initializing the memory
 // see this: https://www.reddit.com/r/rust/comments/jzwwqb/about_creating_a_boxed_slice/
@@ -17,18 +27,32 @@ use machine::{Addr, Memory};
 /// The emulator provides 64kB of RAM and 64kB of ROM, but no extra memory for
 /// cartridges - it simply overrides ROM for cartridges (TBC whether such simplification
 /// is sufficient).
-pub struct C64Memory {
-    ram: Box<[u8]>,
-    rom: Box<[u8]>,
-}
 
+// pub struct C64Memory {
+//     ram: Box<[u8]>,
+//     rom: Box<[u8]>,
+// }
+//
+pub struct C64Memory {
+    pla: PLA_82S100,
+    ram: Device<ArrayMemory>
+}
 impl C64Memory {
-    pub fn new(size: usize) -> Self {
-        // let size: usize = 1 << 16;
-        C64Memory {
-            ram: vec![0u8; size].into_boxed_slice(),
-            rom: vec![0u8; 1 + u16::MAX as usize].into_boxed_slice(),
-        }
+    pub fn new(cia1: &Device<CIA1>, cia2: &Device<CIA2>) -> Self {
+        let mut pla = PLA_82S100::default();
+        let ram = Device::from(ArrayMemory::new(0xffff, 16));
+        pla.link_ram(ram.mutex());
+
+        let io = Device::from(C64IO {
+            ram: ram.mutex(),
+            cia1: cia1.mutex(),
+            cia2: cia2.mutex(),
+        });
+
+        // FIXME careful - there is hardcoded address inside the PLA
+        pla.link_io(io.mutex());
+
+        C64Memory { pla, ram }
     }
 }
 
@@ -36,52 +60,55 @@ impl Memory for C64Memory {
     // TODO: Must check whether the three corresponding its at addr 0x00 are 1
     // check https://www.c64-wiki.com/wiki/Bank_Switching for details
     #[allow(unused_comparisons)]
-    fn mem(&self, addr: Addr) -> &[u8] {
-        let flag = self.ram[1] & 0b00000111;
-        if flag & 1 > 0 && addr >= 0xa000 && addr <= 0xbfff {
-            return &self.rom;
-        };
-        if flag & 2 > 0 && addr >= 0xe000 && addr <= 0xffff {
-            return &self.rom;
-        };
-        if flag & 4 == 0 && addr >= 0xd000 && addr <= 0xdfff {
-            return &self.rom;
-        };
-        &self.ram
+    fn mem(&self, _addr: Addr) -> &[u8] {
+        panic!("shuldnt use");
     }
 
     fn init_rom(&mut self, data: &[u8]) {
         let len = data.len();
         if len == 16384 {
             // the size of original rom
-            self.init_rom_at_addr(0xa000, &data[..8192]);
-            self.init_rom_at_addr(0xe000, &data[8192..]);
+            self.pla
+                .link_basic(Device::from(ArrayMemory::from_data(&data[..8192], 16)).mutex());
+            self.pla
+                .link_kernal(Device::from(ArrayMemory::from_data(&data[8192..], 16)).mutex());
         } else {
             // custom rom
             let addr: usize = 0x10000 - len;
-            self.init_rom_at_addr(addr as u16, data);
+            //self.init_rom_at_addr(addr as u16, data);
+            self.pla
+                .link_kernal(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
         }
     }
 
-    fn init_rom_at_addr(&mut self, addr: Addr, data: &[u8]) {
-        let mut idx = addr as usize;
-        for byte in data.iter() {
-            self.rom[idx] = *byte;
-            idx += 1;
-        }
+    fn init_rom_at_addr(&mut self, _addr: Addr, data: &[u8]) {
+        self.pla
+            .link_chargen(Device::from(ArrayMemory::from_data(&data, 16)).mutex());
     }
-    fn set_byte(&mut self, addr: Addr, val: u8) {
-        self.ram[addr as usize] = val;
+    fn write_byte(&mut self, addr: Addr, val: u8) {
+        self.pla.write_byte(addr, val);
+    }
+    fn read_byte(&self, addr: Addr) -> u8 {
+        self.pla.read_byte(addr)
     }
 
-    fn set_word(&mut self, addr: Addr, val: u16) {
-        let idx = addr as usize;
-        let [high, low] = val.to_be_bytes();
-        self.ram[idx] = low;
-        self.ram[idx + 1] = high; // little endian!
+    fn fragment(&self, from: Addr, to: Addr) -> Vec<u8> {
+        let mut vec = Vec::<u8>::with_capacity((to - from) as usize);
+        let range = std::ops::Range {
+            start: from,
+            end: to,
+        };
+        for i in range {
+            vec.push(self.read_byte(i));
+        }
+        vec
     }
 
     fn size(&self) -> usize {
-        self.ram.len()
+        self.ram.lock().len()
+    }
+
+    fn read_word(&self, addr: Addr) -> u16 {
+        self.pla.read_word(addr)
     }
 }

@@ -8,7 +8,8 @@ use std::time::{Duration, Instant};
 /// was 1/60s.
 /// See:
 /// https://dustlayer.com/machine-coding-tutorials/2013/4/8/episode-2-3-did-i-interrupt-you
-const IRQ_INTERVAL: Duration = Duration::from_millis(20);
+/// (it's always 1/60 of a second ,regardless whether it's PAL or NTSC)
+const JIFFY: Duration = Duration::from_millis(1000/60);
 
 pub struct Runtime<M: Machine> {
     mutex: Arc<Mutex<M>>,
@@ -24,7 +25,7 @@ impl<M: Machine> Runtime<M> {
     }
 
     fn irq_loop(&mut self) {
-        if self.irq_time.elapsed() > IRQ_INTERVAL {
+        if self.irq_time.elapsed() > JIFFY {
             self.irq_time = Instant::now();
             let mut machine = lock::<M>(&self.mutex);
             machine.irq();

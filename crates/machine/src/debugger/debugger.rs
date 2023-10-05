@@ -27,7 +27,7 @@ pub trait Debugger {
             .variables
             .iter()
             .map(|var| Variable {
-                value: self.machine().get_byte(var.addr),
+                value: self.machine().read_byte(var.addr),
                 ..var.clone()
             })
             .collect();

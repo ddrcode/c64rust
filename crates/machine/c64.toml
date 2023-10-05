@@ -1,8 +1,0 @@
-rom = "./tests/target/rom.p"
-ram = "./tests/target/add-sub-16bit.p"
-ram_file_addr = "0200"
-ram_size = 1024
-stop_on_brk = true
-show_status = true
-disassemble = true
-
