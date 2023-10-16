@@ -26,13 +26,14 @@ run_test() {
     local bin_file="./target/${file}.p"
     local addr_dec=$(echo "ibase=16; $ADDR"|bc)
     $ASM --cpu 6502 -f plain --setpc "$addr_dec" -o "$bin_file" "./src/${file}.asm"
-    local res=$($EMU --rom ./target/rom.p --ram "$bin_file" --ram-size 1024 --ram-file-addr "$ADDR" --show-status --stop-on-brk | sed 's/\$//g')
+    local res=$($EMU --rom ./target/rom.p --ram "$bin_file" --ram-size 2048 --ram-file-addr "$ADDR" --show-status --stop-on-brk | sed 's/\$//g')
     printf -- "%s" "$res"
 }
 
 test() {
     local file="$1"
-    echo -ne "Running test for ${LIGHT_BLUE}${file}.a${RC}\t\t\t\t"
+    # echo -ne "Running test for ${LIGHT_BLUE}${file}.a${RC}\t\t\t\t"
+    printf "Running test for ${LIGHT_BLUE}%-32s${RC}\t" $file
 
     local res=$(run_test "$file")
     local reg_y=$(echo "$res" | sed 's/.*Y:\(..\).*/\1/')
@@ -57,9 +58,10 @@ test() {
 
 test "mul1"
 test "mul2"
-test "cmp" 
-test "adc" 
-test "sbc" 
+test "cmp"
+test "adc"
+test "sbc"
 test "add-sub-16bit"
 test "shift"
+test "bcd"
 
