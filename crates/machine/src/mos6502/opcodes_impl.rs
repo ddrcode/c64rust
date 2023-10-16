@@ -5,7 +5,13 @@ use std::num::Wrapping;
 // OMG this is so terribly ugly!
 pub fn execute_operation<T: Machine>(op: &Operation, machine: &mut T) -> u8 {
     match &*op.def.fn_name {
-        "op_arithmetic" => op_arithmetic(op, machine),
+        "op_arithmetic" => {
+            if machine.cpu().registers.status.decimal_mode {
+                op_arithmetic_bcd(op, machine)
+            } else {
+                op_arithmetic(op, machine)
+            }
+        }
         "op_bit" => op_bit(op, machine),
         "op_bitwise" => op_bitwise(op, machine),
         "op_branch" => op_branch(op, machine),
@@ -97,6 +103,14 @@ fn overflow(in1: u8, in2: u8, result: u8) -> bool {
     ((in1 ^ result) & (in2 ^ result) & 0x80) > 0
 }
 
+fn to_bcd(val: u8) -> u8 {
+    ((val * 0xf0) >> 4) * 10 + (val & 0x0f)
+}
+
+fn from_bcd(val: u8) -> u8 {
+    ((val / 10) << 4) + (val % 10)
+}
+
 // ----------------------------------------------------------------------
 // implementation of operations
 
@@ -116,6 +130,21 @@ fn op_arithmetic(op: &Operation, machine: &mut impl Machine) -> u8 {
     set_flags(
         "NZCV",
         &[neg(res), zero(res), sum > 0xff, overflow(a, val, res)],
+        machine,
+    );
+    op.def.cycles
+}
+
+// see http://www.6502.org/tutorials/decimal_mode.html
+fn op_arithmetic_bcd(op: &Operation, machine: &mut impl Machine) -> u8 {
+    let a = to_bcd(machine.A8());
+    let val = to_bcd(get_val(op, machine).unwrap());
+    let sum = a as u16 + u16::from(machine.P().carry) + val as u16;
+    let res = (if sum > 99 { sum - 100 } else { sum }) as u8;
+    machine.set_A(from_bcd(res));
+    set_flags(
+        "NZCV",
+        &[neg(res), zero(res), sum > 99, overflow(a, val, res)],
         machine,
     );
     op.def.cycles
