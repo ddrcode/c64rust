@@ -90,7 +90,7 @@
 
               pkgs.treefmt
               pkgs.acme
-              pkgs.ncurses
+              # pkgs.cc65
             ];
 
             shellHook = ''

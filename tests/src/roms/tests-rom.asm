@@ -3,9 +3,11 @@
 ; Reset vector is set to $0200, as all tests are expected
 ; to start from that address.
 
-* = $fffa
-nmi !word $0000
-rst !word $0200
-irq !word $0000
+* = $fff0
+    RTI
 
+* = $fffa
+nmi !word $fff0
+rst !word $0200
+irq !word $fff0
 

@@ -5,7 +5,13 @@ use std::num::Wrapping;
 // OMG this is so terribly ugly!
 pub fn execute_operation<T: Machine>(op: &Operation, machine: &mut T) -> u8 {
     match &*op.def.fn_name {
-        "op_arithmetic" => op_arithmetic(op, machine),
+        "op_arithmetic" => {
+            if machine.cpu().registers.status.decimal_mode {
+                op_arithmetic_bcd(op, machine)
+            } else {
+                op_arithmetic(op, machine)
+            }
+        }
         "op_bit" => op_bit(op, machine),
         "op_bitwise" => op_bitwise(op, machine),
         "op_branch" => op_branch(op, machine),
@@ -97,6 +103,14 @@ fn overflow(in1: u8, in2: u8, result: u8) -> bool {
     ((in1 ^ result) & (in2 ^ result) & 0x80) > 0
 }
 
+fn bcd_to_dec(val: u8) -> u8 {
+    ((val & 0xf0) >> 4) * 10 + (val & 0x0f)
+}
+
+fn dec_to_bcd(val: u8) -> u8 {
+    ((val / 10) << 4) + (val % 10)
+}
+
 // ----------------------------------------------------------------------
 // implementation of operations
 
@@ -116,6 +130,36 @@ fn op_arithmetic(op: &Operation, machine: &mut impl Machine) -> u8 {
     set_flags(
         "NZCV",
         &[neg(res), zero(res), sum > 0xff, overflow(a, val, res)],
+        machine,
+    );
+    op.def.cycles
+}
+
+// see http://www.6502.org/tutorials/decimal_mode.html
+fn op_arithmetic_bcd(op: &Operation, machine: &mut impl Machine) -> u8 {
+    let a = bcd_to_dec(machine.A8());
+    let val = bcd_to_dec(get_val(op, machine).unwrap());
+    let (sum, carry) = match op.def.mnemonic {
+        ADC => { let x = a + u8::from(machine.P().carry) + val;
+            (x, x>99)
+        },
+        SBC => {
+            let x = a
+                .wrapping_sub(u8::from(!machine.P().carry))
+                .wrapping_sub(val);
+            if x >= 156 {
+                (x - 156, false)
+            } else {
+                (x, true)
+            }
+        }
+        _ => panic!("{} is not an arithmetic operation", op.def.mnemonic),
+    };
+    let res = sum - 100 * (sum / 100);
+    machine.set_A(dec_to_bcd(res));
+    set_flags(
+        "NZCV",
+        &[neg(res), zero(res), carry, overflow(a, val, res)],
         machine,
     );
     op.def.cycles
@@ -170,7 +214,7 @@ fn op_compare(op: &Operation, machine: &mut impl Machine) -> u8 {
         _ => panic!("{} is not a compare operation", op.def.mnemonic),
     };
     let diff = (Wrapping(reg) - Wrapping(val)).0;
-    set_flags("NZC", &[neg(diff), reg == val, reg >= val], machine);
+    set_flags("NZC", &[neg(diff), reg == val, val <= reg], machine);
     op.def.cycles
 }
 
@@ -361,5 +405,10 @@ mod tests {
     fn test_utils() {
         assert!(neg(0x80));
         assert!(zero(0));
+    }
+
+    #[test]
+    fn test_bcd_conversions() {
+        assert_eq!(45, bcd_to_dec(0x45));
     }
 }
