@@ -21,6 +21,7 @@ use chrono::Timelike;
 /// $0C (Serial shift register) - TO DO
 /// $0D (Interrupt control and status) - TO DO
 /// $0E-$0F (Timer control) - TO DO
+#[allow(non_camel_case_types)]
 pub trait CIA_6526: Addressable {
     fn mem(&self) -> &[u8];
     fn mem_mut(&mut self) -> &mut [u8];

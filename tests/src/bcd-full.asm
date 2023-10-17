@@ -28,6 +28,11 @@
 ;
 
 
+; Inspired by
+; https://www.pcjs.org/software/osi/c1p/6502/tests/bcd/
+VALID_BCD_ONLY		=	1
+VALID_FLAGS_ONLY	=	1
+
         JMP TEST
 
 !source "src/common/test_routines.asm"
@@ -44,7 +49,7 @@ N1H !byte 0
 N1L !byte 0
 N2 !byte 0
 N2L !byte 0
-N2H !byte 0
+N2H !word 0
 NF !byte 0
 VF !byte 0
 ZF !byte 0
@@ -56,17 +61,34 @@ TEST    LDY #1    ; initialize Y (used to loop through carry flag values)
         STA N2
 LOOP1   LDA N2    ; N2L = N2 & $0F
         AND #$0F  ; [1] see text
+        !if VALID_BCD_ONLY > 0 {
+            CMP #$0A
+            BCS NEXT2
+        }
         STA N2L
         LDA N2    ; N2H = N2 & $F0
         AND #$F0  ; [2] see text
+        !if VALID_BCD_ONLY > 0 {
+            INC test_count
+            CMP #$A0
+            BCS NEXT2
+        }
         STA N2H
         ORA #$0F  ; N2H+1 = (N2 & $F0) + $0F
         STA N2H+1
 LOOP2   LDA N1    ; N1L = N1 & $0F
         AND #$0F  ; [3] see text
+        !if VALID_BCD_ONLY > 0 {
+            CMP #$0A
+            BCS NEXT1
+        }
         STA N1L
         LDA N1    ; N1H = N1 & $F0
         AND #$F0  ; [4] see text
+        !if VALID_BCD_ONLY > 0 {
+            CMP #$A0
+            BCS NEXT1
+        }
         STA N1H
         JSR ADD
         JSR A6502
@@ -76,12 +98,11 @@ LOOP2   LDA N1    ; N1L = N1 & $0F
         JSR S6502
         JSR COMPARE
         BNE DONE
-        INC N1    ; [5] see text
+NEXT1   INC N1    ; [5] see text
         BNE LOOP2 ; loop through all 256 values of N1
-        INC N2    ; [6] see text
+NEXT2   INC N2    ; [6] see text
         BNE LOOP1 ; loop through all 256 values of N2
         DEY
-        INC test_count
         BPL LOOP1 ; loop through both values of the carry flag
         LDA #0    ; test passed, so store 0 in ERROR
         STA ERROR
@@ -226,18 +247,20 @@ S23     STA AR     ; predicted accumulator result
 COMPARE LDA DA
         CMP AR
         BNE C1
-        LDA DNVZC ; [7] see text
-        EOR NF
-        AND #$80  ; mask off N flag
-        BNE C1
-        LDA DNVZC ; [8] see text
-        EOR VF
-        AND #$40  ; mask off V flag
-        BNE C1    ; [9] see text
-        LDA DNVZC
-        EOR ZF    ; mask off Z flag
-        AND #2
-        BNE C1    ; [10] see text
+        !if VALID_FLAGS_ONLY = 0 {
+            LDA DNVZC ; [7] see text
+            EOR NF
+            AND #$80  ; mask off N flag
+            BNE C1
+            LDA DNVZC ; [8] see text
+            EOR VF
+            AND #$40  ; mask off V flag
+            BNE C1    ; [9] see text
+            LDA DNVZC
+            EOR ZF    ; mask off Z flag
+            AND #2
+            BNE C1    ; [10] see text
+        }
         LDA DNVZC
         EOR CF
         AND #1    ; mask off C flag

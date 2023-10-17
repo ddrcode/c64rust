@@ -3,12 +3,10 @@ use crate::key_utils::ui_event_to_c64_key_codes;
 use crossbeam_channel::Receiver;
 use keyboard_types::{KeyState, KeyboardEvent};
 use machine::{
-    client::*, debugger::DebuggerState, mos6502::Registers, utils::lock, Addr, Machine,
+    client::*, debugger::DebuggerState, mos6502::Registers, Addr, Machine,
     MachineError, MachineStatus, Memory,
 };
 use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
 
 type Result<T> = std::result::Result<T, MachineError>;
 

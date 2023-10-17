@@ -45,7 +45,7 @@ test() {
 
     echo -e "$FAILED_MSG"
     echo ""
-    echo -e "                                             ${LIGHT_GRAY}NV-BDIZC${RC}"
+    echo -e "                                              ${LIGHT_GRAY}NV-BDIZC${RC}"
     echo "   State: $res"
     echo ""
     echo "   Reg A - test id of the last successfully completed test"
@@ -63,5 +63,6 @@ test "adc"
 test "sbc"
 test "add-sub-16bit"
 test "shift"
-test "bcd"
+test "bcd-simple"
+test "bcd-full"
 

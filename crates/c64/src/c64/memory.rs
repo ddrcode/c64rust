@@ -74,7 +74,7 @@ impl Memory for C64Memory {
                 .link_kernal(Device::from(ArrayMemory::from_data(&data[8192..], 16)).mutex());
         } else {
             // custom rom
-            let addr: usize = 0x10000 - len;
+            // let addr: usize = 0x10000 - len;
             //self.init_rom_at_addr(addr as u16, data);
             self.pla
                 .link_kernal(Device::from(ArrayMemory::from_data(&data, 16)).mutex());

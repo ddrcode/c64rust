@@ -103,11 +103,11 @@ fn overflow(in1: u8, in2: u8, result: u8) -> bool {
     ((in1 ^ result) & (in2 ^ result) & 0x80) > 0
 }
 
-fn to_bcd(val: u8) -> u8 {
-    ((val * 0xf0) >> 4) * 10 + (val & 0x0f)
+fn bcd_to_dec(val: u8) -> u8 {
+    ((val & 0xf0) >> 4) * 10 + (val & 0x0f)
 }
 
-fn from_bcd(val: u8) -> u8 {
+fn dec_to_bcd(val: u8) -> u8 {
     ((val / 10) << 4) + (val % 10)
 }
 
@@ -137,14 +137,29 @@ fn op_arithmetic(op: &Operation, machine: &mut impl Machine) -> u8 {
 
 // see http://www.6502.org/tutorials/decimal_mode.html
 fn op_arithmetic_bcd(op: &Operation, machine: &mut impl Machine) -> u8 {
-    let a = to_bcd(machine.A8());
-    let val = to_bcd(get_val(op, machine).unwrap());
-    let sum = a as u16 + u16::from(machine.P().carry) + val as u16;
-    let res = (if sum > 99 { sum - 100 } else { sum }) as u8;
-    machine.set_A(from_bcd(res));
+    let a = bcd_to_dec(machine.A8());
+    let val = bcd_to_dec(get_val(op, machine).unwrap());
+    let (sum, carry) = match op.def.mnemonic {
+        ADC => { let x = a + u8::from(machine.P().carry) + val;
+            (x, x>99)
+        },
+        SBC => {
+            let x = a
+                .wrapping_sub(u8::from(!machine.P().carry))
+                .wrapping_sub(val);
+            if x >= 156 {
+                (x - 156, false)
+            } else {
+                (x, true)
+            }
+        }
+        _ => panic!("{} is not an arithmetic operation", op.def.mnemonic),
+    };
+    let res = sum - 100 * (sum / 100);
+    machine.set_A(dec_to_bcd(res));
     set_flags(
         "NZCV",
-        &[neg(res), zero(res), sum > 99, overflow(a, val, res)],
+        &[neg(res), zero(res), carry, overflow(a, val, res)],
         machine,
     );
     op.def.cycles
@@ -199,7 +214,7 @@ fn op_compare(op: &Operation, machine: &mut impl Machine) -> u8 {
         _ => panic!("{} is not a compare operation", op.def.mnemonic),
     };
     let diff = (Wrapping(reg) - Wrapping(val)).0;
-    set_flags("NZC", &[neg(diff), reg == val, reg >= val], machine);
+    set_flags("NZC", &[neg(diff), reg == val, val <= reg], machine);
     op.def.cycles
 }
 
@@ -390,5 +405,10 @@ mod tests {
     fn test_utils() {
         assert!(neg(0x80));
         assert!(zero(0));
+    }
+
+    #[test]
+    fn test_bcd_conversions() {
+        assert_eq!(45, bcd_to_dec(0x45));
     }
 }
