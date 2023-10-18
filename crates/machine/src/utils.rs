@@ -22,3 +22,11 @@ pub fn if_else<T>(cond: bool, val1: T, val2: T) -> T {
         val2
     }
 }
+
+pub fn dec_to_bcd(val: u8) -> u8 {
+    ((val / 10) << 4) + (val % 10)
+}
+
+pub fn bcd_to_dec(val: u8) -> u8 {
+    ((val & 0xf0) >> 4) * 10 + (val & 0x0f)
+}

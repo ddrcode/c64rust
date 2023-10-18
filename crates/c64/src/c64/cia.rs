@@ -1,7 +1,7 @@
 use super::keyboard::Keyboard;
 use machine::emulator::{
     abstractions::{Addr, Addressable, DeviceTrait},
-    components::CIA_6526,
+    components::{CIA_6526, TOD},
 };
 
 // -----------------------------------------
@@ -11,6 +11,7 @@ pub struct CIA1 {
     data: [u8; 16],
     t_a: u16,
     t_b: u16,
+    time: TOD,
     pub keyboard: Keyboard,
 }
 
@@ -22,6 +23,7 @@ impl CIA1 {
             data,
             t_a: 0,
             t_b: 0,
+            time: TOD::new(),
             keyboard: Keyboard::new(),
         }
     }
@@ -58,6 +60,10 @@ impl CIA_6526 for CIA1 {
         self.t_a = self.t_a.wrapping_sub(1);
         self.t_b = self.t_b.wrapping_sub(1);
     }
+
+    fn tod(&self) -> &TOD {
+        &self.time
+    }
 }
 
 // such a nonsense!!
@@ -84,6 +90,7 @@ pub struct CIA2 {
     data: [u8; 16],
     t_a: u16,
     t_b: u16,
+    time: TOD
 }
 
 impl CIA2 {
@@ -94,6 +101,7 @@ impl CIA2 {
             data,
             t_a: 0,
             t_b: 0,
+            time: TOD::new()
         }
     }
 }
@@ -118,6 +126,10 @@ impl CIA_6526 for CIA2 {
     fn tick(&mut self) {
         self.t_a = self.t_a.wrapping_sub(1);
         self.t_b = self.t_b.wrapping_sub(1);
+    }
+
+    fn tod(&self) -> &TOD {
+        &self.time
     }
 }
 

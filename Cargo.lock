@@ -130,7 +130,6 @@ name = "c64"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bcd-numbers",
  "chrono",
  "clap",
  "colored",

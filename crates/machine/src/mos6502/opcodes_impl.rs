@@ -1,5 +1,5 @@
 use super::{AddressMode::*, Mnemonic::*, Operation, ProcessorStatus};
-use crate::machine::Machine;
+use crate::{machine::Machine, utils::{bcd_to_dec, dec_to_bcd}};
 use std::num::Wrapping;
 
 // OMG this is so terribly ugly!
@@ -101,14 +101,6 @@ fn zero(val: u8) -> bool {
 // see https://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
 fn overflow(in1: u8, in2: u8, result: u8) -> bool {
     ((in1 ^ result) & (in2 ^ result) & 0x80) > 0
-}
-
-fn bcd_to_dec(val: u8) -> u8 {
-    ((val & 0xf0) >> 4) * 10 + (val & 0x0f)
-}
-
-fn dec_to_bcd(val: u8) -> u8 {
-    ((val / 10) << 4) + (val % 10)
 }
 
 // ----------------------------------------------------------------------
