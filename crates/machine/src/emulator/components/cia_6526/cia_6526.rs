@@ -48,7 +48,18 @@ pub trait CIA_6526: Addressable {
         if (0x04..=0x07).contains(&addr) {
             log::info!("Setting timer at {:04x} for {val}", addr);
         }
-        self.mem_mut()[addr as usize] = val;
+
+        if (0x8..=0xb).contains(&addr) {
+            match addr {
+                0x08 => self.tod_mut().set_tenth(val),
+                0x09 => self.tod_mut().set_second(val),
+                0x0a => self.tod_mut().set_minute(val),
+                0x0b => self.tod_mut().set_hour(val),
+                _ => (),
+            };
+        } else {
+            self.mem_mut()[addr as usize] = val;
+        }
     }
 
     fn address_width(&self) -> u16 {
@@ -66,4 +77,5 @@ pub trait CIA_6526: Addressable {
     fn timer_a(&self) -> u16;
     fn timer_b(&self) -> u16;
     fn tod(&self) -> &TOD;
+    fn tod_mut(&mut self) -> &mut TOD;
 }

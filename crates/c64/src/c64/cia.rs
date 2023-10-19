@@ -38,16 +38,6 @@ impl CIA_6526 for CIA1 {
         &mut self.data
     }
 
-    fn write_byte(&mut self, addr: Addr, val: u8) {
-        if addr == 0x00 {
-            self.data[0] = val;
-            let code = self.keyboard.scan(val, self.data[1]); // self.read_byte(0xdc01));
-            self.data[1] = code;
-            return ();
-        }
-        self.mem_mut()[addr as usize] = val;
-    }
-
     fn timer_a(&self) -> u16 {
         self.t_a
     }
@@ -64,6 +54,10 @@ impl CIA_6526 for CIA1 {
     fn tod(&self) -> &TOD {
         &self.time
     }
+
+    fn tod_mut(&mut self) -> &mut TOD {
+        &mut self.time
+    }
 }
 
 // such a nonsense!!
@@ -72,8 +66,15 @@ impl Addressable for CIA1 {
         CIA_6526::read_byte(self, addr)
     }
 
-    fn write_byte(&mut self, addr: Addr, value: u8) {
-        CIA_6526::write_byte(self, addr, value);
+    fn write_byte(&mut self, addr: Addr, val: u8) {
+        if addr == 0x00 {
+            self.data[0] = val;
+            let code = self.keyboard.scan(val, self.data[1]); // self.read_byte(0xdc01));
+            self.data[1] = code;
+            return ();
+        } else {
+            CIA_6526::write_byte(self, addr, val);
+        }
     }
 
     fn address_width(&self) -> u16 {
@@ -90,7 +91,7 @@ pub struct CIA2 {
     data: [u8; 16],
     t_a: u16,
     t_b: u16,
-    time: TOD
+    time: TOD,
 }
 
 impl CIA2 {
@@ -101,7 +102,7 @@ impl CIA2 {
             data,
             t_a: 0,
             t_b: 0,
-            time: TOD::new()
+            time: TOD::new(),
         }
     }
 }
@@ -130,6 +131,10 @@ impl CIA_6526 for CIA2 {
 
     fn tod(&self) -> &TOD {
         &self.time
+    }
+
+    fn tod_mut(&mut self) -> &mut TOD {
+        &mut self.time
     }
 }
 

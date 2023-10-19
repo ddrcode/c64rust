@@ -137,6 +137,7 @@ impl TOD {
     }
 
     pub fn tenth(&self) -> u8 {
+        log::info!("Getting tenth");
         let t = (self.time().nanosecond() / 100_000_000) % 10;
         self.unlock_read();
         dec_to_bcd(t as u8)
@@ -163,6 +164,7 @@ impl TOD {
     /// Sets 1/10th of the seconf of TOD and unhalts the clock (if previously halted with
     /// the call of set_hour)
     pub fn set_tenth(&mut self, val: u8) {
+        log::info!("Setting tenth");
         self.millis_offset = Duration::milliseconds(val as i64 * 10);
         self.unlock_write();
     }
@@ -171,6 +173,7 @@ impl TOD {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::thread::sleep;
 
     #[test]
     fn test_set_hour() {
@@ -178,5 +181,28 @@ mod tests {
         tod.set_hour(5);
         tod.set_tenth(0);
         assert_eq!(5, tod.hour());
+    }
+
+    #[test]
+    fn test_unlocking() {
+        let mut tod = TOD::new();
+        assert!(tod.is_locked());
+        tod.set_tenth(0);
+        assert!(!tod.is_locked());
+        let sec = tod.second();
+        sleep(std::time::Duration::from_millis(1500));
+        assert!(sec != tod.second());
+    }
+
+    #[test]
+    fn test_read_lock() {
+        let mut tod = TOD::new();
+        tod.set_tenth(0);
+        tod.hour(); // read locking occurs here
+        let sec = tod.second();
+        sleep(std::time::Duration::from_millis(1500));
+        assert_eq!(sec, tod.second());
+        tod.tenth(); // read unlock
+        assert!(sec != tod.second());
     }
 }
