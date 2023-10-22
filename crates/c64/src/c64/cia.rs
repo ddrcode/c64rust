@@ -1,6 +1,6 @@
 use super::keyboard::Keyboard;
 use machine::emulator::{
-    abstractions::{Addr, Addressable, DeviceTrait},
+    abstractions::{Addr, Addressable, DeviceTrait, Tickable},
     components::{CIA_6526, TOD},
 };
 
@@ -46,11 +46,6 @@ impl CIA_6526 for CIA1 {
         self.t_b
     }
 
-    fn tick(&mut self) {
-        self.t_a = self.t_a.wrapping_sub(1);
-        self.t_b = self.t_b.wrapping_sub(1);
-    }
-
     fn tod(&self) -> &TOD {
         &self.time
     }
@@ -79,6 +74,13 @@ impl Addressable for CIA1 {
 
     fn address_width(&self) -> u16 {
         CIA_6526::address_width(self)
+    }
+}
+
+impl Tickable for CIA1 {
+    fn tick(&mut self) {
+        self.t_a = self.t_a.wrapping_sub(1);
+        self.t_b = self.t_b.wrapping_sub(1);
     }
 }
 
@@ -124,11 +126,6 @@ impl CIA_6526 for CIA2 {
         self.t_b
     }
 
-    fn tick(&mut self) {
-        self.t_a = self.t_a.wrapping_sub(1);
-        self.t_b = self.t_b.wrapping_sub(1);
-    }
-
     fn tod(&self) -> &TOD {
         &self.time
     }
@@ -150,6 +147,13 @@ impl Addressable for CIA2 {
 
     fn address_width(&self) -> u16 {
         CIA_6526::address_width(self)
+    }
+}
+
+impl Tickable for CIA2 {
+    fn tick(&mut self) {
+        self.t_a = self.t_a.wrapping_sub(1);
+        self.t_b = self.t_b.wrapping_sub(1);
     }
 }
 

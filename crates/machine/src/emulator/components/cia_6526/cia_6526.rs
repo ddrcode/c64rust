@@ -1,5 +1,5 @@
 use super::TOD;
-use crate::emulator::abstractions::{Addr, Addressable};
+use crate::emulator::abstractions::{Addr, Addressable, Tickable};
 
 /// To find out more about CIA6526, read here
 /// [CIA #1 in Mapping C64](http://www.unusedino.de/ec64/technical/project64/mapping_c64.html)
@@ -18,7 +18,7 @@ use crate::emulator::abstractions::{Addr, Addressable};
 /// $0D (Interrupt control and status) - TO DO
 /// $0E-$0F (Timer control) - TO DO
 #[allow(non_camel_case_types)]
-pub trait CIA_6526: Addressable {
+pub trait CIA_6526: Addressable + Tickable {
     fn mem(&self) -> &[u8];
     fn mem_mut(&mut self) -> &mut [u8];
 
@@ -66,16 +66,9 @@ pub trait CIA_6526: Addressable {
         4
     }
 
-    fn tick(&mut self);
-
-    fn tick_times(&mut self, times: u8) {
-        for _ in 0..times {
-            self.tick();
-        }
-    }
-
     fn timer_a(&self) -> u16;
     fn timer_b(&self) -> u16;
     fn tod(&self) -> &TOD;
     fn tod_mut(&mut self) -> &mut TOD;
 }
+

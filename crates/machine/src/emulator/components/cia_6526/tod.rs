@@ -137,7 +137,6 @@ impl TOD {
     }
 
     pub fn tenth(&self) -> u8 {
-        log::info!("Getting tenth");
         let t = (self.time().nanosecond() / 100_000_000) % 10;
         self.unlock_read();
         dec_to_bcd(t as u8)
@@ -164,7 +163,6 @@ impl TOD {
     /// Sets 1/10th of the seconf of TOD and unhalts the clock (if previously halted with
     /// the call of set_hour)
     pub fn set_tenth(&mut self, val: u8) {
-        log::info!("Setting tenth");
         self.millis_offset = Duration::milliseconds(val as i64 * 10);
         self.unlock_write();
     }
