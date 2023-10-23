@@ -1,7 +1,8 @@
 pub mod abstractions;
 pub mod components;
-// pub mod cpus;
+pub mod cpus;
 mod errors;
 
 pub use errors::*;
+
 

@@ -10,6 +10,7 @@ pub mod machine;
 pub mod mos6502;
 pub mod utils;
 pub mod emulator;
+pub mod machines;
 
 use crate::cli::{create_machine_from_cli_args, Args};
 use crate::client::{DirectClient, NonInteractiveClient};
