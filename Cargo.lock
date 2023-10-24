@@ -459,6 +459,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
+name = "gametime"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffb6142b232d42a2a45fa8a3796820901d2f9a64365e7e7ac2a8124db843b0e9"
+
+[[package]]
 name = "getrandom"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -641,6 +647,7 @@ dependencies = [
  "colored",
  "crossbeam-channel",
  "env_logger",
+ "gametime",
  "keyboard-types",
  "lazy_static",
  "log",

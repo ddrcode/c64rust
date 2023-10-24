@@ -61,15 +61,27 @@ impl Pin {
         Rc::new(pin)
     }
 
+    pub fn input() -> Rc<Self> {
+        Pin::new(PinDirection::Input)
+    }
+
+    pub fn output() -> Rc<Self> {
+        Pin::new(PinDirection::Output)
+    }
+
     pub fn state(&self) -> bool {
         let linked = (*self.connection.borrow()).upgrade();
-        if linked.clone().map_or(false, |port| port.output()) {
+        if linked.clone().map_or(false, |port| port.is_output()) {
             *linked.unwrap().value.borrow()
-        } else if self.output() {
+        } else if self.is_output() {
             *self.value.borrow()
         } else {
             false
         }
+    }
+
+    pub fn read(&self) -> bool {
+        self.state()
     }
 
     pub fn val(&self) -> u8 {
@@ -101,12 +113,12 @@ impl Pin {
         Ok(())
     }
 
-    pub fn output(&self) -> bool {
+    pub fn is_output(&self) -> bool {
         *self.direction.borrow() == PinDirection::Output
     }
 
     pub fn write(&self, val: bool) {
-        if self.output() {
+        if self.is_output() {
             *self.value.borrow_mut() = val;
             if let Some(pin) = (*self.connection.borrow()).upgrade() {
                 (*pin.observer.borrow())(val);
@@ -127,7 +139,7 @@ impl Pin {
     }
 
     pub fn toggle(&self) {
-        if self.output() {
+        if self.is_output() {
             let v = *self.value.borrow();
             self.write(!v);
         }
