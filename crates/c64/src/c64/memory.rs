@@ -35,7 +35,7 @@ use machine::{
 //
 pub struct C64Memory {
     pla: PLA_82S100,
-    ram: Device<ArrayMemory>
+    ram: Device<ArrayMemory>,
 }
 impl C64Memory {
     pub fn new(cia1: &Device<CIA1>, cia2: &Device<CIA2>) -> Self {

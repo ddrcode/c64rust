@@ -1,13 +1,14 @@
 #![allow(non_camel_case_types)]
 
-use crate::{config::CONFIG, messaging::send_client_event};
 use crate::utils::color::color;
 use crate::utils::keyboard::map_key_event;
+use crate::{config::CONFIG, messaging::send_client_event};
 use c64::key_utils::screen_code_to_ascii;
 use cursive::{
+    direction::Direction,
     event::{Event, EventResult, MouseEvent},
-    theme::{ColorStyle},
-    Printer, Vec2, View, direction::Direction,
+    theme::ColorStyle,
+    Printer, Vec2, View,
 };
 use keyboard_types::Key;
 use machine::client::ClientEvent;
@@ -108,9 +109,9 @@ impl View for MachineScreen {
                 position: _,
                 event: MouseEvent::Press(_btn),
             } => {
-                    // FIXME It doesn't work
-                    let _ = self.take_focus(Direction::none());
-                    EventResult::Consumed(None)
+                // FIXME It doesn't work
+                let _ = self.take_focus(Direction::none());
+                EventResult::Consumed(None)
             }
             _ => {
                 let event = map_key_event(event);

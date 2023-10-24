@@ -1,8 +1,8 @@
 use super::{
-    impl_reg_setter, FromConfig, MOS6502Memory, Machine, MachineConfig, MachineStatus,
-    RegSetter, Cycles
+    impl_reg_setter, Cycles, FromConfig, MOS6502Memory, Machine, MachineConfig, MachineStatus,
+    RegSetter,
 };
-use crate::cli::{Profile, FromProfile};
+use crate::cli::{FromProfile, Profile};
 use crate::debugger::DebugMachine;
 use crate::mos6502::{execute_operation, Operation, MOS6502};
 use std::num::Wrapping;
@@ -12,7 +12,7 @@ pub struct MOS6502Machine {
     mos6502: MOS6502,
     mem: MOS6502Memory,
     status: MachineStatus,
-    cycles: Cycles
+    cycles: Cycles,
 }
 
 impl MOS6502Machine {
@@ -23,7 +23,7 @@ impl MOS6502Machine {
             mos6502: MOS6502::new(),
             mem: MOS6502Memory::new(size),
             status: MachineStatus::Stopped,
-            cycles: 0
+            cycles: 0,
         }
     }
 }

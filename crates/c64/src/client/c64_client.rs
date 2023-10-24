@@ -3,8 +3,8 @@ use crate::key_utils::ui_event_to_c64_key_codes;
 use crossbeam_channel::Receiver;
 use keyboard_types::{KeyState, KeyboardEvent};
 use machine::{
-    client::*, debugger::DebuggerState, mos6502::Registers, Addr, Machine,
-    MachineError, MachineStatus, Memory,
+    client::*, debugger::DebuggerState, mos6502::Registers, Addr, Machine, MachineError,
+    MachineStatus, Memory,
 };
 use std::sync::{Arc, Mutex};
 

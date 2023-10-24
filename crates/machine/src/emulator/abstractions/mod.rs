@@ -1,13 +1,13 @@
 mod addressable;
-mod machine;
 mod device;
-mod tickable;
+mod machine;
 mod pin;
 mod port;
+mod tickable;
 
 pub use addressable::*;
-pub use machine::*;
 pub use device::*;
-pub use tickable::*;
+pub use machine::*;
 pub use pin::*;
 pub use port::*;
+pub use tickable::*;

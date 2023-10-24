@@ -1,9 +1,8 @@
-use thiserror::Error;
 use crate::emulator::abstractions::Addr;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum EmulatorError {
-
     #[error("Memory device can't read from address {0}")]
     AddressNotAccessible(Addr),
 
@@ -14,8 +13,5 @@ pub enum EmulatorError {
     PinAlreadyLinked,
 
     #[error("Can't link ports of different widths")]
-    IncompatiblePortWidths
-
+    IncompatiblePortWidths,
 }
-
-

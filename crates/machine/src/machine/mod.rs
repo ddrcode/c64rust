@@ -9,7 +9,7 @@ mod macros;
 
 pub use {
     impl_reg_setter,
-    machine::{Machine, MachineStatus, RegSetter,Cycles},
+    machine::{Cycles, Machine, MachineStatus, RegSetter},
     machine_config::{FromConfig, MachineConfig},
     memory::{Addr, Memory},
     mos6502_machine::MOS6502Machine,

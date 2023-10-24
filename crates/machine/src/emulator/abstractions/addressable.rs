@@ -49,7 +49,7 @@ impl<T: DeviceTrait + Addressable> Addressable for Device<T> {
 }
 
 pub trait AddressableDevice<T: DeviceTrait>: Addressable + Accessor<T> {}
-impl<T: Addressable+DeviceTrait> AddressableDevice<T> for Device<T> {}
+impl<T: Addressable + DeviceTrait> AddressableDevice<T> for Device<T> {}
 
 /// Simple implementation of Array built on top of u8 array.
 pub struct ArrayMemory {

@@ -1,6 +1,9 @@
-use std::{rc::Rc, cell::RefCell};
+use std::rc::Rc;
 
-use crate::{emulator::abstractions::{Pin, PinDirection, Port, Ticker, Tickable}, machine::Cycles};
+use crate::{
+    emulator::abstractions::{IPin, Pin, PinDirection, Port, Tickable, Ticker},
+    machine::Cycles,
+};
 
 pub struct MOS6510Pins {
     pub address_bus: Port<u16>,
@@ -30,19 +33,19 @@ impl MOS6510Pins {
 
 pub struct MOS6510 {
     pub pins: MOS6510Pins,
-    ticker: Ticker
+    ticker: Ticker,
 }
 
 impl MOS6510 {
     pub fn new() -> Rc<Self> {
         let cpu = MOS6510 {
             pins: MOS6510Pins::new(),
-            ticker: Ticker::new()
+            ticker: Ticker::new(),
         };
 
         let cpu_rc = Rc::new(cpu);
         let cloned = cpu_rc.clone();
-        cpu_rc.pins.phi0.observe(move |_val| cloned.tick());
+        // cpu_rc.pins.phi0.observe(move |_val| cloned.tick());
 
         cpu_rc
     }

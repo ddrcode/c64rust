@@ -1,5 +1,5 @@
 use crossbeam_channel::{bounded, Receiver, Sender};
-use machine::client::{ NonInteractiveClient, ClientEvent };
+use machine::client::{ClientEvent, NonInteractiveClient};
 
 lazy_static! {
     static ref CHANNEL: (Sender<ClientEvent>, Receiver<ClientEvent>) = bounded(10);
@@ -10,7 +10,7 @@ lazy_static! {
 }
 
 pub fn send_client_event(event: ClientEvent) {
-    CLIENT_CHANNEL_SENDER.send(event).unwrap_or_else(|e|{
+    CLIENT_CHANNEL_SENDER.send(event).unwrap_or_else(|e| {
         log::error!("Sending message to the client channel failed: {e}");
     });
 }

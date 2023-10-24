@@ -47,7 +47,65 @@ pub struct Pin {
     value: RefCell<bool>,
     direction: RefCell<PinDirection>,
     connection: RefCell<Weak<Pin>>,
-    observer: RefCell<Box<dyn Fn(bool)>>
+    handler: RefCell<Box<dyn PinStateChange>>
+}
+
+pub trait IPin {
+    fn state(&self) -> bool;
+
+    fn read(&self) -> bool {
+        self.state()
+    }
+
+    fn val(&self) -> u8 {
+        self.state().into()
+    }
+
+    fn high(&self) -> bool {
+        self.state()
+    }
+
+    fn low(&self) -> bool {
+        !self.state()
+    }
+
+    fn direction(&self) -> PinDirection;
+
+    fn linked(&self) -> bool;
+
+
+    fn is_output(&self) -> bool {
+        self.direction() == PinDirection::Output
+    }
+
+    fn write(&self, val: bool);
+
+    fn set_direction(&self, dir: PinDirection);
+
+    fn set_high(&self) {
+        self.write(true);
+    }
+
+    fn set_low(&self) {
+        self.write(false);
+    }
+
+    fn toggle(&self) {
+        if self.is_output() {
+            let v = self.state();
+            self.write(!v);
+        }
+    }
+
+    fn handler(&self) -> Option<Box<dyn PinStateChange>> {
+        None
+    }
+}
+
+impl Into<u8> for Pin {
+    fn into(self) -> u8 {
+        self.state().into()
+    }
 }
 
 impl Pin {
@@ -56,7 +114,7 @@ impl Pin {
             value: RefCell::new(false),
             direction: RefCell::new(direction),
             connection: RefCell::new(Weak::new()),
-            observer: RefCell::new(Box::new(|_|{}))
+            handler: RefCell::new(Box::new(DefaltHandler {}))
         };
         Rc::new(pin)
     }
@@ -69,7 +127,19 @@ impl Pin {
         Pin::new(PinDirection::Output)
     }
 
-    pub fn state(&self) -> bool {
+    pub fn link(pin1: &Rc<Pin>, pin2: &Rc<Pin>) -> Result<(), EmulatorError> {
+        if pin1.linked() || pin2.linked() {
+            return Err(EmulatorError::PinAlreadyLinked);
+        }
+        *pin1.connection.borrow_mut() = Rc::downgrade(pin2);
+        *pin2.connection.borrow_mut() = Rc::downgrade(pin1);
+        Ok(())
+    }
+
+}
+
+impl IPin for Pin {
+    fn state(&self) -> bool {
         let linked = (*self.connection.borrow()).upgrade();
         if linked.clone().map_or(false, |port| port.is_output()) {
             *linked.unwrap().value.borrow()
@@ -80,79 +150,40 @@ impl Pin {
         }
     }
 
-    pub fn read(&self) -> bool {
-        self.state()
-    }
-
-    pub fn val(&self) -> u8 {
-        self.state().into()
-    }
-
-    pub fn high(&self) -> bool {
-        self.state()
-    }
-
-    pub fn low(&self) -> bool {
-        !self.state()
-    }
-
-    pub fn direction(&self) -> PinDirection {
+    fn direction(&self) -> PinDirection {
         *self.direction.borrow()
     }
 
-    pub fn linked(&self) -> bool {
+    fn linked(&self) -> bool {
         (*self.connection.borrow()).upgrade().is_some()
     }
 
-    pub fn link(pin1: &Rc<Pin>, pin2: &Rc<Pin>) -> Result<(), EmulatorError> {
-        if pin1.linked() || pin2.linked() {
-            return Err(EmulatorError::PinAlreadyLinked);
-        }
-        *pin1.connection.borrow_mut() = Rc::downgrade(pin2);
-        *pin2.connection.borrow_mut() = Rc::downgrade(pin1);
-        Ok(())
-    }
-
-    pub fn is_output(&self) -> bool {
-        *self.direction.borrow() == PinDirection::Output
-    }
-
-    pub fn write(&self, val: bool) {
+    fn write(&self, val: bool) {
         if self.is_output() {
             *self.value.borrow_mut() = val;
             if let Some(pin) = (*self.connection.borrow()).upgrade() {
-                (*pin.observer.borrow())(val);
+                self.handler.borrow().on_state_change(self);
+                // (*pin.observer.borrow())(val);
             }
         }
     }
 
-    pub fn set_direction(&self, dir: PinDirection) {
+    fn set_direction(&self, dir: PinDirection) {
         *self.direction.borrow_mut() = dir;
     }
 
-    pub fn set_high(&self) {
-        self.write(true);
-    }
-
-    pub fn set_low(&self) {
-        self.write(false);
-    }
-
-    pub fn toggle(&self) {
-        if self.is_output() {
-            let v = *self.value.borrow();
-            self.write(!v);
-        }
-    }
-
-    pub fn observe(&self, observer: impl Fn(bool) + 'static) {
-        *self.observer.borrow_mut() = Box::new(observer);
-    }
 }
 
-impl Into<u8> for Pin {
-    fn into(self) -> u8 {
-        self.state().into()
+pub trait PinStateChange {
+    fn on_state_change(&self, pin: &dyn IPin);
+}
+
+pub struct DefaltHandler {
+
+}
+
+impl PinStateChange for DefaltHandler {
+    fn on_state_change(&self, _pin: &dyn IPin) {
     }
 }
 

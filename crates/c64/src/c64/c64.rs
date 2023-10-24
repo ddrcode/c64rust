@@ -5,9 +5,13 @@ use crate::key_utils::C64KeyCode;
 use machine::{
     cli::{FromProfile, Profile},
     debugger::{DebugMachine, Debugger, DebuggerState},
+    emulator::{
+        abstractions::{Accessor, Device},
+        components::CIA_6526,
+    },
     impl_reg_setter,
     mos6502::{execute_operation, Operation, MOS6502},
-    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter, emulator::{abstractions::{Device, Accessor}, components::CIA_6526},
+    Addr, Cycles, FromConfig, Machine, MachineConfig, MachineStatus, Memory, RegSetter,
 };
 use std::num::Wrapping;
 

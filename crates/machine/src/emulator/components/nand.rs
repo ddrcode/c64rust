@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::emulator::abstractions::Pin;
+use crate::emulator::abstractions::{IPin, Pin, PinStateChange};
 
 pub struct Nand {
     pub in0: Rc<Pin>,
@@ -19,16 +19,19 @@ impl Nand {
         let nand_rc = Rc::new(nand);
 
         let in_0_rc = nand_rc.clone();
-        nand_rc.in0.observe(move |_| { in_0_rc.compute_state() });
+        // nand_rc.in0.observe(move |_| { in_0_rc.compute_state() });
 
         let in_1_rc = nand_rc.clone();
-        nand_rc.in1.observe(move |_| { in_1_rc.compute_state() });
+        // nand_rc.in1.observe(move |_| { in_1_rc.compute_state() });
 
         nand_rc
     }
+}
 
-    fn compute_state(&self) {
+impl PinStateChange for Nand {
+    fn on_state_change(&self, _pin: &dyn IPin) {
         let val = !(self.in0.read() && self.in1.read());
         self.out.write(val);
     }
 }
+

@@ -1,6 +1,6 @@
+use crate::emulator::abstractions::{IPin, Pin, PinDirection, Tickable};
+use gametime::{Frequency, FrequencyTicker, TimeStamp};
 use std::rc::Rc;
-use gametime::{ TimeStamp, FrequencyTicker, Frequency };
-use crate::emulator::abstractions::{PinDirection, Pin, Tickable};
 
 pub struct Oscilator {
     pub pin: Rc<Pin>,

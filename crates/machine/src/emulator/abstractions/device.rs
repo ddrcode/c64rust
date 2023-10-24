@@ -1,5 +1,5 @@
-use std::sync::{Arc, Mutex, MutexGuard};
 use crate::utils::lock;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 pub trait DeviceTrait {}
 
@@ -63,10 +63,7 @@ mod tests {
             fn new() -> Self {
                 let ram = Device::from(Ram(0));
                 let gpu = Device::from(Gpu { ram: ram.clone() });
-                Machine {
-                    ram,
-                    gpu,
-                }
+                Machine { ram, gpu }
             }
         }
 

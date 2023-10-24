@@ -14,7 +14,6 @@ pub fn do_vecs_match<T: PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
     matching == a.len() && matching == b.len()
 }
 
-
 pub fn if_else<T>(cond: bool, val1: T, val2: T) -> T {
     if cond {
         val1

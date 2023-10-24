@@ -1,5 +1,8 @@
 use super::{AddressMode::*, Mnemonic::*, Operation, ProcessorStatus};
-use crate::{machine::Machine, utils::{bcd_to_dec, dec_to_bcd}};
+use crate::{
+    machine::Machine,
+    utils::{bcd_to_dec, dec_to_bcd},
+};
 use std::num::Wrapping;
 
 // OMG this is so terribly ugly!
@@ -132,9 +135,10 @@ fn op_arithmetic_bcd(op: &Operation, machine: &mut impl Machine) -> u8 {
     let a = bcd_to_dec(machine.A8());
     let val = bcd_to_dec(get_val(op, machine).unwrap());
     let (sum, carry) = match op.def.mnemonic {
-        ADC => { let x = a + u8::from(machine.P().carry) + val;
-            (x, x>99)
-        },
+        ADC => {
+            let x = a + u8::from(machine.P().carry) + val;
+            (x, x > 99)
+        }
         SBC => {
             let x = a
                 .wrapping_sub(u8::from(!machine.P().carry))

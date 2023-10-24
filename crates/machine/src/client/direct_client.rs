@@ -18,7 +18,7 @@ type Result<T> = std::result::Result<T, MachineError>;
 pub struct DirectClient<T: Machine + Send + 'static> {
     machine_mtx: Arc<Mutex<T>>,
     handle: Option<thread::JoinHandle<()>>,
-    pub receiver: Option<Receiver<ClientEvent>>
+    pub receiver: Option<Receiver<ClientEvent>>,
 }
 
 impl<T: Machine + Send + 'static> DirectClient<T> {
@@ -26,7 +26,7 @@ impl<T: Machine + Send + 'static> DirectClient<T> {
         DirectClient {
             machine_mtx: Arc::new(Mutex::new(machine)),
             handle: None,
-            receiver: None
+            receiver: None,
         }
     }
 
@@ -121,8 +121,7 @@ impl<T: Machine + Send + 'static> NonInteractiveClient for DirectClient<T> {
         Ok(self.lock().cpu().registers.clone())
     }
 
-    fn set_receiver(&mut self, r: Receiver<ClientEvent>){
+    fn set_receiver(&mut self, r: Receiver<ClientEvent>) {
         self.receiver = Some(r);
     }
-
 }

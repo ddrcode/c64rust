@@ -14,8 +14,8 @@ pub fn update_asm_view(s: &mut Cursive, last_op: &String, next_op: &String) {
         if let Some(last) = ud.asm_lines.pop() {
             ud.asm_lines.push(last.to_string().replacen(">", " ", 1));
         }
-        ud.asm_lines.push(["> ",last_op].join(""));
-        ud.asm_lines.push(["  ",next_op].join(""));
+        ud.asm_lines.push(["> ", last_op].join(""));
+        ud.asm_lines.push(["  ", next_op].join(""));
         if ud.asm_lines.len() > 100 {
             ud.asm_lines.remove(0);
         }

@@ -7,8 +7,6 @@ use machine::{client::ClientEvent, debugger::Breakpoint};
 
 use crate::messaging::send_client_event;
 
-
-
 pub fn init_breakpoints_view(s: &mut Cursive, bps: &Vec<Breakpoint>) {
     let content: Vec<Breakpoint> = bps
         .iter()

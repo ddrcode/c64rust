@@ -311,7 +311,12 @@ impl PLA_82S100 {
     #[cfg(test)]
     pub(crate) fn set_mode(&mut self, mode: u8) {
         // self.write_byte(1, mode);
-        self.devices[RAM].as_mut().unwrap().lock().unwrap().write_byte(1, mode);
+        self.devices[RAM]
+            .as_mut()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .write_byte(1, mode);
     }
 
     pub(crate) fn link_dev(&mut self, id: usize, dev: Cell) -> &mut Self {

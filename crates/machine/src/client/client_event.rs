@@ -9,5 +9,5 @@ pub enum ClientEvent {
     EnableBreakpoint(Breakpoint),
     DisableBreakpoint(Breakpoint),
     KeyPress(KeyboardEvent),
-    SetObservedMemory(Range<u16>)
+    SetObservedMemory(Range<u16>),
 }

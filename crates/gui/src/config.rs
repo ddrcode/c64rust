@@ -15,5 +15,5 @@ pub struct Config<'a> {
     pub machine_screen_back: &'a str,
     pub machine_screen_front: &'a str,
 
-    pub memory_view_size: u16
+    pub memory_view_size: u16,
 }

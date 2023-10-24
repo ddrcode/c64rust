@@ -71,4 +71,3 @@ pub trait CIA_6526: Addressable + Tickable {
     fn tod(&self) -> &TOD;
     fn tod_mut(&mut self) -> &mut TOD;
 }
-

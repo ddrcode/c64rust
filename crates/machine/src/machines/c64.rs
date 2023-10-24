@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
-use crate::emulator::{cpus::MOS6510, abstractions::{Pin, PinDirection}};
+use crate::emulator::{
+    abstractions::{IPin, Pin, PinDirection},
+    cpus::MOS6510,
+};
 
 pub struct C64 {
     clock: Rc<Pin>,

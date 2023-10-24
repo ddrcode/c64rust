@@ -10,7 +10,8 @@ pub type Cycles = u64;
 
 #[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub enum MachineStatus {
-    #[default] Stopped,
+    #[default]
+    Stopped,
     Running,
     Debug,
 }

@@ -4,5 +4,3 @@ pub mod cpus;
 mod errors;
 
 pub use errors::*;
-
-

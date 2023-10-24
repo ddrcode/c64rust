@@ -1,10 +1,10 @@
-use std::{rc::Rc, ops::BitOrAssign};
+use std::{ops::BitOrAssign, rc::Rc};
 
-use num::traits::{ Unsigned, PrimInt };
+use num::traits::{PrimInt, Unsigned};
 
 use crate::emulator::EmulatorError;
 
-use super::{Pin, PinDirection};
+use super::{IPin, Pin, PinDirection};
 
 pub struct Port<T: Unsigned + Copy> {
     width: T,
@@ -69,7 +69,6 @@ impl<T: Unsigned + PrimInt + Copy + Into<usize> + From<u8> + BitOrAssign<T>> Por
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

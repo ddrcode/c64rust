@@ -1,4 +1,7 @@
-use crate::{machine::{MachineConfig, Cycles}, utils::if_else};
+use crate::{
+    machine::{Cycles, MachineConfig},
+    utils::if_else,
+};
 use clap::Parser;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -80,7 +83,6 @@ impl From<&Args> for MachineConfig {
         }
     }
 }
-
 
 fn val_or(val1: bool, val2: bool) -> bool {
     if val1 {

@@ -27,7 +27,7 @@ impl DebuggerState {
 
     pub fn remove_breakpoint(&mut self, bp: &Breakpoint) {
         log::info!("Calling remove_breakpoint with {:?}", bp);
-        self.breakpoints.retain(|b| b!=bp);
+        self.breakpoints.retain(|b| b != bp);
     }
 
     pub fn add_breakpoint(&mut self, bp: &Breakpoint) {
