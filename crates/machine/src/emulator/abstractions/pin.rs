@@ -1,5 +1,5 @@
 use std::{
-    cell::RefCell,
+    cell::{OnceCell, RefCell},
     rc::{Rc, Weak},
 };
 
@@ -47,7 +47,7 @@ pub struct Pin {
     value: RefCell<bool>,
     direction: RefCell<PinDirection>,
     connection: RefCell<Weak<Pin>>,
-    handler: RefCell<Box<dyn PinStateChange>>
+    handler: OnceCell<Rc<dyn PinStateChange>>,
 }
 
 pub trait IPin {
@@ -73,7 +73,6 @@ pub trait IPin {
 
     fn linked(&self) -> bool;
 
-
     fn is_output(&self) -> bool {
         self.direction() == PinDirection::Output
     }
@@ -96,10 +95,6 @@ pub trait IPin {
             self.write(!v);
         }
     }
-
-    fn handler(&self) -> Option<Box<dyn PinStateChange>> {
-        None
-    }
 }
 
 impl Into<u8> for Pin {
@@ -114,7 +109,7 @@ impl Pin {
             value: RefCell::new(false),
             direction: RefCell::new(direction),
             connection: RefCell::new(Weak::new()),
-            handler: RefCell::new(Box::new(DefaltHandler {}))
+            handler: OnceCell::new(),
         };
         Rc::new(pin)
     }
@@ -136,6 +131,9 @@ impl Pin {
         Ok(())
     }
 
+    pub fn set_handler(&self, handler: Rc<dyn PinStateChange>) -> Result<(), EmulatorError> {
+        self.handler.set(handler).map_err(|_|EmulatorError::HandlerAlreadyDefined)
+    }
 }
 
 impl IPin for Pin {
@@ -162,8 +160,9 @@ impl IPin for Pin {
         if self.is_output() {
             *self.value.borrow_mut() = val;
             if let Some(pin) = (*self.connection.borrow()).upgrade() {
-                self.handler.borrow().on_state_change(self);
-                // (*pin.observer.borrow())(val);
+                if let Some(handler) = pin.handler.get() {
+                    handler.on_state_change(self);
+                }
             }
         }
     }
@@ -171,20 +170,10 @@ impl IPin for Pin {
     fn set_direction(&self, dir: PinDirection) {
         *self.direction.borrow_mut() = dir;
     }
-
 }
 
 pub trait PinStateChange {
     fn on_state_change(&self, pin: &dyn IPin);
-}
-
-pub struct DefaltHandler {
-
-}
-
-impl PinStateChange for DefaltHandler {
-    fn on_state_change(&self, _pin: &dyn IPin) {
-    }
 }
 
 #[cfg(test)]

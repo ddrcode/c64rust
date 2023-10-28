@@ -1,12 +1,12 @@
 mod addressable;
-mod device;
+mod async_device;
 mod machine;
 mod pin;
 mod port;
 mod tickable;
 
 pub use addressable::*;
-pub use device::*;
+pub use async_device::*;
 pub use machine::*;
 pub use pin::*;
 pub use port::*;

@@ -1,4 +1,4 @@
-use super::device::*;
+use super::async_device::*;
 use core::num::Wrapping;
 
 pub type Addr = u16;

@@ -14,4 +14,7 @@ pub enum EmulatorError {
 
     #[error("Can't link ports of different widths")]
     IncompatiblePortWidths,
+
+    #[error("Handler aleady defined for this port")]
+    HandlerAlreadyDefined,
 }
