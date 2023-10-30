@@ -13,7 +13,7 @@ impl NandPins {
         NandPins {
             in0: Pin::input(),
             in1: Pin::input(),
-            out: Pin::output()
+            out: Pin::output(),
         }
     }
 }
@@ -29,7 +29,7 @@ impl INand for NandImpl {}
 
 pub struct Nand<T: INand> {
     pins: NandPins,
-    logic: T
+    logic: T,
 }
 
 impl<T: INand + 'static> Nand<T> {
@@ -41,7 +41,10 @@ impl<T: INand + 'static> Nand<T> {
 
         let c0 = Rc::clone(&nand_rc);
         nand_rc.pins.in0.set_handler(c0);
-        nand_rc.pins.in1.set_handler(Rc::clone(&nand_rc) as Rc<dyn PinStateChange>);
+        nand_rc
+            .pins
+            .in1
+            .set_handler(Rc::clone(&nand_rc) as Rc<dyn PinStateChange>);
 
         nand_rc
     }
@@ -49,7 +52,9 @@ impl<T: INand + 'static> Nand<T> {
 
 impl<T: INand> PinStateChange for Nand<T> {
     fn on_state_change(&self, _pin: &dyn IPin) {
-        let val = self.logic.execute(self.pins.in0.read(), self.pins.in1.read());
+        let val = self
+            .logic
+            .execute(self.pins.in0.read(), self.pins.in1.read());
         self.pins.out.write(val);
     }
 }

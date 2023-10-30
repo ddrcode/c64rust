@@ -44,6 +44,7 @@ impl Into<u8> for PinDirection {
 }
 
 pub struct Pin {
+    name: OnceCell<String>,
     value: RefCell<bool>,
     enabled: RefCell<bool>,
     direction: RefCell<PinDirection>,
@@ -51,7 +52,6 @@ pub struct Pin {
     handler: OnceCell<Rc<dyn PinStateChange>>,
     tri_state: bool,
     io: bool,
-
 }
 
 pub trait IPin {
@@ -76,6 +76,8 @@ pub trait IPin {
     fn direction(&self) -> PinDirection;
 
     fn linked(&self) -> bool;
+
+    fn name(&self) -> Option<String>;
 
     fn is_output(&self) -> bool {
         self.direction() == PinDirection::Output
@@ -119,13 +121,14 @@ impl Into<u8> for Pin {
 impl Pin {
     pub fn new(direction: PinDirection, tri_state: bool, io: bool) -> Rc<Self> {
         let pin = Pin {
+            name: OnceCell::new(),
             value: RefCell::new(false),
             enabled: RefCell::new(true),
             direction: RefCell::new(direction),
             connection: RefCell::new(Weak::new()),
             handler: OnceCell::new(),
             tri_state,
-            io
+            io,
         };
         Rc::new(pin)
     }
@@ -147,8 +150,14 @@ impl Pin {
         Ok(())
     }
 
+    pub fn set_name(&self, name: String) {
+        self.name.set(name);
+    }
+
     pub fn set_handler(&self, handler: Rc<dyn PinStateChange>) -> Result<(), EmulatorError> {
-        self.handler.set(handler).map_err(|_|EmulatorError::HandlerAlreadyDefined)
+        self.handler
+            .set(handler)
+            .map_err(|_| EmulatorError::HandlerAlreadyDefined)
     }
 
     fn set_enable(&self, val: bool) -> Result<(), EmulatorError> {
@@ -195,6 +204,10 @@ impl IPin for Pin {
         *self.direction.borrow_mut() = dir;
     }
 
+    fn name(&self) -> Option<String> {
+        self.name.get().cloned()
+    }
+
     fn tri_state(&self) -> bool {
         self.tri_state
     }
@@ -222,12 +235,8 @@ mod tests {
             d0: Rc<Pin>,
         }
 
-        let a = A {
-            d0: Pin::input(),
-        };
-        let b = A {
-            d0: Pin::output(),
-        };
+        let a = A { d0: Pin::input() };
+        let b = A { d0: Pin::output() };
         let res = Pin::link(&a.d0, &b.d0);
         assert!(res.is_ok());
         assert!(a.d0.low());
