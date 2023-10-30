@@ -45,9 +45,13 @@ impl Into<u8> for PinDirection {
 
 pub struct Pin {
     value: RefCell<bool>,
+    enabled: RefCell<bool>,
     direction: RefCell<PinDirection>,
     connection: RefCell<Weak<Pin>>,
     handler: OnceCell<Rc<dyn PinStateChange>>,
+    tri_state: bool,
+    io: bool,
+
 }
 
 pub trait IPin {
@@ -95,6 +99,15 @@ pub trait IPin {
             self.write(!v);
         }
     }
+
+    fn tri_state(&self) -> bool;
+
+    fn enabled(&self) -> bool {
+        true
+    }
+
+    fn enable(&self) -> Result<(), EmulatorError>;
+    fn disable(&self) -> Result<(), EmulatorError>;
 }
 
 impl Into<u8> for Pin {
@@ -104,22 +117,25 @@ impl Into<u8> for Pin {
 }
 
 impl Pin {
-    pub fn new(direction: PinDirection) -> Rc<Self> {
+    pub fn new(direction: PinDirection, tri_state: bool, io: bool) -> Rc<Self> {
         let pin = Pin {
             value: RefCell::new(false),
+            enabled: RefCell::new(true),
             direction: RefCell::new(direction),
             connection: RefCell::new(Weak::new()),
             handler: OnceCell::new(),
+            tri_state,
+            io
         };
         Rc::new(pin)
     }
 
     pub fn input() -> Rc<Self> {
-        Pin::new(PinDirection::Input)
+        Pin::new(PinDirection::Input, false, false)
     }
 
     pub fn output() -> Rc<Self> {
-        Pin::new(PinDirection::Output)
+        Pin::new(PinDirection::Output, false, false)
     }
 
     pub fn link(pin1: &Rc<Pin>, pin2: &Rc<Pin>) -> Result<(), EmulatorError> {
@@ -133,6 +149,14 @@ impl Pin {
 
     pub fn set_handler(&self, handler: Rc<dyn PinStateChange>) -> Result<(), EmulatorError> {
         self.handler.set(handler).map_err(|_|EmulatorError::HandlerAlreadyDefined)
+    }
+
+    fn set_enable(&self, val: bool) -> Result<(), EmulatorError> {
+        if !self.tri_state {
+            return Err(EmulatorError::NotATriStatePin);
+        }
+        *self.enabled.borrow_mut() = val;
+        Ok(())
     }
 }
 
@@ -170,6 +194,18 @@ impl IPin for Pin {
     fn set_direction(&self, dir: PinDirection) {
         *self.direction.borrow_mut() = dir;
     }
+
+    fn tri_state(&self) -> bool {
+        self.tri_state
+    }
+
+    fn enable(&self) -> Result<(), EmulatorError> {
+        self.set_enable(true)
+    }
+
+    fn disable(&self) -> Result<(), EmulatorError> {
+        self.set_enable(false)
+    }
 }
 
 pub trait PinStateChange {
@@ -187,10 +223,10 @@ mod tests {
         }
 
         let a = A {
-            d0: Pin::new(PinDirection::Input),
+            d0: Pin::input(),
         };
         let b = A {
-            d0: Pin::new(PinDirection::Output),
+            d0: Pin::output(),
         };
         let res = Pin::link(&a.d0, &b.d0);
         assert!(res.is_ok());
@@ -201,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_direction_change() {
-        let pin = Pin::new(PinDirection::Input);
+        let pin = Pin::input();
         assert_eq!(PinDirection::Input, pin.direction());
         assert_eq!(0u8, pin.direction().into());
         assert_eq!(false, pin.direction().into());

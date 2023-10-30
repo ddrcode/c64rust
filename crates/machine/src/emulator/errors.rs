@@ -17,4 +17,7 @@ pub enum EmulatorError {
 
     #[error("Handler aleady defined for this port")]
     HandlerAlreadyDefined,
+
+    #[error("Only tri-state pins can be enabled/disabled")]
+    NotATriStatePin,
 }

@@ -12,7 +12,7 @@ pub struct C64 {
 
 impl C64 {
     pub fn new() -> Self {
-        let clock = Pin::new(PinDirection::Output);
+        let clock = Pin::output();
         let cpu = MOS6510::new();
         let _ = Pin::link(&clock, &cpu.pins.phi0);
         C64 { cpu, clock }

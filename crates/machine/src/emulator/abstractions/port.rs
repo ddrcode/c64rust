@@ -15,7 +15,7 @@ impl<T: Unsigned + PrimInt + Copy + Into<usize> + From<u8> + BitOrAssign<T>> Por
     pub fn new(width: T, direction: PinDirection) -> Self {
         let mut v: Vec<Rc<Pin>> = Vec::with_capacity(width.into());
         for _ in 0..width.into() {
-            v.push(Pin::new(direction));
+            v.push(Pin::new(direction, false, false));
         }
         Port {
             width,

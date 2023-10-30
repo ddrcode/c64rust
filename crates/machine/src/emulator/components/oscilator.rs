@@ -10,7 +10,7 @@ pub struct Oscilator {
 impl Oscilator {
     pub fn new(khz: u64) -> Self {
         Oscilator {
-            pin: Pin::new(PinDirection::Output),
+            pin: Pin::output(),
             ticker: Frequency::from_khz(khz).ticker(TimeStamp::start()),
         }
     }

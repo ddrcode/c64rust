@@ -22,11 +22,11 @@ impl MOS6510Pins {
             address_bus: Port::new(16, PinDirection::Output),
             data_bus: Port::new(8, PinDirection::Output),
             processor_port: Port::new(6, PinDirection::Output),
-            irq: Pin::new(PinDirection::Input),
-            nmi: Pin::new(PinDirection::Input),
-            rdy: Pin::new(PinDirection::Input),
-            phi0: Pin::new(PinDirection::Input),
-            phi2: Pin::new(PinDirection::Output),
+            irq: Pin::input(),
+            nmi: Pin::input(),
+            rdy: Pin::input(),
+            phi0: Pin::input(),
+            phi2: Pin::output(),
         }
     }
 }
