@@ -1,8 +1,12 @@
-use crate::emulator::abstractions::{Pin, PinBuilder, PinDirection::*};
+use crate::emulator::abstractions::{Pin, IPin, PinBuilder, PinDirection::*, Port};
 use std::rc::Rc;
+use std::collections::HashMap;
 
 pub struct W65C02_Pins {
     pins: [Rc<Pin>; 40],
+    pins_map: HashMap<String, Rc<Pin>>,
+    data_port: Port<u8>,
+    addr_port: Port<u16>
 }
 
 impl W65C02_Pins {
@@ -35,18 +39,35 @@ impl W65C02_Pins {
             .set(40, "RESB", Input)
             .build();
 
+        let mut pins_map: HashMap<String, Rc<Pin>> = HashMap::with_capacity(40);
+        pins.iter().for_each(|pin| {
+            pins_map.insert(pin.name().unwrap(), Rc::clone(pin));
+        });
+
+        let data = pins[25..33].to_vec();
+
+        let addr = {
+            let mut v1 = pins[8..20].to_vec();
+            let mut v2 = pins[21..25].to_vec();
+            v1.append(&mut v2);
+            v1
+        };
+
         W65C02_Pins {
             pins: pins
                 .try_into()
                 .unwrap_or_else(|_| panic!("Must have 40 pins")),
+            pins_map,
+            data_port: Port::from_pins(8, data),
+            addr_port: Port::from_pins(16, addr)
         }
     }
 
-    pub fn by_id(&self, id: usize) -> Rc<Pin> {
-        self.pins[id-1]
+    pub fn pin_by_id(&self, id: usize) -> Option<&Rc<Pin>> {
+        Some(&self.pins[id-1])
     }
 
-    pub fn by_name(&self, name: &str) -> Rc<Pin> {
-
+    pub fn pin_by_name(&self, name: &str) -> Option<&Rc<Pin>> {
+        self.pins_map.get(name)
     }
 }

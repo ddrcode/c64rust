@@ -17,9 +17,13 @@ impl<T: Unsigned + PrimInt + Copy + Into<usize> + From<u8> + BitOrAssign<T>> Por
         for _ in 0..width.into() {
             v.push(Pin::new(direction, false, false));
         }
+        Port::from_pins(width, v)
+    }
+
+    pub fn from_pins(width: T, pins: Vec<Rc<Pin>>) -> Self {
         Port {
             width,
-            pins: v.into_boxed_slice(),
+            pins: pins.into_boxed_slice()
         }
     }
 
