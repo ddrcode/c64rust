@@ -2,6 +2,7 @@ use crate::emulator::abstractions::Addr;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum EmulatorError {
     #[error("Memory device can't read from address {0}")]
     AddressNotAccessible(Addr),
@@ -20,4 +21,6 @@ pub enum EmulatorError {
 
     #[error("Only tri-state pins can be enabled/disabled")]
     NotATriStatePin,
+
+
 }
