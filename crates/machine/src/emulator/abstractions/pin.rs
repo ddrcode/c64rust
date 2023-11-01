@@ -160,7 +160,7 @@ impl Pin {
             .map_err(|_| EmulatorError::HandlerAlreadyDefined)
     }
 
-    fn set_enable(&self, val: bool) -> Result<(), EmulatorError> {
+    pub fn set_enable(&self, val: bool) -> Result<(), EmulatorError> {
         if !self.tri_state {
             return Err(EmulatorError::NotATriStatePin);
         }

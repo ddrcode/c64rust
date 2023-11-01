@@ -35,6 +35,11 @@ impl PinBuilder {
         self
     }
 
+    pub fn with_ids(&mut self, ids: &[usize]) -> &mut Self {
+        self.elems = ids.iter().map(|id|id-1).collect();
+        self
+    }
+
     pub fn set_range(
         &mut self,
         range: RangeInclusive<usize>,

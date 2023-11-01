@@ -65,6 +65,12 @@ impl<T: Unsigned + PrimInt + Copy + Into<usize> + From<u8> + BitOrAssign<T>> Por
         }
     }
 
+    pub fn set_direction(&self, dir: PinDirection) {
+        for i in 0..self.width().into() {
+            self.pins[i].set_direction(dir);
+        }
+    }
+
     pub fn set_directions(&self, dirs: T) {
         for i in 0..self.width().into() {
             let flag: T = (1 << i).into();
