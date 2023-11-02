@@ -21,6 +21,4 @@ pub enum EmulatorError {
 
     #[error("Only tri-state pins can be enabled/disabled")]
     NotATriStatePin,
-
-
 }

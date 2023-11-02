@@ -6,9 +6,9 @@ use crate::{
 };
 
 pub struct MOS6510Pins {
-    pub address_bus: Port<u16>,
-    pub data_bus: Port<u8>,
-    pub processor_port: Port<u8>,
+    pub address_bus: Rc<Port<u16>>,
+    pub data_bus: Rc<Port<u8>>,
+    pub processor_port: Rc<Port<u8>>,
     pub irq: Rc<Pin>,
     pub nmi: Rc<Pin>,
     pub rdy: Rc<Pin>,

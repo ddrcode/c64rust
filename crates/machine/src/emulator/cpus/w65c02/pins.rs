@@ -1,12 +1,12 @@
-use crate::emulator::abstractions::{Pin, IPin, PinBuilder, PinDirection::*, Port};
-use std::rc::Rc;
+use crate::emulator::abstractions::{IPin, Pin, PinBuilder, PinDirection::*, Port};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct W65C02_Pins {
     pins: [Rc<Pin>; 40],
     pins_map: HashMap<String, Rc<Pin>>,
-    data_port: Port<u8>,
-    addr_port: Port<u16>
+    data_port: Rc<Port<u8>>,
+    addr_port: Rc<Port<u16>>,
 }
 
 impl W65C02_Pins {
@@ -59,12 +59,12 @@ impl W65C02_Pins {
                 .unwrap_or_else(|_| panic!("Must have 40 pins")),
             pins_map,
             data_port: Port::from_pins(8, data),
-            addr_port: Port::from_pins(16, addr)
+            addr_port: Port::from_pins(16, addr),
         }
     }
 
     pub fn pin_by_id(&self, id: usize) -> Option<&Rc<Pin>> {
-        Some(&self.pins[id-1])
+        Some(&self.pins[id - 1])
     }
 
     pub fn pin_by_name(&self, name: &str) -> Option<&Rc<Pin>> {

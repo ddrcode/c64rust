@@ -3,18 +3,15 @@ use crate::emulator::abstractions::{
     PinDirection::{self, *},
     PinStateChange, Port,
 };
-use std::{
-    cell::{OnceCell, RefCell},
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 const ADDR_PINS: [usize; 15] = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 25, 24, 21, 23, 26];
 const DATA_PINS: [usize; 8] = [11, 12, 13, 15, 16, 17, 18, 19];
 
 pub struct HM62256BPins {
     pins: [Rc<Pin>; 28],
-    data: Port<u8>,
-    addr: Port<u16>,
+    data: Rc<Port<u8>>,
+    addr: Rc<Port<u16>>,
 }
 
 impl HM62256BPins {
@@ -106,9 +103,11 @@ impl<T: Addressable + 'static> HM62256B<T> {
         let logic = RefCell::new(logic);
         let res = Rc::new(HM62256B { pins, logic });
 
-        let handler = Rc::clone(&res) as Rc<dyn PinStateChange>;
-        res.pins.data.set_handler(&handler).unwrap();
-        res.pins.addr.set_handler(&handler).unwrap();
+        let data_handler = Rc::clone(&res) as Rc<dyn PinStateChange>;
+        res.pins.data.set_handler(data_handler).unwrap();
+
+        let addr_handler = Rc::clone(&res) as Rc<dyn PinStateChange>;
+        res.pins.addr.set_handler(addr_handler).unwrap();
 
         res
     }
@@ -150,8 +149,8 @@ mod tests {
         logic.write_byte(0x200, 0xa0);
 
         let mem = HM62256B::new(logic);
-        let addr: Port<u16> = Port::new(15, Output);
-        let data: Port<u8> = Port::new(8, Input);
+        let addr: Rc<Port<u16>> = Port::new(15, Output);
+        let data: Rc<Port<u8>> = Port::new(8, Input);
 
         Port::link(&addr, &mem.pins.addr).unwrap();
         Port::link(&data, &mem.pins.data).unwrap();
@@ -161,5 +160,26 @@ mod tests {
 
         addr.write(0x200);
         assert_eq!(0xa0, data.read());
+    }
+
+    #[test]
+    fn test_memory_write() {
+        let logic = HM62256BLogic::new();
+        let mem = HM62256B::new(logic);
+        let addr: Rc<Port<u16>> = Port::new(15, Output);
+        let data: Rc<Port<u8>> = Port::new(8, Output);
+        let we = Pin::output();
+
+        Pin::link(&we, &mem.pins.pins[26]).unwrap();
+        Port::link(&addr, &mem.pins.addr).unwrap();
+        Port::link(&data, &mem.pins.data).unwrap();
+
+        we.set_low();
+        assert_eq!(false, mem.pins.pins[26].read());
+
+        addr.write(0x100);
+        data.write(128);
+
+        assert_eq!(128, mem.logic.borrow().read_byte(0x100));
     }
 }

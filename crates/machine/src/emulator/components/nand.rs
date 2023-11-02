@@ -40,11 +40,10 @@ impl<T: INand + 'static> Nand<T> {
         let nand_rc = Rc::new(nand);
 
         let c0 = Rc::clone(&nand_rc);
-        nand_rc.pins.in0.set_handler(c0);
-        nand_rc
-            .pins
-            .in1
-            .set_handler(Rc::clone(&nand_rc) as Rc<dyn PinStateChange>);
+        nand_rc.pins.in0.set_handler(c0).unwrap();
+
+        let c1 = Rc::clone(&nand_rc);
+        nand_rc.pins.in1.set_handler(c1).unwrap();
 
         nand_rc
     }
@@ -77,8 +76,10 @@ mod tests {
         let n = Nand::new(NandImpl);
         let p1 = Pin::output();
         let p2 = Pin::output();
-        Pin::link(&p1, &n.pins.in0);
-        Pin::link(&p2, &n.pins.in1);
+
+        Pin::link(&p1, &n.pins.in0).unwrap();
+        Pin::link(&p2, &n.pins.in1).unwrap();
+
         p1.write(false);
         p2.write(false);
         assert_eq!(true, n.pins.out.read());
