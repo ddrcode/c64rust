@@ -26,7 +26,7 @@ impl W65C02_Pins {
             .set_range(22..=25, "A", 12, Output)
             .with_range(26..=33)
             .direction(Output)
-            .name_prefix_dec("D", 7)
+            .group_dec("D", 7)
             .tri_state()
             .io()
             .set(34, "RWB", Output)

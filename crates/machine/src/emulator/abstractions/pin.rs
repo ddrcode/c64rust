@@ -44,7 +44,9 @@ impl Into<u8> for PinDirection {
 }
 
 pub struct Pin {
+    id: OnceCell<u8>,
     name: OnceCell<String>,
+    group_id: OnceCell<u8>,
     value: RefCell<bool>,
     enabled: RefCell<bool>,
     direction: RefCell<PinDirection>,
@@ -78,6 +80,18 @@ pub trait IPin {
     fn linked(&self) -> bool;
 
     fn name(&self) -> Option<String>;
+    fn id(&self) -> Option<u8>;
+    fn group_id(&self) -> Option<u8>;
+
+    fn group_name(&self) -> Option<String> {
+        let name = self.name();
+        let group_id = self.group_id();
+        if name.is_some() && group_id.is_some() {
+            Some(format!("{}{}", name.unwrap(), group_id.unwrap()))
+        } else {
+            None
+        }
+    }
 
     fn is_output(&self) -> bool {
         self.direction() == PinDirection::Output
@@ -121,7 +135,9 @@ impl Into<u8> for Pin {
 impl Pin {
     pub fn new(direction: PinDirection, tri_state: bool, io: bool) -> Rc<Self> {
         let pin = Pin {
+            id: OnceCell::new(),
             name: OnceCell::new(),
+            group_id: OnceCell::new(),
             value: RefCell::new(false),
             enabled: RefCell::new(true),
             direction: RefCell::new(direction),
@@ -151,7 +167,15 @@ impl Pin {
     }
 
     pub fn set_name(&self, name: String) {
-        self.name.set(name);
+        let _ = self.name.set(name);
+    }
+
+    pub fn set_id(&self, id: u8) {
+        let _ = self.id.set(id);
+    }
+
+    pub fn set_group_id(&self, id: u8) {
+        let _ = self.group_id.set(id);
     }
 
     pub fn set_handler(&self, handler: Rc<dyn PinStateChange>) -> Result<(), EmulatorError> {
@@ -194,7 +218,7 @@ impl IPin for Pin {
             *self.value.borrow_mut() = val;
             if let Some(pin) = (*self.connection.borrow()).upgrade() {
                 if let Some(handler) = pin.handler.get() {
-                    handler.on_state_change(self);
+                    handler.on_state_change(pin.as_ref());
                 }
             }
         }
@@ -202,6 +226,14 @@ impl IPin for Pin {
 
     fn set_direction(&self, dir: PinDirection) {
         *self.direction.borrow_mut() = dir;
+    }
+
+    fn id(&self) -> Option<u8> {
+        self.id.get().copied()
+    }
+
+    fn group_id(&self) -> Option<u8> {
+        self.group_id.get().copied()
     }
 
     fn name(&self) -> Option<String> {

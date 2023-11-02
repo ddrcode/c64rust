@@ -1,9 +1,11 @@
 use super::{IPin, Pin, PinDirection};
-use std::ops::{Range, RangeInclusive};
+use std::ops::RangeInclusive;
 use std::rc::Rc;
 
 #[derive(Default, Clone)]
 struct PinBuilderItem {
+    id: u8,
+    group_id: Option<u8>,
     name: Option<String>,
     direction: PinDirection,
     enabled: bool,
@@ -20,8 +22,11 @@ pub struct PinBuilder {
 impl PinBuilder {
     pub fn new(num_of_pins: usize) -> Self {
         let mut pins = Vec::with_capacity(num_of_pins);
-        (0..num_of_pins).for_each(|_| {
-            pins.push(PinBuilderItem::default());
+        (0..num_of_pins).for_each(|idx| {
+            let mut item = PinBuilderItem::default();
+            item.id = (idx + 1) as u8;
+            item.enabled = true;
+            pins.push(item);
         });
         PinBuilder {
             pins,
@@ -36,23 +41,23 @@ impl PinBuilder {
     }
 
     pub fn with_ids(&mut self, ids: &[usize]) -> &mut Self {
-        self.elems = ids.iter().map(|id|id-1).collect();
+        self.elems = ids.iter().map(|id| id - 1).collect();
         self
     }
 
     pub fn set_range(
         &mut self,
         range: RangeInclusive<usize>,
-        prefix: &str,
-        prefix_start: usize,
+        name: &str,
+        from_id: usize,
         direction: PinDirection,
     ) -> &mut Self {
         self.with_range(range)
-            .name_prefix(prefix, prefix_start)
+            .group(name, from_id)
             .direction(direction)
     }
 
-    pub fn with_all(&mut self, range: Range<usize>) -> &mut Self {
+    pub fn with_all(&mut self) -> &mut Self {
         self.elems = Vec::from_iter(0..self.size);
         self
     }
@@ -91,16 +96,18 @@ impl PinBuilder {
         self
     }
 
-    pub fn name_prefix(&mut self, prefix: &str, from: usize) -> &mut Self {
+    pub fn group(&mut self, name: &str, from_id: usize) -> &mut Self {
         self.elems.iter().enumerate().for_each(|(idx, elem)| {
-            self.pins[*elem].name = Some(format!("{prefix}{}", from + idx));
+            self.pins[*elem].name = Some(name.to_string());
+            self.pins[*elem].group_id = Some((from_id + idx) as u8);
         });
         self
     }
 
-    pub fn name_prefix_dec(&mut self, prefix: &str, from: usize) -> &mut Self {
+    pub fn group_dec(&mut self, name: &str, from_id: usize) -> &mut Self {
         self.elems.iter().enumerate().for_each(|(idx, elem)| {
-            self.pins[*elem].name = Some(format!("{prefix}{}", from - idx));
+            self.pins[*elem].name = Some(name.to_string());
+            self.pins[*elem].group_id = Some((from_id - idx) as u8);
         });
         self
     }
@@ -118,6 +125,8 @@ impl PinBuilder {
     pub fn set(&mut self, id: usize, name: &str, direction: PinDirection) -> &mut Self {
         self.elems = vec![id - 1];
         self.pins[id - 1] = PinBuilderItem {
+            id: id as u8,
+            group_id: None,
             name: Some(name.to_string()),
             direction,
             enabled: true,
@@ -132,8 +141,12 @@ impl PinBuilder {
             .iter()
             .map(|item| {
                 let pin = Pin::new(item.direction, item.tri_state, item.io);
+                pin.set_id(item.id.clone());
                 if let Some(name) = &item.name {
                     pin.set_name(name.clone());
+                }
+                if let Some(group_id) = &item.group_id {
+                    pin.set_group_id(group_id.clone());
                 }
                 pin
             })
@@ -163,7 +176,7 @@ mod tests {
             .set_range(22..=25, "A", 12, Output)
             .with_range(26..=33)
             .direction(Output)
-            .name_prefix_dec("D", 7)
+            .group_dec("D", 7)
             .tri_state()
             .io()
             .set(34, "RWB", Output)
@@ -178,13 +191,13 @@ mod tests {
 
         assert_eq!(Input, pins[1].direction());
         assert_eq!(Output, pins[8].direction());
-        assert_eq!("A0", pins[8].name().unwrap());
-        assert_eq!("A11", pins[19].name().unwrap());
+        assert_eq!("A0", pins[8].group_name().unwrap());
+        assert_eq!("A11", pins[19].group_name().unwrap());
         assert_eq!("VSS", pins[20].name().unwrap());
-        assert_eq!("A12", pins[21].name().unwrap());
-        assert_eq!("A15", pins[24].name().unwrap());
-        assert_eq!("D7", pins[25].name().unwrap());
-        assert_eq!("D0", pins[32].name().unwrap());
+        assert_eq!("A12", pins[21].group_name().unwrap());
+        assert_eq!("A15", pins[24].group_name().unwrap());
+        assert_eq!("D7", pins[25].group_name().unwrap());
+        assert_eq!("D0", pins[32].group_name().unwrap());
         assert_eq!("RWB", pins[33].name().unwrap());
         assert_eq!(true, pins[33].tri_state());
     }
