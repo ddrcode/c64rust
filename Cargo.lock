@@ -465,6 +465,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffb6142b232d42a2a45fa8a3796820901d2f9a64365e7e7ac2a8124db843b0e9"
 
 [[package]]
+name = "genawaiter"
+version = "0.99.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c86bd0361bcbde39b13475e6e36cb24c329964aa2611be285289d1e4b751c1a0"
+dependencies = [
+ "genawaiter-macro",
+]
+
+[[package]]
+name = "genawaiter-macro"
+version = "0.99.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b32dfe1fdfc0bbde1f22a5da25355514b5e450c33a6af6770884c8750aedfbc"
+
+[[package]]
 name = "getrandom"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -648,6 +663,7 @@ dependencies = [
  "crossbeam-channel",
  "env_logger",
  "gametime",
+ "genawaiter",
  "keyboard-types",
  "lazy_static",
  "log",

@@ -8,6 +8,7 @@ mod operation;
 mod operation_def;
 mod processor_status;
 mod registers;
+pub mod steppers;
 
 use std::collections::HashMap;
 

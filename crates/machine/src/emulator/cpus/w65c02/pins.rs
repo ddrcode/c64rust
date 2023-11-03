@@ -5,8 +5,8 @@ use std::rc::Rc;
 pub struct W65C02_Pins {
     pins: [Rc<Pin>; 40],
     pins_map: HashMap<String, Rc<Pin>>,
-    data_port: Rc<Port<u8>>,
-    addr_port: Rc<Port<u16>>,
+    pub data: Rc<Port<u8>>,
+    pub addr: Rc<Port<u16>>,
 }
 
 impl W65C02_Pins {
@@ -58,16 +58,16 @@ impl W65C02_Pins {
                 .try_into()
                 .unwrap_or_else(|_| panic!("Must have 40 pins")),
             pins_map,
-            data_port: Port::from_pins(8, data),
-            addr_port: Port::from_pins(16, addr),
+            data: Port::from_pins(8, data),
+            addr: Port::from_pins(16, addr),
         }
     }
 
-    pub fn pin_by_id(&self, id: usize) -> Option<&Rc<Pin>> {
+    pub fn by_id(&self, id: usize) -> Option<&Rc<Pin>> {
         Some(&self.pins[id - 1])
     }
 
-    pub fn pin_by_name(&self, name: &str) -> Option<&Rc<Pin>> {
+    pub fn by_name(&self, name: &str) -> Option<&Rc<Pin>> {
         self.pins_map.get(name)
     }
 }

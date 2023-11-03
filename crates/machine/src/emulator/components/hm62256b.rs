@@ -3,6 +3,7 @@ use crate::emulator::abstractions::{
     PinDirection::{self, *},
     PinStateChange, Port,
 };
+use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
 
 const ADDR_PINS: [usize; 15] = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 25, 24, 21, 23, 26];
@@ -10,8 +11,9 @@ const DATA_PINS: [usize; 8] = [11, 12, 13, 15, 16, 17, 18, 19];
 
 pub struct HM62256BPins {
     pins: [Rc<Pin>; 28],
-    data: Rc<Port<u8>>,
-    addr: Rc<Port<u16>>,
+    pins_map: HashMap<String, Rc<Pin>>,
+    pub data: Rc<Port<u8>>,
+    pub addr: Rc<Port<u16>>,
 }
 
 impl HM62256BPins {
@@ -35,12 +37,18 @@ impl HM62256BPins {
         let data_pins: Vec<Rc<Pin>> = DATA_PINS.map(|id| Rc::clone(&pins[id - 1])).to_vec();
         let addr_pins: Vec<Rc<Pin>> = ADDR_PINS.map(|id| Rc::clone(&pins[id - 1])).to_vec();
 
+        let mut pins_map: HashMap<String, Rc<Pin>> = HashMap::with_capacity(40);
+        pins.iter().for_each(|pin| {
+            pins_map.insert(pin.name().unwrap(), Rc::clone(pin));
+        });
+
         let res = Rc::new(HM62256BPins {
             pins: pins
                 .try_into()
                 .unwrap_or_else(|_| panic!("Must have 28 pins")),
             data: Port::from_pins(8, data_pins),
             addr: Port::from_pins(15, addr_pins),
+            pins_map,
         });
 
         res.pins[19]
@@ -51,6 +59,16 @@ impl HM62256BPins {
             .unwrap();
 
         res
+    }
+}
+
+impl HM62256BPins {
+    pub fn by_id(&self, id: usize) -> Option<&Rc<Pin>> {
+        Some(&self.pins[id - 1])
+    }
+
+    pub fn by_name(&self, name: &str) -> Option<&Rc<Pin>> {
+        self.pins_map.get(name)
     }
 }
 
@@ -93,7 +111,7 @@ impl Addressable for HM62256BLogic {
 }
 
 pub struct HM62256B<T: Addressable> {
-    pins: Rc<HM62256BPins>,
+    pub pins: Rc<HM62256BPins>,
     logic: RefCell<T>,
 }
 
