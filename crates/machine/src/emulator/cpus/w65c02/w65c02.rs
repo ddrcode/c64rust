@@ -37,11 +37,11 @@ pub struct Registers {
 pub struct W65C02Logic {
     reg: Registers,
     instruction_cycle: u8,
-    mem: Rc<RefCell<dyn Addressable>>
+    mem: Rc<dyn Addressable>
 }
 
 impl W65C02Logic {
-    pub fn new(mem: Rc<RefCell<dyn Addressable>>) -> Self {
+    pub fn new(mem: Rc<dyn Addressable>) -> Self {
         W65C02Logic {
             reg: Registers::default(),
             instruction_cycle: 0,
@@ -70,11 +70,11 @@ impl CPU for W65C02Logic {
     }
 
     fn read_byte(&self, addr: Addr) -> u8 {
-        self.mem.borrow().read_byte(addr)
+        self.mem.read_byte(addr)
     }
 
     fn write_byte(&mut self, addr: Addr, val: u8) {
-        self.mem.borrow_mut().write_byte(addr, val);
+        // self.mem.write_byte(addr, val);
     }
 
     fn execute(&mut self, val: u8) -> u8 {

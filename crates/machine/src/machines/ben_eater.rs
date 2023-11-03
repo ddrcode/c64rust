@@ -16,8 +16,8 @@ impl BenEaterMachine {
     pub fn new() -> Self {
         let clock = Oscilator::new(1000);
         let ram = HM62256B::new(HM62256BLogic::new());
-        let cpu_logic = W65C02Logic<HM62256B>::new();
-        let cpu = W65C02::new();
+        let cpu_logic = W65C02Logic::new(ram);
+        let cpu = W65C02::new(cpu_logic);
 
         Pin::link(&clock.pin, cpu.pins.by_name("PHI_2").unwrap()).unwrap();
         Port::link(&cpu.pins.addr, &ram.pins.addr).unwrap();
