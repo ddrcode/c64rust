@@ -1,17 +1,18 @@
-use crate::emulator::abstractions::Addr;
+use std::{rc::Rc, cell::RefCell};
+
+use crate::emulator::abstractions::{Addr, CPU, Addressable};
 
 use super::W65C02_Pins;
 // use genawaiter::{rc::gen, rc::Gen, yield_};
 
-pub struct W65C02 {
+pub struct W65C02<T: CPU> {
     pub pins: W65C02_Pins,
-    logic: W65C02Logic,
+    logic: T,
 }
 
-impl W65C02 {
-    pub fn new() -> Self {
+impl<T: CPU> W65C02<T> {
+    pub fn new(logic: T) -> Self {
         let pins = W65C02_Pins::new();
-        let logic = W65C02Logic::new();
         W65C02 { pins, logic }
     }
 }
@@ -36,13 +37,15 @@ pub struct Registers {
 pub struct W65C02Logic {
     reg: Registers,
     instruction_cycle: u8,
+    mem: Rc<RefCell<dyn Addressable>>
 }
 
 impl W65C02Logic {
-    pub fn new() -> Self {
+    pub fn new(mem: Rc<RefCell<dyn Addressable>>) -> Self {
         W65C02Logic {
             reg: Registers::default(),
             instruction_cycle: 0,
+            mem
         }
     }
 
@@ -55,8 +58,34 @@ impl W65C02Logic {
         //     false
         // });
     }
+}
 
-    pub fn read_byte(&self, addr: Addr) -> u8 {
-        0
+impl CPU for W65C02Logic {
+    fn cycles(&self) -> crate::emulator::abstractions::CPUCycles {
+        todo!()
+    }
+
+    fn advance_cycles(&mut self, cycles: u8) -> Result<(), crate::emulator::EmulatorError> {
+        todo!()
+    }
+
+    fn read_byte(&self, addr: Addr) -> u8 {
+        self.mem.borrow().read_byte(addr)
+    }
+
+    fn write_byte(&mut self, addr: Addr, val: u8) {
+        self.mem.borrow_mut().write_byte(addr, val);
+    }
+
+    fn execute(&mut self, val: u8) -> u8 {
+        todo!()
+    }
+
+    fn pc(&self) -> Addr {
+        self.reg.pc
+    }
+
+    fn inc_pc(&mut self) {
+        self.reg.pc = self.reg.pc.wrapping_add(1);
     }
 }
