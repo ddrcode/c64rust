@@ -6,7 +6,7 @@ pub type CPUCycles = u64;
 
 pub trait CPU {
     fn cycles(&self) -> CPUCycles;
-    fn advance_cycles(&mut self, cycles: u8) -> Result<(), EmulatorError>;
+    fn advance_cycles(&mut self);
     fn read_byte(&self, addr: Addr) -> u8;
     fn write_byte(&mut self, addr: Addr, val: u8);
     fn execute(&mut self, val: u8) -> u8;

@@ -1,22 +1,42 @@
-use std::{rc::Rc, cell::RefCell};
-use genawaiter::{rc::Gen, Generator};
+use corosensei::{Coroutine, CoroutineResult};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::emulator::abstractions::{Addr, CPU, Addressable, IPin};
-use crate::mos6502::steppers::{ OpGen, nop };
+use crate::emulator::abstractions::{Addr, Addressable, CPUCycles, IPin, PinStateChange, CPU};
+use crate::emulator::cpus::mos6502::{get_stepper, OperationDef, OPERATIONS};
 
 use super::W65C02_Pins;
 // use genawaiter::{rc::gen, rc::Gen, yield_};
 
-pub struct W65C02<'a> {
+pub struct W65C02 {
     pub pins: Rc<W65C02_Pins>,
-    logic: W65C02Logic<'a>,
+    logic: RefCell<W65C02Logic>,
 }
 
-impl W65C02<'_> {
-    pub fn new() -> Self {
+impl W65C02 {
+    pub fn new() -> Rc<Self> {
         let pins = Rc::new(W65C02_Pins::new());
-        let logic = W65C02Logic::new(Rc::clone(&pins));
-        W65C02 { pins, logic }
+        let logic = RefCell::new(W65C02Logic::new(Rc::clone(&pins)));
+
+        let cpu = Rc::new(W65C02 {
+            pins,
+            logic
+        });
+
+        cpu.pins.by_name("PHI2").unwrap().set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>).unwrap();
+
+        cpu
+    }
+}
+
+impl PinStateChange for W65C02 {
+    fn on_state_change(&self, pin: &dyn IPin) {
+        println!("KOZA -- ");
+        match pin.name().map_or("", |name| name.leak()) {
+            "PHI2" => {
+                self.logic.borrow_mut().tick();
+            },
+            _ => {}
+        };
     }
 }
 
@@ -34,42 +54,56 @@ pub struct Registers {
     pub s: u8,
 }
 
-pub struct W65C02Logic<'a> {
+pub struct W65C02Logic {
     reg: Registers,
-    instruction_cycle: u8,
     pins: Rc<W65C02_Pins>,
-    stepper: OpGen<'a>
+    stepper: Coroutine<(), (), bool>,
+    cycles: CPUCycles,
+    last_step_result: CoroutineResult<(), bool>,
 }
 
-impl W65C02Logic<'_> {
+impl W65C02Logic {
     pub fn new(pins: Rc<W65C02_Pins>) -> Self {
         W65C02Logic {
             reg: Registers::default(),
-            instruction_cycle: 0,
             pins,
-            stepper: nop()
+            stepper: get_stepper(OPERATIONS.get(&0xea).unwrap()), // default to NOP
+            last_step_result: CoroutineResult::Return(false),
+            cycles: 0,
         }
     }
 
     pub fn tick(&mut self) {
-        self.stepper.resume();
-        // let op: Gen<(), bool, _> = gen!({
-        //     let opcode = self.read_byte(self.reg.pc);
-        //     self.reg.pc = self.reg.pc.wrapping_add(1);
-        //     yield_!();
-        //     let arg_lo = self.read_byte(self.reg.pc);
-        //     false
-        // });
+        if let CoroutineResult::Return(r) = self.last_step_result {
+            if !r {
+                self.reg.ir = self.read_byte(self.pc());
+            }
+            let op = self.decode_op(&self.reg.ir);
+            self.stepper = get_stepper(&op);
+        }
+        self.last_step_result = self.stepper.resume(());
+        self.advance_cycles();
+    }
+
+    fn decode_op(&self, opcode: &u8) -> OperationDef {
+        match OPERATIONS.get(&opcode) {
+            Some(op) => op.clone(),
+            None => panic!(
+                "Opcode {:#04x} not found at address {:#06x}",
+                opcode,
+                self.pc()
+            ),
+        }
     }
 }
 
-impl CPU for W65C02Logic<'_> {
-    fn cycles(&self) -> crate::emulator::abstractions::CPUCycles {
-        todo!()
+impl CPU for W65C02Logic {
+    fn cycles(&self) -> CPUCycles {
+        self.cycles
     }
 
-    fn advance_cycles(&mut self, cycles: u8) -> Result<(), crate::emulator::EmulatorError> {
-        todo!()
+    fn advance_cycles(&mut self) {
+        self.cycles = self.cycles.wrapping_add(1);
     }
 
     fn read_byte(&self, addr: Addr) -> u8 {
@@ -94,5 +128,50 @@ impl CPU for W65C02Logic<'_> {
 
     fn inc_pc(&mut self) {
         self.reg.pc = self.reg.pc.wrapping_add(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::emulator::{abstractions::Pin, cpus::mos6502::Stepper};
+
+    fn create_stepper() -> Stepper {
+        Coroutine::new(|yielder, _input| {
+            for _ in 0..3 {
+                yielder.suspend(());
+            }
+            false
+        })
+    }
+
+    #[test]
+    fn test_steps() {
+        let cpu = W65C02::new();
+        (*cpu.logic.borrow_mut()).stepper = create_stepper();
+
+        assert_eq!(0, cpu.logic.borrow().cycles());
+        cpu.logic.borrow_mut().tick();
+        assert_eq!(1, cpu.logic.borrow().cycles());
+        cpu.logic.borrow_mut().tick();
+        assert_eq!(2, cpu.logic.borrow().cycles());
+        cpu.logic.borrow_mut().tick();
+        assert_eq!(3, cpu.logic.borrow().cycles());
+    }
+
+    #[test]
+    fn test_steps_with_clock_signal() {
+        let clock = Pin::output();
+        let cpu = W65C02::new();
+        (*cpu.logic.borrow_mut()).stepper = create_stepper();
+        Pin::link(&clock, &cpu.pins.by_name("PHI2").unwrap()).unwrap();
+
+        assert_eq!(0, cpu.logic.borrow().cycles());
+        clock.toggle();
+        assert_eq!(1, cpu.logic.borrow().cycles());
+        clock.toggle();
+        assert_eq!(2, cpu.logic.borrow().cycles());
+        clock.toggle();
+        assert_eq!(3, cpu.logic.borrow().cycles());
     }
 }

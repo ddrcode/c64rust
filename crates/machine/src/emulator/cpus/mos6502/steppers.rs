@@ -1,15 +1,24 @@
-use genawaiter::{rc::Gen, Generator};
+use genawaiter::{rc::Gen,Generator};
+use corosensei::{Coroutine, CoroutineResult};
 
 use crate::emulator::abstractions::{CPU, Addr};
+use crate::emulator::cpus::mos6502::{ OperationDef, OPERATIONS };
+
 
 pub type OpGen<'a> = Box<dyn Generator<Yield = (), Return = ()> + 'a>;
+pub type Stepper = Coroutine<(),(),bool>;
 
-pub fn nop() -> OpGen<'static> {
-    Box::new(Gen::new(|co| async move {
+pub fn get_stepper(op: &OperationDef) -> Stepper {
+    nop()
+}
+
+pub fn nop() -> Stepper {
+    Coroutine::new(|yielder, input| {
         for _ in 0..7 {
-            co.yield_(()).await;
+            yielder.suspend(());
         }
-    }))
+        false
+    })
 }
 
 // ----------------------------------------------------------------------
@@ -125,5 +134,20 @@ fn read_from_addr(cpu: &impl CPU, lo: u8, hi: u8) -> (u8, Addr) {
 fn write_and_exec(cpu: &mut impl CPU, addr: Addr, val: u8) -> u8 {
     cpu.write_byte(addr, val);
     cpu.execute(val)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_stepper() {
+        let mut stepper = nop();
+        match stepper.resume(()) {
+            CoroutineResult::Yield(()) => {},
+            CoroutineResult::Return(_) => {},
+        };
+    }
 }
 

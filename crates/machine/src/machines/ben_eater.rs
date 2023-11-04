@@ -1,18 +1,18 @@
 use std::rc::Rc;
 
 use crate::emulator::{
-    abstractions::{Pin, Port},
+    abstractions::{Pin, Port, Addressable},
     components::{HM62256BLogic, Oscilator, HM62256B},
     cpus::{W65C02, W65C02Logic},
 };
 
-pub struct BenEaterMachine<'a> {
+pub struct BenEaterMachine {
     clock: Oscilator,
-    cpu: W65C02<'a>,
+    cpu: Rc<W65C02>,
     ram: Rc<HM62256B<HM62256BLogic>>,
 }
 
-impl BenEaterMachine<'_> {
+impl BenEaterMachine {
     pub fn new() -> Self {
         let clock = Oscilator::new(1000);
         let ram = HM62256B::new(HM62256BLogic::new());

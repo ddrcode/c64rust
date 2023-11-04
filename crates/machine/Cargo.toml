@@ -27,6 +27,7 @@ bcd-numbers = "1.0.11"
 num = "0.4.1"
 gametime = "0.1.6"
 genawaiter = { version="0.99.1", default-features=false }
+corosensei = "0.1.4"
 
 [[bin]]
 name = "machine"
