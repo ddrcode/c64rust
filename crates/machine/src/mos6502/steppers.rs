@@ -2,7 +2,15 @@ use genawaiter::{rc::Gen, Generator};
 
 use crate::emulator::abstractions::{CPU, Addr};
 
-type OpGen<'a> = Box<dyn Generator<Yield = (), Return = ()> + 'a>;
+pub type OpGen<'a> = Box<dyn Generator<Yield = (), Return = ()> + 'a>;
+
+pub fn nop() -> OpGen<'static> {
+    Box::new(Gen::new(|co| async move {
+        for _ in 0..7 {
+            co.yield_(()).await;
+        }
+    }))
+}
 
 // ----------------------------------------------------------------------
 // Absolute addressing

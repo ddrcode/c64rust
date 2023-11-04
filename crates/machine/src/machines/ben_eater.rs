@@ -6,18 +6,17 @@ use crate::emulator::{
     cpus::{W65C02, W65C02Logic},
 };
 
-pub struct BenEaterMachine {
+pub struct BenEaterMachine<'a> {
     clock: Oscilator,
-    cpu: W65C02<W65C02Logic>,
+    cpu: W65C02<'a>,
     ram: Rc<HM62256B<HM62256BLogic>>,
 }
 
-impl BenEaterMachine {
+impl BenEaterMachine<'_> {
     pub fn new() -> Self {
         let clock = Oscilator::new(1000);
         let ram = HM62256B::new(HM62256BLogic::new());
-        let cpu_logic = W65C02Logic::new(ram);
-        let cpu = W65C02::new(cpu_logic);
+        let cpu = W65C02::new();
 
         Pin::link(&clock.pin, cpu.pins.by_name("PHI_2").unwrap()).unwrap();
         Port::link(&cpu.pins.addr, &ram.pins.addr).unwrap();
