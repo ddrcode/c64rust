@@ -2,7 +2,7 @@ use corosensei::{Coroutine, CoroutineResult};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::emulator::abstractions::{Addr, Addressable, CPUCycles, IPin, PinStateChange, CPU};
-use crate::emulator::cpus::mos6502::{get_stepper, OperationDef, OPERATIONS};
+use crate::emulator::cpus::mos6502::{get_stepper, OperationDef, OPERATIONS, Stepper};
 
 use super::W65C02_Pins;
 // use genawaiter::{rc::gen, rc::Gen, yield_};
@@ -57,7 +57,7 @@ pub struct Registers {
 pub struct W65C02Logic {
     reg: Registers,
     pins: Rc<W65C02_Pins>,
-    stepper: Coroutine<(), (), bool>,
+    stepper: Option<Stepper>,
     cycles: CPUCycles,
     last_step_result: CoroutineResult<(), bool>,
 }
@@ -67,7 +67,7 @@ impl W65C02Logic {
         W65C02Logic {
             reg: Registers::default(),
             pins,
-            stepper: get_stepper(OPERATIONS.get(&0xea).unwrap()), // default to NOP
+            stepper: None,
             last_step_result: CoroutineResult::Return(false),
             cycles: 0,
         }
@@ -79,9 +79,9 @@ impl W65C02Logic {
                 self.reg.ir = self.read_byte(self.pc());
             }
             let op = self.decode_op(&self.reg.ir);
-            self.stepper = get_stepper(&op);
+            self.stepper = get_stepper(&op, self);
         }
-        self.last_step_result = self.stepper.resume(());
+        self.last_step_result = self.stepper.as_mut().unwrap().resume(());
         self.advance_cycles();
     }
 
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_steps() {
         let cpu = W65C02::new();
-        (*cpu.logic.borrow_mut()).stepper = create_stepper();
+        (*cpu.logic.borrow_mut()).stepper = Some(create_stepper());
 
         assert_eq!(0, cpu.logic.borrow().cycles());
         cpu.logic.borrow_mut().tick();
@@ -163,7 +163,7 @@ mod tests {
     fn test_steps_with_clock_signal() {
         let clock = Pin::output();
         let cpu = W65C02::new();
-        (*cpu.logic.borrow_mut()).stepper = create_stepper();
+        (*cpu.logic.borrow_mut()).stepper = Some(create_stepper());
         Pin::link(&clock, &cpu.pins.by_name("PHI2").unwrap()).unwrap();
 
         assert_eq!(0, cpu.logic.borrow().cycles());
