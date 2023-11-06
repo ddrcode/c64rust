@@ -1,6 +1,6 @@
 use crate::emulator::EmulatorError;
 
-use super::{AddressResolver, Addr};
+use super::{Addr, AddressResolver};
 
 pub type CPUCycles = u64;
 

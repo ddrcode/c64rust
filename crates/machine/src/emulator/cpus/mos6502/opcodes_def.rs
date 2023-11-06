@@ -233,13 +233,7 @@ fn define_operations() -> OpsMap {
         ],
     );
 
-    add_group(
-        NOP,
-        "op_nop",
-        &[
-            (0xea, 2, false, Implicit),
-        ],
-    );
+    add_group(NOP, "op_nop", &[(0xea, 2, false, Implicit)]);
 
     add_group(
         ORA,

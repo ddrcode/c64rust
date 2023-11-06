@@ -2,27 +2,52 @@ use corosensei::{Coroutine, CoroutineResult};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::emulator::abstractions::{Addr, Addressable, CPUCycles, IPin, PinStateChange, CPU};
-use crate::emulator::cpus::mos6502::{get_stepper, OperationDef, OPERATIONS, Stepper};
+use crate::emulator::cpus::mos6502::{get_stepper, nop, OperationDef, Stepper, OPERATIONS};
 
 use super::W65C02_Pins;
 // use genawaiter::{rc::gen, rc::Gen, yield_};
 
+pub struct DummyCPU;
+impl CPU for DummyCPU {
+    fn cycles(&self) -> CPUCycles {
+        0
+    }
+
+    fn advance_cycles(&mut self) {}
+
+    fn read_byte(&self, _addr: Addr) -> u8 {
+        0
+    }
+
+    fn write_byte(&mut self, _addr: Addr, _val: u8) {}
+
+    fn execute(&mut self, _val: u8) -> u8 {
+        0
+    }
+
+    fn pc(&self) -> Addr {
+        0
+    }
+
+    fn inc_pc(&mut self) {}
+}
+
 pub struct W65C02 {
     pub pins: Rc<W65C02_Pins>,
-    logic: RefCell<W65C02Logic>,
+    logic: Rc<RefCell<W65C02Logic>>,
 }
 
 impl W65C02 {
     pub fn new() -> Rc<Self> {
         let pins = Rc::new(W65C02_Pins::new());
-        let logic = RefCell::new(W65C02Logic::new(Rc::clone(&pins)));
+        let logic = W65C02Logic::new(Rc::clone(&pins));
+        let cpu = Rc::new(W65C02 { pins, logic });
 
-        let cpu = Rc::new(W65C02 {
-            pins,
-            logic
-        });
-
-        cpu.pins.by_name("PHI2").unwrap().set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>).unwrap();
+        cpu.pins
+            .by_name("PHI2")
+            .unwrap()
+            .set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>)
+            .unwrap();
 
         cpu
     }
@@ -30,11 +55,10 @@ impl W65C02 {
 
 impl PinStateChange for W65C02 {
     fn on_state_change(&self, pin: &dyn IPin) {
-        println!("KOZA -- ");
         match pin.name().map_or("", |name| name.leak()) {
             "PHI2" => {
                 self.logic.borrow_mut().tick();
-            },
+            }
             _ => {}
         };
     }
@@ -59,29 +83,40 @@ pub struct W65C02Logic {
     pins: Rc<W65C02_Pins>,
     stepper: Option<Stepper>,
     cycles: CPUCycles,
-    last_step_result: CoroutineResult<(), bool>,
+    self_ref: Rc<RefCell<dyn CPU>>,
 }
 
 impl W65C02Logic {
-    pub fn new(pins: Rc<W65C02_Pins>) -> Self {
-        W65C02Logic {
+    pub fn new(pins: Rc<W65C02_Pins>) -> Rc<RefCell<Self>> {
+        let logic = W65C02Logic {
             reg: Registers::default(),
             pins,
             stepper: None,
-            last_step_result: CoroutineResult::Return(false),
             cycles: 0,
-        }
+            self_ref: Rc::new(RefCell::new(DummyCPU)),
+        };
+
+        let rc = Rc::new(RefCell::new(logic));
+        let clone = Rc::clone(&rc);
+        (*rc.borrow_mut()).self_ref = clone;
+
+        rc
     }
 
     pub fn tick(&mut self) {
-        if let CoroutineResult::Return(r) = self.last_step_result {
-            if !r {
-                self.reg.ir = self.read_byte(self.pc());
-            }
+        if self.stepper.is_none() {
+            self.reg.ir = self.read_byte(self.pc());
             let op = self.decode_op(&self.reg.ir);
-            self.stepper = get_stepper(&op, self);
+            self.stepper = get_stepper(&op);
+        } else {
+            let cpu = Rc::clone(&self.self_ref);
+            match self.stepper.as_mut().unwrap().resume(cpu) {
+                CoroutineResult::Yield(()) => {}
+                CoroutineResult::Return(_) => {
+                    self.stepper = None;
+                }
+            }
         }
-        self.last_step_result = self.stepper.as_mut().unwrap().resume(());
         self.advance_cycles();
     }
 
@@ -173,5 +208,20 @@ mod tests {
         assert_eq!(2, cpu.logic.borrow().cycles());
         clock.toggle();
         assert_eq!(3, cpu.logic.borrow().cycles());
+    }
+
+    #[test]
+    fn test_with_real_stepper() {
+        let cpu = W65C02::new();
+        let opdef = OPERATIONS.get(&0xad).unwrap(); // LDA, absolute
+        (*cpu.logic.borrow_mut()).stepper = get_stepper(opdef);
+
+        assert_eq!(0, cpu.logic.borrow().cycles());
+        cpu.logic.borrow_mut().tick();
+        // assert_eq!(1, cpu.logic.borrow().cycles());
+        // cpu.logic.borrow_mut().tick();
+        // assert_eq!(2, cpu.logic.borrow().cycles());
+        // cpu.logic.borrow_mut().tick();
+        // assert_eq!(3, cpu.logic.borrow().cycles());
     }
 }

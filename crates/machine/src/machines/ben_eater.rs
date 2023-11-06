@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use crate::emulator::{
-    abstractions::{Pin, Port, Addressable},
+    abstractions::{Addressable, Pin, Port},
     components::{HM62256BLogic, Oscilator, HM62256B},
-    cpus::{W65C02, W65C02Logic},
+    cpus::{W65C02Logic, W65C02},
 };
 
 pub struct BenEaterMachine {
