@@ -21,4 +21,10 @@ pub enum EmulatorError {
 
     #[error("Only tri-state pins can be enabled/disabled")]
     NotATriStatePin,
+
+    #[error("Couldn't find Pin {1} in component {0}")]
+    PinNotFound(String, String),
+
+    #[error("Couldn't find component {0}")]
+    ComponentNotFound(String)
 }

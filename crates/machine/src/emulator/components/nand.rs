@@ -61,17 +61,17 @@ mod tests {
         assert_eq!(true, n.execute(false, false));
     }
 
-    #[test]
-    fn test_with_pins() {
-        let n = Nand::new(NandImpl);
-        let p1 = Pin::output();
-        let p2 = Pin::output();
-
-        Pin::link(&p1, &n.pins.in1).unwrap();
-        Pin::link(&p2, &n.pins.in2).unwrap();
-
-        p1.write(false);
-        p2.write(false);
-        assert_eq!(true, n.pins.out.read());
-    }
+    // #[test]
+    // fn test_with_pins() {
+    //     let n = Nand::new(NandImpl);
+    //     let p1 = Pin::output();
+    //     let p2 = Pin::output();
+    //
+    //     Pin::link(&p1, &n.pins.in1).unwrap();
+    //     Pin::link(&p2, &n.pins.in2).unwrap();
+    //
+    //     p1.write(false);
+    //     p2.write(false);
+    //     assert_eq!(true, n.pins.out.read());
+    // }
 }

@@ -1,6 +1,4 @@
-use crate::emulator::EmulatorError;
-
-use super::{Addr, AddressResolver};
+use super::Addr;
 
 pub type CPUCycles = u64;
 
@@ -17,12 +15,7 @@ pub trait CPU {
     // fn instruction_set() -> OpsMap;
 }
 
-pub trait Machine: AddressResolver {
-    type CPU: CPU;
-
-    fn cpu(&self) -> &Self::CPU;
-    fn cpu_mut(&mut self) -> &mut Self::CPU;
-
+pub trait Machine {
     fn start(&mut self);
     fn stop(&mut self);
     fn reset(&mut self);

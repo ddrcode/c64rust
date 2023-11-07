@@ -1,6 +1,8 @@
-use std::{collections::HashMap, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, ops::Range, rc::Rc};
 
-use super::{Component, PinStateChange, Pin};
+use crate::{emulator::EmulatorError, utils::if_else};
+
+use super::{Component, Pin, PinStateChange};
 
 pub struct Circuit {
     pins: HashMap<u32, (String, String)>,
@@ -15,6 +17,13 @@ pub struct Circuit {
 impl Circuit {
     pub fn component(&self, name: &str) -> &RefCell<Box<dyn Component>> {
         &self.components[name]
+    }
+
+    pub fn with_pin(&self, component_name: &str, pin_name: &str, cb: impl FnOnce(&Pin)) {
+        let c = self.component(component_name).borrow();
+        if let Some(pin) = c.get_pin(pin_name) {
+            cb(pin);
+        }
     }
 }
 
@@ -47,15 +56,41 @@ impl PinStateChange for CircuitPinHandler {
         // but I can't, because self.0 is a Rc<Circuit>
         // QUESTION #2: is there any option to fix it?
         let mut component = self.0.components[&component_id].borrow_mut();
-        println!(
-            "Reader pin: {}, {}",
-            rpin.name(),
-            rpin.inner_id().unwrap()
-        );
+        println!("Reader pin: {}, {}", rpin.name(), rpin.inner_id().unwrap());
 
         println!("Updating compoent {}", component_id);
         component.on_state_change(&rpin);
     }
+}
+
+// --------------------------------------------------------------------
+// Power supply :-)
+
+struct Power {
+    vcc: Pin,
+    gnd: Pin,
+}
+
+impl Power {
+    fn new() -> Power {
+        let p = Power {
+            vcc: Pin::output("VCC"),
+            gnd: Pin::output("GND"),
+        };
+        p.vcc.set_high();
+        p.gnd.set_low();
+        p
+    }
+}
+
+impl Component for Power {
+    fn get_pin(&self, name: &str) -> Option<&Pin> {
+        if_else(name == "VCC", Some(&self.vcc), None)
+    }
+}
+
+impl PinStateChange for Power {
+    fn on_state_change(&mut self, _pin: &Pin) {}
 }
 
 // --------------------------------------------------------------------
@@ -71,12 +106,15 @@ pub struct CircuitBuilder {
 
 impl CircuitBuilder {
     pub fn new() -> Self {
-        CircuitBuilder {
+        let mut cb = CircuitBuilder {
             components: Some(HashMap::new()),
             pins: HashMap::new(),
-            last_pin_id: 0,
+            last_pin_id: 2,
             connections: HashMap::new(),
-        }
+        };
+
+        cb.add_component("POW", Power::new());
+        cb
     }
 
     pub fn add_component(&mut self, name: &str, cmp: impl Component + 'static) -> &mut Self {
@@ -114,7 +152,34 @@ impl CircuitBuilder {
         self
     }
 
-    pub fn build(&mut self) -> Rc<Circuit> {
+    pub fn link_range(
+        &mut self,
+        writer_name: &str,
+        writer_pin_prefix: &str,
+        reader_name: &str,
+        reader_name_prefix: &str,
+        range: Range<u8>,
+    ) -> &mut Self {
+        for i in range {
+            self.link(
+                &writer_name,
+                &format!("{}{}", writer_pin_prefix, i),
+                reader_name,
+                &format!("{}{}", reader_name_prefix, i),
+            );
+        }
+        self
+    }
+
+    pub fn link_to_vcc(&mut self, component_name: &str, pin_name: &str) -> &mut Self {
+        self.link("POW", "VCC", component_name, pin_name)
+    }
+
+    pub fn link_to_gnd(&mut self, component_name: &str, pin_name: &str) -> &mut Self {
+        self.link("POW", "GND", component_name, pin_name)
+    }
+
+    pub fn build(&mut self) -> Result<Rc<Circuit>, EmulatorError> {
         let c = Circuit {
             pins: self.pins.clone(),
             connections: self.connections.clone(),
@@ -129,25 +194,30 @@ impl CircuitBuilder {
         let cref = Rc::new(c);
         let handler = Rc::new(RefCell::new(CircuitPinHandler(Rc::clone(&cref))));
 
-        cref.connections.iter().for_each(|(key, rkey)| {
+        for (key, rkey) in cref.connections.iter() {
             let data = &cref.pins[key];
-            let component = cref.components[&data.0].borrow();
-            let pin = component.get_pin(&data.1).unwrap();
+            let component = (cref
+                .components
+                .get(&data.0)
+                .ok_or(EmulatorError::ComponentNotFound(data.0.clone()))?)
+            .borrow();
+            let pin = component
+                .get_pin(&data.1)
+                .ok_or(EmulatorError::PinNotFound(data.0.clone(), data.1.clone()))?;
 
             // "injecting" handler to all pins
             // QUESTION #4
             // Achieving the same functionality without callback would, most likely,
             // result in a cleaner code. But is there an alternative to it?
-            pin.set_handler(Rc::clone(&handler) as Rc<RefCell<dyn PinStateChange>>);
+            pin.set_handler(Rc::clone(&handler) as Rc<RefCell<dyn PinStateChange>>)?;
             pin.set_inner_id(*key);
 
             let data = &cref.pins[rkey];
             let component = cref.components[&data.0].borrow();
             let pin = component.get_pin(&data.1).unwrap();
             pin.set_inner_id(*rkey);
-        });
+        }
 
-        cref
+        Ok(cref)
     }
 }
-

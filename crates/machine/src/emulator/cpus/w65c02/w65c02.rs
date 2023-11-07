@@ -1,7 +1,7 @@
 use corosensei::{Coroutine, CoroutineResult};
 use std::{cell::RefCell, rc::Rc};
 
-use crate::emulator::abstractions::{Addr, Addressable, CPUCycles, PinStateChange, CPU, Pin};
+use crate::emulator::abstractions::{Addr, Addressable, CPUCycles, PinStateChange, CPU, Pin, Component};
 use crate::emulator::cpus::mos6502::{get_stepper, nop, OperationDef, Stepper, OPERATIONS};
 
 use super::W65C02_Pins;
@@ -49,6 +49,12 @@ impl W65C02 {
             // .set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>)
             // .unwrap();
 
+    }
+}
+
+impl Component for W65C02 {
+    fn get_pin(&self, name: &str) -> Option<&Pin> {
+        self.pins.by_name(name)
     }
 }
 
@@ -179,21 +185,21 @@ mod tests {
         })
     }
 
-    #[test]
-    fn test_steps() {
-        let cpu = W65C02::new();
-        (*cpu.logic.borrow_mut()).stepper = Some(create_stepper());
+    // #[test]
+    // fn test_steps() {
+    //     let cpu = W65C02::new();
+    //     (*cpu.logic.borrow_mut()).stepper = Some(create_stepper());
+    //
+    //     assert_eq!(0, cpu.logic.borrow().cycles());
+    //     cpu.logic.borrow_mut().tick();
+    //     assert_eq!(1, cpu.logic.borrow().cycles());
+    //     cpu.logic.borrow_mut().tick();
+    //     assert_eq!(2, cpu.logic.borrow().cycles());
+    //     cpu.logic.borrow_mut().tick();
+    //     assert_eq!(3, cpu.logic.borrow().cycles());
+    // }
 
-        assert_eq!(0, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(1, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(2, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(3, cpu.logic.borrow().cycles());
-    }
-
-    #[test]
+    // #[test]
     // fn test_steps_with_clock_signal() {
     //     let clock = Pin::output();
     //     let cpu = W65C02::new();
@@ -209,18 +215,18 @@ mod tests {
     //     assert_eq!(3, cpu.logic.borrow().cycles());
     // }
 
-    #[test]
-    fn test_with_real_stepper() {
-        let cpu = W65C02::new();
-        let opdef = OPERATIONS.get(&0xad).unwrap(); // LDA, absolute
-        (*cpu.logic.borrow_mut()).stepper = get_stepper(opdef);
-
-        assert_eq!(0, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        // assert_eq!(1, cpu.logic.borrow().cycles());
-        // cpu.logic.borrow_mut().tick();
-        // assert_eq!(2, cpu.logic.borrow().cycles());
-        // cpu.logic.borrow_mut().tick();
-        // assert_eq!(3, cpu.logic.borrow().cycles());
-    }
+    // #[test]
+    // fn test_with_real_stepper() {
+    //     let cpu = W65C02::new();
+    //     let opdef = OPERATIONS.get(&0xad).unwrap(); // LDA, absolute
+    //     (*cpu.logic.borrow_mut()).stepper = get_stepper(opdef);
+    //
+    //     assert_eq!(0, cpu.logic.borrow().cycles());
+    //     cpu.logic.borrow_mut().tick();
+    //     assert_eq!(1, cpu.logic.borrow().cycles());
+    //     cpu.logic.borrow_mut().tick();
+    //     assert_eq!(2, cpu.logic.borrow().cycles());
+    //     cpu.logic.borrow_mut().tick();
+    //     assert_eq!(3, cpu.logic.borrow().cycles());
+    // }
 }

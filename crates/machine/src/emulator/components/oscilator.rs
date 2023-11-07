@@ -1,4 +1,4 @@
-use crate::emulator::abstractions::{Pin, Tickable};
+use crate::{emulator::abstractions::{Pin, Tickable, Component, PinStateChange}, utils::if_else};
 use gametime::{Frequency, FrequencyTicker, TimeStamp};
 
 pub struct Oscilator {
@@ -9,7 +9,7 @@ pub struct Oscilator {
 impl Oscilator {
     pub fn new(khz: u64) -> Self {
         Oscilator {
-            pin: Pin::output("phi1o"),
+            pin: Pin::output("OUT"),
             ticker: Frequency::from_khz(khz).ticker(TimeStamp::start()),
         }
     }
@@ -18,5 +18,17 @@ impl Oscilator {
 impl Tickable for Oscilator {
     fn tick(&self) {
         self.pin.toggle();
+    }
+}
+
+impl Component for Oscilator {
+    fn get_pin(&self, name: &str) -> Option<&Pin> {
+        if_else(name=="OUT", Some(&self.pin), None)
+    }
+}
+
+impl PinStateChange for Oscilator {
+    fn on_state_change(&mut self, _pin: &Pin) {
+        // no input pins
     }
 }
