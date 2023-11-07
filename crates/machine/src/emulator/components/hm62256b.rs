@@ -1,5 +1,5 @@
 use crate::emulator::abstractions::{
-    Addr, Addressable, IPin, Pin, PinBuilder,
+    Addr, Addressable, Pin, PinBuilder,
     PinDirection::{self, *},
     PinStateChange, Port,
 };
@@ -17,7 +17,7 @@ pub struct HM62256BPins {
 }
 
 impl HM62256BPins {
-    pub fn new() -> Rc<Self> {
+    pub fn new() -> Self {
         let pins = PinBuilder::new(28)
             .with_ids(&ADDR_PINS)
             .group("A", 0)
@@ -42,23 +42,14 @@ impl HM62256BPins {
             pins_map.insert(pin.name().unwrap(), Rc::clone(pin));
         });
 
-        let res = Rc::new(HM62256BPins {
+        HM62256BPins {
             pins: pins
                 .try_into()
                 .unwrap_or_else(|_| panic!("Must have 28 pins")),
             data: Port::from_pins(8, data_pins),
             addr: Port::from_pins(15, addr_pins),
             pins_map,
-        });
-
-        res.pins[19]
-            .set_handler(Rc::clone(&res) as Rc<dyn PinStateChange>)
-            .unwrap();
-        res.pins[26]
-            .set_handler(Rc::clone(&res) as Rc<dyn PinStateChange>)
-            .unwrap();
-
-        res
+        }
     }
 }
 
@@ -69,20 +60,6 @@ impl HM62256BPins {
 
     pub fn by_name(&self, name: &str) -> Option<&Rc<Pin>> {
         self.pins_map.get(name)
-    }
-}
-
-impl PinStateChange for HM62256BPins {
-    fn on_state_change(&self, pin: &dyn IPin) {
-        match &*pin.name().unwrap() {
-            "CS" => self.pins.iter().filter(|p| p.tri_state()).for_each(|p| {
-                p.set_enable(!pin.state()).unwrap();
-            }),
-
-            "WE" => self.data.set_direction(PinDirection::from(!pin.state())),
-
-            _ => {}
-        };
     }
 }
 
@@ -132,18 +109,33 @@ impl<T: Addressable + 'static> HM62256B<T> {
 }
 
 impl<T: Addressable> PinStateChange for HM62256B<T> {
-    fn on_state_change(&self, pin: &dyn IPin) {
-        if pin.name().is_none() {
-            return ();
-        }
-        let name = pin.name().unwrap();
+    fn on_state_change(&mut self, pin: &Pin) {
+        let name = pin.name();
         let addr = self.pins.addr.read();
-        if name == "D" {
-            let byte = self.pins.data.read();
-            self.logic.borrow_mut().write_byte(addr, byte);
-        } else if name == "A" && self.pins.pins[26].low() {
-            let byte = self.logic.borrow().read_byte(addr);
-            self.pins.data.write(byte);
+        match &*pin.name() {
+            "D" => {
+                let byte = self.pins.data.read();
+                self.logic.borrow_mut().write_byte(addr, byte);
+            }
+            "A" => {
+                if self.pins.pins[26].low() {
+                    let byte = self.logic.borrow().read_byte(addr);
+                    self.pins.data.write(byte);
+                }
+            }
+            "CS" => self
+                .pins
+                .pins
+                .iter()
+                .filter(|p| p.tri_state())
+                .for_each(|p| {
+                    p.set_enable(!pin.state()).unwrap();
+                }),
+            "WE" => self
+                .pins
+                .data
+                .set_direction(PinDirection::from(!pin.state())),
+            _ => {}
         }
     }
 }

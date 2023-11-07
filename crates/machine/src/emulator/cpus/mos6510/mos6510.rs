@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
-    emulator::abstractions::{IPin, Pin, PinDirection, Port, Tickable, Ticker},
+    emulator::abstractions::{Pin, PinDirection, Port, Tickable, Ticker},
     machine::Cycles,
 };
 
@@ -9,24 +9,24 @@ pub struct MOS6510Pins {
     pub address_bus: Rc<Port<u16>>,
     pub data_bus: Rc<Port<u8>>,
     pub processor_port: Rc<Port<u8>>,
-    pub irq: Rc<Pin>,
-    pub nmi: Rc<Pin>,
-    pub rdy: Rc<Pin>,
-    pub phi0: Rc<Pin>,
-    pub phi2: Rc<Pin>,
+    pub irq: Pin,
+    pub nmi: Pin,
+    pub rdy: Pin,
+    pub phi0: Pin,
+    pub phi2: Pin,
 }
 
 impl MOS6510Pins {
     pub fn new() -> Self {
         MOS6510Pins {
-            address_bus: Port::new(16, PinDirection::Output),
-            data_bus: Port::new(8, PinDirection::Output),
-            processor_port: Port::new(6, PinDirection::Output),
-            irq: Pin::input(),
-            nmi: Pin::input(),
-            rdy: Pin::input(),
-            phi0: Pin::input(),
-            phi2: Pin::output(),
+            address_bus: Port::new("A", 16, PinDirection::Output),
+            data_bus: Port::new("D", 8, PinDirection::Output),
+            processor_port: Port::new("P", 6, PinDirection::Output),
+            irq: Pin::input("IRQ"),
+            nmi: Pin::input("NMI"),
+            rdy: Pin::input("RDY"),
+            phi0: Pin::input("PHI0"),
+            phi2: Pin::output("PHI2"),
         }
     }
 }

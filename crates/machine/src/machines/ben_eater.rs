@@ -8,8 +8,8 @@ use crate::emulator::{
 
 pub struct BenEaterMachine {
     clock: Oscilator,
-    cpu: Rc<W65C02>,
-    ram: Rc<HM62256B<HM62256BLogic>>,
+    cpu: W65C02,
+    ram: HM62256B<HM62256BLogic>,
 }
 
 impl BenEaterMachine {

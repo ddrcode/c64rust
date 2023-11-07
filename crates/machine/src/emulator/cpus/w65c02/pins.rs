@@ -1,17 +1,16 @@
-use crate::emulator::abstractions::{IPin, Pin, PinBuilder, PinDirection::*, Port};
+use crate::emulator::abstractions::{Pin, PinBuilder, PinDirection::*, Port};
 use std::collections::HashMap;
 use std::rc::Rc;
 
 pub struct W65C02_Pins {
     pins: [Rc<Pin>; 40],
-    pins_map: HashMap<String, Rc<Pin>>,
     pub data: Rc<Port<u8>>,
     pub addr: Rc<Port<u16>>,
 }
 
 impl W65C02_Pins {
     pub fn new() -> Self {
-        let pins = PinBuilder::new(40)
+        let pins: Vec<Rc<Pin>> = PinBuilder::new(40)
             .set(1, "VPB", Output)
             .set(2, "RDY", Input)
             .set(3, "PHI1O", Output)
@@ -37,12 +36,10 @@ impl W65C02_Pins {
             .set(38, "SOB", Output)
             .set(39, "PHI2O", Output)
             .set(40, "RESB", Input)
-            .build();
-
-        let mut pins_map: HashMap<String, Rc<Pin>> = HashMap::with_capacity(40);
-        pins.iter().for_each(|pin| {
-            pins_map.insert(pin.name().unwrap(), Rc::clone(pin));
-        });
+            .build()
+            .iter()
+            .map(move |&pin| Rc::new(pin))
+            .collect();
 
         let data = pins[25..33].to_vec();
 
@@ -57,17 +54,18 @@ impl W65C02_Pins {
             pins: pins
                 .try_into()
                 .unwrap_or_else(|_| panic!("Must have 40 pins")),
-            pins_map,
             data: Port::from_pins(8, data),
             addr: Port::from_pins(16, addr),
         }
     }
 
-    pub fn by_id(&self, id: usize) -> Option<&Rc<Pin>> {
+    pub fn by_id(&self, id: usize) -> Option<&Pin> {
         Some(&self.pins[id - 1])
     }
 
-    pub fn by_name(&self, name: &str) -> Option<&Rc<Pin>> {
-        self.pins_map.get(name)
+    pub fn by_name(&self, name: &str) -> Option<&Pin> {
+        self.pins
+            .iter()
+            .find(|&pin| pin.name() == name).map(|&pin| pin.as_ref())
     }
 }

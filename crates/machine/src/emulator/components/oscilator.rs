@@ -1,16 +1,15 @@
-use crate::emulator::abstractions::{IPin, Pin, PinDirection, Tickable};
+use crate::emulator::abstractions::{Pin, Tickable};
 use gametime::{Frequency, FrequencyTicker, TimeStamp};
-use std::rc::Rc;
 
 pub struct Oscilator {
-    pub pin: Rc<Pin>,
+    pub pin: Pin,
     ticker: FrequencyTicker,
 }
 
 impl Oscilator {
     pub fn new(khz: u64) -> Self {
         Oscilator {
-            pin: Pin::output(),
+            pin: Pin::output("phi1o"),
             ticker: Frequency::from_khz(khz).ticker(TimeStamp::start()),
         }
     }

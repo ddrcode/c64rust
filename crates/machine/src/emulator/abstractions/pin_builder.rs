@@ -1,12 +1,11 @@
-use super::{IPin, Pin, PinDirection};
+use super::{Pin, PinDirection};
 use std::ops::RangeInclusive;
-use std::rc::Rc;
 
 #[derive(Default, Clone)]
 struct PinBuilderItem {
     id: u8,
     group_id: Option<u8>,
-    name: Option<String>,
+    name: String,
     direction: PinDirection,
     enabled: bool,
     tri_state: bool,
@@ -92,13 +91,13 @@ impl PinBuilder {
     }
 
     pub fn name(&mut self, name: &str) -> &mut Self {
-        self.pins[self.elems[0]].name = Some(name.to_string());
+        self.pins[self.elems[0]].name = name.to_string();
         self
     }
 
     pub fn group(&mut self, name: &str, from_id: usize) -> &mut Self {
         self.elems.iter().enumerate().for_each(|(idx, elem)| {
-            self.pins[*elem].name = Some(name.to_string());
+            self.pins[*elem].name = name.to_string();
             self.pins[*elem].group_id = Some((from_id + idx) as u8);
         });
         self
@@ -106,7 +105,7 @@ impl PinBuilder {
 
     pub fn group_dec(&mut self, name: &str, from_id: usize) -> &mut Self {
         self.elems.iter().enumerate().for_each(|(idx, elem)| {
-            self.pins[*elem].name = Some(name.to_string());
+            self.pins[*elem].name = name.to_string();
             self.pins[*elem].group_id = Some((from_id - idx) as u8);
         });
         self
@@ -127,7 +126,7 @@ impl PinBuilder {
         self.pins[id - 1] = PinBuilderItem {
             id: id as u8,
             group_id: None,
-            name: Some(name.to_string()),
+            name: name.to_string(),
             direction,
             enabled: true,
             tri_state: false,
@@ -136,15 +135,12 @@ impl PinBuilder {
         self
     }
 
-    pub fn build(&self) -> Vec<Rc<Pin>> {
+    pub fn build(&self) -> Vec<Pin> {
         self.pins
             .iter()
             .map(|item| {
-                let pin = Pin::new(item.direction, item.tri_state, item.io);
+                let pin = Pin::new(&item.name, item.direction, item.tri_state, item.io);
                 pin.set_id(item.id.clone());
-                if let Some(name) = &item.name {
-                    pin.set_name(name.clone());
-                }
                 if let Some(group_id) = &item.group_id {
                     pin.set_group_id(group_id.clone());
                 }
@@ -193,12 +189,12 @@ mod tests {
         assert_eq!(Output, pins[8].direction());
         assert_eq!("A0", pins[8].group_name().unwrap());
         assert_eq!("A11", pins[19].group_name().unwrap());
-        assert_eq!("VSS", pins[20].name().unwrap());
+        assert_eq!("VSS", pins[20].name());
         assert_eq!("A12", pins[21].group_name().unwrap());
         assert_eq!("A15", pins[24].group_name().unwrap());
         assert_eq!("D7", pins[25].group_name().unwrap());
         assert_eq!("D0", pins[32].group_name().unwrap());
-        assert_eq!("RWB", pins[33].name().unwrap());
+        assert_eq!("RWB", pins[33].name());
         assert_eq!(true, pins[33].tri_state());
     }
 }
