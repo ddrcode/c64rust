@@ -40,7 +40,7 @@ where
     }
 
     pub fn from_pins(width: T, pins: Vec<Rc<Pin>>) -> Rc<Self> {
-        let mut port = Rc::new(Port {
+        let port = Rc::new(Port {
             width,
             pins: pins.into_boxed_slice(),
             handler: OnceCell::new(),
@@ -75,7 +75,9 @@ where
         for i in 0..self.width().into() {
             let flag: T = (<T as NumCast>::from(1 << i)).unwrap();
             let val = state & flag;
-            self.pins[i].write(val > T::zero());
+            self.pins[i]
+                .write(val > T::zero())
+                .expect("Can't write to input pin");
         }
     }
 
@@ -93,14 +95,17 @@ where
         }
     }
 
-    pub fn set_handler(&self, handler: Rc<RefCell<dyn PinStateChange>>) -> Result<(), EmulatorError> {
+    pub fn set_handler(
+        &self,
+        handler: Rc<RefCell<dyn PinStateChange>>,
+    ) -> Result<(), EmulatorError> {
         // for i in 0..self.width().into() {
         //     let h = Rc::clone(&self.self_ref.get().unwrap());
         //     self.pins[i].set_handler(h)?;
         // }
         self.handler
             .set(handler)
-            .map_err(|_| EmulatorError::HandlerAlreadyDefined)
+            .map_err(|_| EmulatorError::HandlerAlreadyDefined("port".to_string()))
     }
 }
 
@@ -116,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_u8_port_creation() {
-        let p: Rc<Port<u8>> = Port::new("A", 8, PinDirection::Input);
+        let p: Rc<Port<u8>> = Port::new("A", 8, PinDirection::Output);
         assert_eq!(0, p.read());
 
         p.set_directions(0xff);
@@ -128,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_u16_port_creation() {
-        let p: Rc<Port<u16>> = Port::new("A", 16, PinDirection::Input);
+        let p: Rc<Port<u16>> = Port::new("A", 16, PinDirection::Output);
         assert_eq!(0, p.read());
 
         p.set_directions(0xff);

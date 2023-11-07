@@ -16,8 +16,8 @@ pub enum EmulatorError {
     #[error("Can't link ports of different widths")]
     IncompatiblePortWidths,
 
-    #[error("Handler aleady defined for this port")]
-    HandlerAlreadyDefined,
+    #[error("Handler aleady defined for port {0}")]
+    HandlerAlreadyDefined(String),
 
     #[error("Only tri-state pins can be enabled/disabled")]
     NotATriStatePin,
@@ -26,5 +26,8 @@ pub enum EmulatorError {
     PinNotFound(String, String),
 
     #[error("Couldn't find component {0}")]
-    ComponentNotFound(String)
+    ComponentNotFound(String),
+
+    #[error("Can't write to read (input) pin {0}")]
+    CantWriteToReadPin(String),
 }

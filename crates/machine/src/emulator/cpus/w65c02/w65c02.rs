@@ -1,7 +1,9 @@
 use corosensei::{Coroutine, CoroutineResult};
 use std::{cell::RefCell, rc::Rc};
 
-use crate::emulator::abstractions::{Addr, Addressable, CPUCycles, PinStateChange, CPU, Pin, Component};
+use crate::emulator::abstractions::{
+    Addr, Addressable, CPUCycles, Component, Pin, PinStateChange, CPU,
+};
 use crate::emulator::cpus::mos6502::{get_stepper, nop, OperationDef, Stepper, OPERATIONS};
 
 use super::W65C02_Pins;
@@ -46,9 +48,8 @@ impl W65C02 {
         // cpu.pins
         //     .by_name("PHI2")
         //     .unwrap()
-            // .set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>)
-            // .unwrap();
-
+        // .set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>)
+        // .unwrap();
     }
 }
 
@@ -147,13 +148,13 @@ impl CPU for W65C02Logic {
     }
 
     fn read_byte(&self, addr: Addr) -> u8 {
-        self.pins.by_name("RWB").unwrap().set_high();
+        self.pins.by_name("RWB").unwrap().set_high().unwrap();
         self.pins.addr.write(addr);
         self.pins.data.read()
     }
 
     fn write_byte(&mut self, addr: Addr, val: u8) {
-        self.pins.by_name("RWB").unwrap().set_low();
+        self.pins.by_name("RWB").unwrap().set_low().unwrap();
         self.pins.addr.write(addr);
         self.pins.data.write(val);
     }

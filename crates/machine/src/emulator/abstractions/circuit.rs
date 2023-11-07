@@ -25,6 +25,15 @@ impl Circuit {
             cb(pin);
         }
     }
+
+    pub fn write_to_pin(&self, component_name: &str, pin_name: &str, val: bool) -> Result<bool, EmulatorError> {
+        let c = self.component(component_name).borrow();
+        if let Some(pin) = c.get_pin(pin_name) {
+            pin.write(val)
+        } else {
+            Err(EmulatorError::PinNotFound(component_name.to_string(), pin_name.to_string()))
+        }
+    }
 }
 
 // --------------------------------------------------------------------
@@ -209,12 +218,16 @@ impl CircuitBuilder {
             // QUESTION #4
             // Achieving the same functionality without callback would, most likely,
             // result in a cleaner code. But is there an alternative to it?
-            pin.set_handler(Rc::clone(&handler) as Rc<RefCell<dyn PinStateChange>>)?;
-            pin.set_inner_id(*key);
+            if pin.inner_id().is_none() {
+                pin.set_handler(Rc::clone(&handler) as Rc<RefCell<dyn PinStateChange>>)?;
+                pin.set_inner_id(*key);
+            }
 
             let data = &cref.pins[rkey];
             let component = cref.components[&data.0].borrow();
-            let pin = component.get_pin(&data.1).unwrap();
+            let pin = component
+                .get_pin(&data.1)
+                .ok_or(EmulatorError::PinNotFound(data.0.clone(), data.1.clone()))?;
             pin.set_inner_id(*rkey);
         }
 

@@ -11,12 +11,12 @@ pub struct W65C02_Pins {
 impl W65C02_Pins {
     pub fn new() -> Self {
         let pins: Vec<Rc<Pin>> = PinBuilder::new(40)
-            .set(1, "VPB", Output)
+            .set(1, "VP", Output)
             .set(2, "RDY", Input)
             .set(3, "PHI1O", Output)
-            .set(4, "IRQB", Input)
-            .set(5, "MLB", Output)
-            .set(6, "NMIB", Input)
+            .set(4, "IRQ", Input)
+            .set(5, "ML", Output)
+            .set(6, "NMI", Input)
             .set(7, "SYNC", Output)
             .set(8, "VDD", Input)
             .set_range(9..=20, "A", 0, Output)
@@ -28,14 +28,14 @@ impl W65C02_Pins {
             .group_dec("D", 7)
             .tri_state()
             .io()
-            .set(34, "RWB", Output)
+            .set(34, "RW", Output)
             .tri_state()
             .set(35, "NC", Input)
             .set(36, "BE", Input)
             .set(37, "PHI2", Input)
-            .set(38, "SOB", Output)
+            .set(38, "SO", Output)
             .set(39, "PHI2O", Output)
-            .set(40, "RESB", Input)
+            .set(40, "RES", Input)
             .build()
             .iter()
             .map(move |pin| Rc::new(pin.clone()))
@@ -66,6 +66,7 @@ impl W65C02_Pins {
     pub fn by_name(&self, name: &str) -> Option<&Pin> {
         self.pins
             .iter()
-            .find(|&pin| pin.name() == name).map(|pin| pin.as_ref())
+            .find(|&pin| pin.name() == name)
+            .map(|pin| pin.as_ref())
     }
 }

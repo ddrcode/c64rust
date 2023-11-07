@@ -95,10 +95,13 @@ impl Pin {
         let _ = self.group_id.set(id);
     }
 
-    pub(crate) fn set_handler(&self, handler: Rc<RefCell<dyn PinStateChange>>) -> Result<(), EmulatorError> {
+    pub(crate) fn set_handler(
+        &self,
+        handler: Rc<RefCell<dyn PinStateChange>>,
+    ) -> Result<(), EmulatorError> {
         self.handler
             .set(handler)
-            .map_err(|_| EmulatorError::HandlerAlreadyDefined)
+            .map_err(|_| EmulatorError::HandlerAlreadyDefined(self.name()))
     }
 
     pub fn set_enable(&self, val: bool) -> Result<(), EmulatorError> {
@@ -125,11 +128,21 @@ impl Pin {
         !self.state()
     }
 
+    pub fn name(&self) -> String {
+        let name = &self.name;
+        let group_id = self.group_id();
+        if group_id.is_some() {
+            format!("{}{}", name, group_id.unwrap())
+        } else {
+            name.to_string()
+        }
+    }
+
     pub fn group_name(&self) -> Option<String> {
         let name = self.name();
         let group_id = self.group_id();
         if group_id.is_some() {
-            Some(format!("{}{}", name, group_id.unwrap()))
+            Some(name)
         } else {
             None
         }
@@ -139,19 +152,17 @@ impl Pin {
         self.direction() == PinDirection::Output
     }
 
-    pub fn set_high(&self) {
-        self.write(true);
+    pub fn set_high(&self) -> Result<bool, EmulatorError> {
+        self.write(true)
     }
 
-    pub fn set_low(&self) {
-        self.write(false);
+    pub fn set_low(&self) -> Result<bool, EmulatorError> {
+        self.write(false)
     }
 
-    pub fn toggle(&self) {
-        if self.is_output() {
-            let v = self.state();
-            self.write(!v);
-        }
+    pub fn toggle(&self) -> Result<bool, EmulatorError> {
+        let v = self.state();
+        self.write(!v)
     }
 
     pub fn enabled(&self) -> bool {
@@ -166,16 +177,22 @@ impl Pin {
         *self.direction.borrow()
     }
 
-    pub fn write(&self, val: bool) {
+    pub fn write(&self, val: bool) -> Result<bool, EmulatorError> {
         if self.is_output() {
+            if *self.value.borrow() == val {
+                return Ok(false);
+            }
             *self.value.borrow_mut() = val;
             if let Some(handler) = self.handler.get() {
                 handler.borrow_mut().on_state_change(self);
             }
+            Ok(true)
+        } else {
+            Err(EmulatorError::CantWriteToReadPin(self.name()))
         }
     }
 
-    pub fn set_val(&self, val: bool) {
+    pub(crate) fn set_val(&self, val: bool) {
         if !self.is_output() {
             *self.value.borrow_mut() = val;
         }
@@ -191,10 +208,6 @@ impl Pin {
 
     pub fn group_id(&self) -> Option<u8> {
         self.group_id.get().copied()
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 
     pub fn tri_state(&self) -> bool {

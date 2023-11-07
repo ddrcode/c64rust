@@ -44,14 +44,14 @@ impl MOS6510 {
         };
 
         let cpu_rc = Rc::new(cpu);
-        let cloned = cpu_rc.clone();
+        // let cloned = cpu_rc.clone();
         // cpu_rc.pins.phi0.observe(move |_val| cloned.tick());
 
         cpu_rc
     }
 
     fn tick(&self) {
-        self.pins.phi2.write(self.pins.phi0.state());
+        self.pins.phi2.write(self.pins.phi0.state()).unwrap();
         self.ticker.tick();
     }
 

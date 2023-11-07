@@ -1,4 +1,7 @@
-use crate::{emulator::abstractions::{Pin, Tickable, Component, PinStateChange}, utils::if_else};
+use crate::{
+    emulator::abstractions::{Component, Pin, PinStateChange, Tickable},
+    utils::if_else,
+};
 use gametime::{Frequency, FrequencyTicker, TimeStamp};
 
 pub struct Oscilator {
@@ -17,13 +20,13 @@ impl Oscilator {
 
 impl Tickable for Oscilator {
     fn tick(&self) {
-        self.pin.toggle();
+        self.pin.toggle().unwrap();
     }
 }
 
 impl Component for Oscilator {
     fn get_pin(&self, name: &str) -> Option<&Pin> {
-        if_else(name=="OUT", Some(&self.pin), None)
+        if_else(name == "OUT", Some(&self.pin), None)
     }
 }
 

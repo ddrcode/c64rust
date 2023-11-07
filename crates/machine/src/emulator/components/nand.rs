@@ -44,7 +44,7 @@ impl<T: INand> PinStateChange for Nand<T> {
         let val = self
             .logic
             .execute(self.pins.in1.read(), self.pins.in2.read());
-        self.pins.out.write(val);
+        self.pins.out.write(val).expect("Pin must be writeable");
     }
 }
 

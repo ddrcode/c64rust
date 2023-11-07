@@ -1,10 +1,10 @@
 use crate::emulator::abstractions::{
-    Addr, Addressable, Pin, PinBuilder,
+    Addr, Addressable, Component, Pin, PinBuilder,
     PinDirection::{self, *},
-    PinStateChange, Port, Component,
+    PinStateChange, Port,
 };
 use std::collections::HashMap;
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
 const ADDR_PINS: [usize; 15] = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 25, 24, 21, 23, 26];
 const DATA_PINS: [usize; 8] = [11, 12, 13, 15, 16, 17, 18, 19];
@@ -35,8 +35,7 @@ impl HM62256BPins {
             .build()
             .iter()
             .map(|pin| Rc::new(pin.clone()))
-            .collect()
-        ;
+            .collect();
 
         let data_pins: Vec<Rc<Pin>> = DATA_PINS.map(|id| Rc::clone(&pins[id - 1])).to_vec();
         let addr_pins: Vec<Rc<Pin>> = ADDR_PINS.map(|id| Rc::clone(&pins[id - 1])).to_vec();
