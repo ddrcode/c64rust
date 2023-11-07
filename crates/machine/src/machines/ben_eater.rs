@@ -30,15 +30,12 @@ impl BenEaterMachine {
             .add_component("X1", clock)
             .add_component("U1", cpu)
             .add_component("U6", ram)
-
             .link("X1", "OUT", "U1", "PHI2")
             .link("U1", "RW", "U6", "WE")
             .link_range("U1", "A", "U6", "A", 0..15)
-
             .link_to_vcc("U1", "NMI")
             .link_to_vcc("U1", "RDY")
             .link_to_vcc("U1", "BE")
-
             .build()?;
 
         Ok(BenEaterMachine { circuit })

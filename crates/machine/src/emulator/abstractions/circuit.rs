@@ -26,12 +26,20 @@ impl Circuit {
         }
     }
 
-    pub fn write_to_pin(&self, component_name: &str, pin_name: &str, val: bool) -> Result<bool, EmulatorError> {
+    pub fn write_to_pin(
+        &self,
+        component_name: &str,
+        pin_name: &str,
+        val: bool,
+    ) -> Result<bool, EmulatorError> {
         let c = self.component(component_name).borrow();
         if let Some(pin) = c.get_pin(pin_name) {
             pin.write(val)
         } else {
-            Err(EmulatorError::PinNotFound(component_name.to_string(), pin_name.to_string()))
+            Err(EmulatorError::PinNotFound(
+                component_name.to_string(),
+                pin_name.to_string(),
+            ))
         }
     }
 }
