@@ -5,6 +5,7 @@ mod pin;
 mod pin_builder;
 mod port;
 mod tickable;
+mod component;
 mod circuit;
 
 pub use addressable::*;
@@ -14,4 +15,5 @@ pub use pin::*;
 pub use pin_builder::*;
 pub use port::*;
 pub use tickable::*;
-pub use circuit;
+pub use circuit::*;
+pub use component::*;

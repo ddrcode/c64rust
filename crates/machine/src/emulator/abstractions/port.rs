@@ -1,6 +1,5 @@
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 use std::convert::From;
-use std::rc::Weak;
 use std::{
     ops::{BitOr, BitOrAssign},
     rc::Rc,
@@ -13,12 +12,12 @@ use num::{
 
 use crate::emulator::EmulatorError;
 
-use super::{IPin, Pin, PinDirection, PinStateChange};
+use super::{Pin, PinDirection, PinStateChange};
 
 pub struct Port<T: Unsigned + Copy> {
     width: T,
     pins: Box<[Rc<Pin>]>,
-    handler: OnceCell<Rc<dyn PinStateChange>>,
+    handler: OnceCell<Rc<RefCell<dyn PinStateChange>>>,
     self_ref: OnceCell<Rc<Port<T>>>,
 }
 
@@ -32,10 +31,10 @@ where
         + BitOrAssign<T>
         + 'static,
 {
-    pub fn new(width: T, direction: PinDirection) -> Rc<Self> {
+    pub fn new(name: &str, width: T, direction: PinDirection) -> Rc<Self> {
         let mut v: Vec<Rc<Pin>> = Vec::with_capacity(width.into());
         for _ in 0..width.into() {
-            v.push(Pin::new(direction, false, false));
+            v.push(Rc::new(Pin::new(name, direction, false, false)));
         }
         Port::from_pins(width, v)
     }
@@ -54,16 +53,6 @@ where
 
     pub fn width(&self) -> T {
         self.width
-    }
-
-    pub fn link(port_a: &Port<T>, port_b: &Port<T>) -> Result<(), EmulatorError> {
-        if port_a.width() != port_b.width() {
-            return Err(EmulatorError::IncompatiblePortWidths);
-        }
-        for i in 0..port_a.width().into() {
-            Pin::link(&port_a.pins[i], &port_b.pins[i])?;
-        }
-        Ok(())
     }
 
     pub fn read(&self) -> T {
@@ -104,22 +93,22 @@ where
         }
     }
 
-    pub fn set_handler(&self, handler: Rc<dyn PinStateChange>) -> Result<(), EmulatorError> {
-        for i in 0..self.width().into() {
-            let h = Rc::clone(&self.self_ref.get().unwrap());
-            self.pins[i].set_handler(h)?;
-        }
+    pub fn set_handler(&self, handler: Rc<RefCell<dyn PinStateChange>>) -> Result<(), EmulatorError> {
+        // for i in 0..self.width().into() {
+        //     let h = Rc::clone(&self.self_ref.get().unwrap());
+        //     self.pins[i].set_handler(h)?;
+        // }
         self.handler
             .set(handler)
             .map_err(|_| EmulatorError::HandlerAlreadyDefined)
     }
 }
 
-impl<T: Copy + Unsigned> PinStateChange for Port<T> {
-    fn on_state_change(&self, pin: &dyn IPin) {
-        self.handler.get().unwrap().on_state_change(pin);
-    }
-}
+// impl<T: Copy + Unsigned> PinStateChange for Port<T> {
+//     fn on_state_change(&mut self, pin: &Pin) {
+//         self.handler.get().unwrap().on_state_change(pin);
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -127,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_u8_port_creation() {
-        let p: Rc<Port<u8>> = Port::new(8, PinDirection::Input);
+        let p: Rc<Port<u8>> = Port::new("A", 8, PinDirection::Input);
         assert_eq!(0, p.read());
 
         p.set_directions(0xff);
@@ -139,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_u16_port_creation() {
-        let p: Rc<Port<u16>> = Port::new(16, PinDirection::Input);
+        let p: Rc<Port<u16>> = Port::new("A", 16, PinDirection::Input);
         assert_eq!(0, p.read());
 
         p.set_directions(0xff);
