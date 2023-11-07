@@ -1,4 +1,4 @@
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 use std::convert::From;
 use std::{
     ops::{BitOr, BitOrAssign},
@@ -17,7 +17,7 @@ use super::{Pin, PinDirection, PinStateChange};
 pub struct Port<T: Unsigned + Copy> {
     width: T,
     pins: Box<[Rc<Pin>]>,
-    handler: OnceCell<Rc<dyn PinStateChange>>,
+    handler: OnceCell<Rc<RefCell<dyn PinStateChange>>>,
     self_ref: OnceCell<Rc<Port<T>>>,
 }
 
@@ -93,22 +93,22 @@ where
         }
     }
 
-    pub fn set_handler(&self, handler: Rc<dyn PinStateChange>) -> Result<(), EmulatorError> {
-        for i in 0..self.width().into() {
-            let h = Rc::clone(&self.self_ref.get().unwrap());
-            self.pins[i].set_handler(h)?;
-        }
+    pub fn set_handler(&self, handler: Rc<RefCell<dyn PinStateChange>>) -> Result<(), EmulatorError> {
+        // for i in 0..self.width().into() {
+        //     let h = Rc::clone(&self.self_ref.get().unwrap());
+        //     self.pins[i].set_handler(h)?;
+        // }
         self.handler
             .set(handler)
             .map_err(|_| EmulatorError::HandlerAlreadyDefined)
     }
 }
 
-impl<T: Copy + Unsigned> PinStateChange for Port<T> {
-    fn on_state_change(&mut self, pin: &Pin) {
-        self.handler.get().unwrap().on_state_change(pin);
-    }
-}
+// impl<T: Copy + Unsigned> PinStateChange for Port<T> {
+//     fn on_state_change(&mut self, pin: &Pin) {
+//         self.handler.get().unwrap().on_state_change(pin);
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

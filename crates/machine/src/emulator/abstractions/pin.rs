@@ -43,6 +43,7 @@ impl Into<u8> for PinDirection {
     }
 }
 
+#[derive(Clone)]
 pub struct Pin {
     id: OnceCell<u8>,
     inner_id: OnceCell<u32>,
@@ -192,8 +193,8 @@ impl Pin {
         self.group_id.get().copied()
     }
 
-    pub fn name(&self) -> String {
-        self.name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn tri_state(&self) -> bool {

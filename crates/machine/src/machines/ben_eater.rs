@@ -18,14 +18,14 @@ impl BenEaterMachine {
         let ram = HM62256B::new(HM62256BLogic::new());
         let cpu = W65C02::new();
 
-        Pin::link(&clock.pin, cpu.pins.by_name("PHI_2").unwrap()).unwrap();
-        Port::link(&cpu.pins.addr, &ram.pins.addr).unwrap();
-        Port::link(&cpu.pins.data, &ram.pins.data).unwrap();
-        Pin::link(
-            &cpu.pins.by_name("RWB").unwrap(),
-            &ram.pins.by_name("WE").unwrap(),
-        )
-        .unwrap();
+        // Pin::link(&clock.pin, cpu.pins.by_name("PHI_2").unwrap()).unwrap();
+        // Port::link(&cpu.pins.addr, &ram.pins.addr).unwrap();
+        // Port::link(&cpu.pins.data, &ram.pins.data).unwrap();
+        // Pin::link(
+        //     &cpu.pins.by_name("RWB").unwrap(),
+        //     &ram.pins.by_name("WE").unwrap(),
+        // )
+        // .unwrap();
 
         BenEaterMachine { clock, cpu, ram }
     }

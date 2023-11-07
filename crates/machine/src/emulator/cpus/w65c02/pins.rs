@@ -38,7 +38,7 @@ impl W65C02_Pins {
             .set(40, "RESB", Input)
             .build()
             .iter()
-            .map(move |&pin| Rc::new(pin))
+            .map(move |pin| Rc::new(pin.clone()))
             .collect();
 
         let data = pins[25..33].to_vec();
@@ -66,6 +66,6 @@ impl W65C02_Pins {
     pub fn by_name(&self, name: &str) -> Option<&Pin> {
         self.pins
             .iter()
-            .find(|&pin| pin.name() == name).map(|&pin| pin.as_ref())
+            .find(|&pin| pin.name() == name).map(|pin| pin.as_ref())
     }
 }

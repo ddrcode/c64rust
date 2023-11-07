@@ -38,18 +38,17 @@ pub struct W65C02 {
 }
 
 impl W65C02 {
-    pub fn new() -> Rc<Self> {
+    pub fn new() -> Self {
         let pins = Rc::new(W65C02_Pins::new());
         let logic = W65C02Logic::new(Rc::clone(&pins));
-        let cpu = Rc::new(W65C02 { pins, logic });
+        W65C02 { pins, logic }
 
-        cpu.pins
-            .by_name("PHI2")
-            .unwrap()
-            .set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>)
-            .unwrap();
+        // cpu.pins
+        //     .by_name("PHI2")
+        //     .unwrap()
+            // .set_handler(Rc::clone(&cpu) as Rc<dyn PinStateChange>)
+            // .unwrap();
 
-        cpu
     }
 }
 

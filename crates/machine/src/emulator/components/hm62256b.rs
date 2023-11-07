@@ -18,7 +18,7 @@ pub struct HM62256BPins {
 
 impl HM62256BPins {
     pub fn new() -> Self {
-        let pins = PinBuilder::new(28)
+        let pins: Vec<Rc<Pin>> = PinBuilder::new(28)
             .with_ids(&ADDR_PINS)
             .group("A", 0)
             .direction(Input)
@@ -32,14 +32,18 @@ impl HM62256BPins {
             .set(22, "OE", Input)
             .set(27, "WE", Input)
             .set(28, "VCC", Input)
-            .build();
+            .build()
+            .iter()
+            .map(|pin| Rc::new(pin.clone()))
+            .collect()
+        ;
 
         let data_pins: Vec<Rc<Pin>> = DATA_PINS.map(|id| Rc::clone(&pins[id - 1])).to_vec();
         let addr_pins: Vec<Rc<Pin>> = ADDR_PINS.map(|id| Rc::clone(&pins[id - 1])).to_vec();
 
         let mut pins_map: HashMap<String, Rc<Pin>> = HashMap::with_capacity(40);
         pins.iter().for_each(|pin| {
-            pins_map.insert(pin.name().unwrap(), Rc::clone(pin));
+            pins_map.insert(pin.name().to_string(), Rc::clone(pin));
         });
 
         HM62256BPins {
@@ -93,18 +97,17 @@ pub struct HM62256B<T: Addressable> {
 }
 
 impl<T: Addressable + 'static> HM62256B<T> {
-    pub fn new(logic: T) -> Rc<Self> {
-        let pins = HM62256BPins::new();
+    pub fn new(logic: T) -> Self {
+        let pins = Rc::new(HM62256BPins::new());
         let logic = RefCell::new(logic);
-        let res = Rc::new(HM62256B { pins, logic });
+        HM62256B { pins, logic }
 
-        let data_handler = Rc::clone(&res) as Rc<dyn PinStateChange>;
-        res.pins.data.set_handler(data_handler).unwrap();
+        // let data_handler: Rc<RefCell<dyn PinStateChange>> = Rc::clone(&res) ;
+        // res.pins.data.set_handler(data_handler).unwrap();
+        //
+        // let addr_handler = Rc::clone(&res) as Rc<RefCell<dyn PinStateChange>>;
+        // res.pins.addr.set_handler(addr_handler).unwrap();
 
-        let addr_handler = Rc::clone(&res) as Rc<dyn PinStateChange>;
-        res.pins.addr.set_handler(addr_handler).unwrap();
-
-        res
     }
 }
 
@@ -159,8 +162,8 @@ mod tests {
         logic.write_byte(0x200, 0xa0);
 
         let mem = HM62256B::new(logic);
-        let addr: Rc<Port<u16>> = Port::new(15, Output);
-        let data: Rc<Port<u8>> = Port::new(8, Input);
+        let addr: Port<u16> = Port::new(15, Output);
+        let data: Port<u8> = Port::new(8, Input);
 
         Port::link(&addr, &mem.pins.addr).unwrap();
         Port::link(&data, &mem.pins.data).unwrap();
