@@ -31,10 +31,16 @@ where
         + BitOrAssign<T>
         + 'static,
 {
-    pub fn new(name: &str, width: T, direction: PinDirection) -> Rc<Self> {
+    pub fn new(
+        name: &str,
+        width: T,
+        direction: PinDirection,
+        tri_state: bool,
+        io: bool,
+    ) -> Rc<Self> {
         let mut v: Vec<Rc<Pin>> = Vec::with_capacity(width.into());
         for _ in 0..width.into() {
-            v.push(Rc::new(Pin::new(name, direction, false, false)));
+            v.push(Rc::new(Pin::new(name, direction, tri_state, io)));
         }
         Port::from_pins(width, v)
     }
@@ -75,24 +81,28 @@ where
         for i in 0..self.width().into() {
             let flag: T = (<T as NumCast>::from(1 << i)).unwrap();
             let val = state & flag;
-            self.pins[i]
-                .write(val > T::zero())
-                .expect("Can't write to input pin");
+            if self.pins[i].is_output() {
+                self.pins[i]
+                    .write(val > T::zero())
+                    .expect("Can't write to input pin");
+            }
         }
     }
 
-    pub fn set_direction(&self, dir: PinDirection) {
+    pub fn set_direction(&self, dir: PinDirection) -> Result<(), EmulatorError> {
         for i in 0..self.width().into() {
-            self.pins[i].set_direction(dir);
+            self.pins[i].set_direction(dir)?;
         }
+        Ok(())
     }
 
-    pub fn set_directions(&self, dirs: T) {
+    pub fn set_directions(&self, dirs: T) -> Result<(), EmulatorError> {
         for i in 0..self.width().into() {
             let flag: T = (<T as NumCast>::from(1 << i)).unwrap();
             let val = dirs & flag;
-            self.pins[i].set_direction((val > T::zero()).into());
+            self.pins[i].set_direction((val > T::zero()).into())?;
         }
+        Ok(())
     }
 
     pub fn set_handler(
@@ -121,10 +131,11 @@ mod tests {
 
     #[test]
     fn test_u8_port_creation() {
-        let p: Rc<Port<u8>> = Port::new("A", 8, PinDirection::Output);
+        let p: Rc<Port<u8>> = Port::new("A", 8, PinDirection::Output, false, true);
         assert_eq!(0, p.read());
 
-        p.set_directions(0xff);
+        let res = p.set_directions(0xff);
+        assert!(res.is_ok());
         assert_eq!(0xff, p.directions());
 
         p.write(0xff);
@@ -133,10 +144,11 @@ mod tests {
 
     #[test]
     fn test_u16_port_creation() {
-        let p: Rc<Port<u16>> = Port::new("A", 16, PinDirection::Output);
+        let p: Rc<Port<u16>> = Port::new("A", 16, PinDirection::Output, false, true);
         assert_eq!(0, p.read());
 
-        p.set_directions(0xff);
+        let res = p.set_directions(0xff);
+        assert!(res.is_ok());
         assert_eq!(0xff, p.directions());
 
         p.write(0xff);

@@ -5,6 +5,7 @@ mod component;
 mod machine;
 mod pin;
 mod pin_builder;
+mod pins;
 mod port;
 mod tickable;
 
@@ -15,5 +16,6 @@ pub use component::*;
 pub use machine::*;
 pub use pin::*;
 pub use pin_builder::*;
+pub use pins::*;
 pub use port::*;
 pub use tickable::*;

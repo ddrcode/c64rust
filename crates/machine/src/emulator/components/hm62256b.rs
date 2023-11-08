@@ -1,7 +1,7 @@
 use crate::emulator::abstractions::{
     Addr, Addressable, Component, Pin, PinBuilder,
     PinDirection::{self, *},
-    PinStateChange, Port,
+    PinStateChange, Pins, Port,
 };
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -56,13 +56,9 @@ impl HM62256BPins {
     }
 }
 
-impl HM62256BPins {
-    pub fn by_id(&self, id: usize) -> Option<&Rc<Pin>> {
-        Some(&self.pins[id - 1])
-    }
-
-    pub fn by_name(&self, name: &str) -> Option<&Rc<Pin>> {
-        self.pins_map.get(name)
+impl Pins for HM62256BPins {
+    fn pins(&self) -> &[Rc<Pin>] {
+        &self.pins
     }
 }
 
@@ -104,7 +100,7 @@ impl<T: Addressable + 'static> HM62256B<T> {
 
 impl<T: Addressable> Component for HM62256B<T> {
     fn get_pin(&self, name: &str) -> Option<&Pin> {
-        self.pins.by_name(name).map(|pin| pin.as_ref())
+        self.pins.by_name(name)
     }
 }
 
@@ -133,7 +129,8 @@ impl<T: Addressable> PinStateChange for HM62256B<T> {
             "WE" => self
                 .pins
                 .data
-                .set_direction(PinDirection::from(!pin.state())),
+                .set_direction(PinDirection::from(!pin.state()))
+                .unwrap(),
             _ => {}
         }
     }

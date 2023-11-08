@@ -1,8 +1,7 @@
-use crate::emulator::abstractions::{Pin, PinBuilder, PinDirection::*, Port};
-use std::collections::HashMap;
+use crate::emulator::abstractions::{Pin, PinBuilder, PinDirection::*, Pins, Port};
 use std::rc::Rc;
 
-/// ```plain
+/// ```text
 ///                W65C02
 ///            --------------
 ///     VP <-- |  1      40 | <-- RES
@@ -85,15 +84,10 @@ impl W65C02_Pins {
             addr: Port::from_pins(16, addr),
         }
     }
+}
 
-    pub fn by_id(&self, id: usize) -> Option<&Pin> {
-        Some(&self.pins[id - 1])
-    }
-
-    pub fn by_name(&self, name: &str) -> Option<&Pin> {
-        self.pins
-            .iter()
-            .find(|&pin| pin.name() == name)
-            .map(|pin| pin.as_ref())
+impl Pins for W65C02_Pins {
+    fn pins(&self) -> &[Rc<Pin>] {
+        &self.pins
     }
 }

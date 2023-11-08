@@ -19,9 +19,9 @@ pub struct MOS6510Pins {
 impl MOS6510Pins {
     pub fn new() -> Self {
         MOS6510Pins {
-            address_bus: Port::new("A", 16, PinDirection::Output),
-            data_bus: Port::new("D", 8, PinDirection::Output),
-            processor_port: Port::new("P", 6, PinDirection::Output),
+            address_bus: Port::new("A", 16, PinDirection::Output, true, false),
+            data_bus: Port::new("D", 8, PinDirection::Output, true, true),
+            processor_port: Port::new("P", 6, PinDirection::Output, false, false),
             irq: Pin::input("IRQ"),
             nmi: Pin::input("NMI"),
             rdy: Pin::input("RDY"),

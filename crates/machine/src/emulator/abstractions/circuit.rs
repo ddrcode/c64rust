@@ -92,10 +92,10 @@ impl Power {
     fn new() -> Power {
         let p = Power {
             vcc: Pin::output("VCC"),
-            gnd: Pin::output("GND"),
+            gnd: Pin::input("GND"),
         };
-        p.vcc.set_high();
-        p.gnd.set_low();
+        p.vcc.set_high().unwrap();
+        p.gnd.set_val(false);
         p
     }
 }

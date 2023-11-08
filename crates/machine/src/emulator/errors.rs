@@ -30,4 +30,7 @@ pub enum EmulatorError {
 
     #[error("Can't write to read (input) pin {0}")]
     CantWriteToReadPin(String),
+
+    #[error("Can't change direction of non-io pin {0}")]
+    CantChangePinDirection(String),
 }

@@ -88,11 +88,11 @@ impl Pin {
     }
 
     pub fn set_id(&self, id: u8) {
-        let _ = self.id.set(id);
+        self.id.set(id).unwrap();
     }
 
     pub fn set_group_id(&self, id: u8) {
-        let _ = self.group_id.set(id);
+        self.group_id.set(id).unwrap();
     }
 
     pub(crate) fn set_handler(
@@ -152,6 +152,10 @@ impl Pin {
         self.direction() == PinDirection::Output
     }
 
+    pub fn is_io(&self) -> bool {
+        self.io
+    }
+
     pub fn set_high(&self) -> Result<bool, EmulatorError> {
         self.write(true)
     }
@@ -198,8 +202,13 @@ impl Pin {
         }
     }
 
-    pub fn set_direction(&self, dir: PinDirection) {
-        *self.direction.borrow_mut() = dir;
+    pub fn set_direction(&self, dir: PinDirection) -> Result<(), EmulatorError> {
+        if self.io {
+            *self.direction.borrow_mut() = dir;
+            Ok(())
+        } else {
+            Err(EmulatorError::CantChangePinDirection(self.name()))
+        }
     }
 
     pub fn id(&self) -> Option<u8> {
@@ -238,17 +247,28 @@ pub trait PinStateChange {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use PinDirection::*;
 
     #[test]
     fn test_direction_change() {
-        let pin = Pin::input("a");
-        assert_eq!(PinDirection::Input, pin.direction());
+        let pin = Pin::new("A", Input, false, true);
+        assert_eq!(Input, pin.direction());
         assert_eq!(0u8, pin.direction().into());
         assert_eq!(false, pin.direction().into());
 
-        pin.set_direction(PinDirection::Output);
-        assert_eq!(PinDirection::Output, pin.direction());
+        let res = pin.set_direction(Output);
+        assert!(res.is_ok());
+        assert_eq!(Output, pin.direction());
         assert_eq!(1u8, pin.direction().into());
         assert_eq!(true, pin.direction().into());
+    }
+
+    #[test]
+    fn test_direction_change_err() {
+        let pin = Pin::new("A", Input, false, false);
+        assert_eq!(Input, pin.direction());
+        let res = pin.set_direction(Output);
+        assert!(res.is_err());
+        assert_eq!(Input, pin.direction());
     }
 }
