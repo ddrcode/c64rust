@@ -9,34 +9,9 @@ use crate::emulator::cpus::mos6502::{get_stepper, nop, OperationDef, Stepper, OP
 use super::W65C02_Pins;
 // use genawaiter::{rc::gen, rc::Gen, yield_};
 
-pub struct DummyCPU;
-impl CPU for DummyCPU {
-    fn cycles(&self) -> CPUCycles {
-        0
-    }
-
-    fn advance_cycles(&mut self) {}
-
-    fn read_byte(&self, _addr: Addr) -> u8 {
-        0
-    }
-
-    fn write_byte(&mut self, _addr: Addr, _val: u8) {}
-
-    fn execute(&mut self, _val: u8) -> u8 {
-        0
-    }
-
-    fn pc(&self) -> Addr {
-        0
-    }
-
-    fn inc_pc(&mut self) {}
-}
-
 pub struct W65C02 {
     pub pins: Rc<W65C02_Pins>,
-    logic: Rc<RefCell<W65C02Logic>>,
+    logic: W65C02Logic,
 }
 
 impl W65C02 {
@@ -63,7 +38,7 @@ impl PinStateChange for W65C02 {
     fn on_state_change(&mut self, pin: &Pin) {
         match &*pin.name() {
             "PHI2" => {
-                self.logic.borrow_mut().tick();
+                self.logic.tick();
             }
             _ => {}
         };
@@ -84,41 +59,83 @@ pub struct Registers {
     pub s: u8,
 }
 
-pub struct CpuState {}
+pub struct CpuState {
+    pub reg: Registers,
+    pub pins: Rc<W65C02_Pins>,
+}
+
+impl CpuState {
+    pub fn read_byte(&self, addr: Addr) -> u8 {
+        self.pins.by_name("RW").unwrap().set_high().unwrap();
+        self.pins.addr.write(addr);
+        self.pins.data.read()
+    }
+
+    pub fn write_byte(&mut self, addr: Addr, val: u8) {
+        self.pins.by_name("RW").unwrap().set_low().unwrap();
+        self.pins.addr.write(addr);
+        self.pins.data.write(val);
+    }
+
+    pub fn inc_pc(&mut self) {
+        self.reg.pc = self.reg.pc.wrapping_add(1);
+    }
+
+    pub fn execute(&mut self, _val: u8) -> u8 {
+        0
+    }
+
+    pub fn set_ir_from_pc(&mut self) -> u8 {
+        self.reg.ir = self.read_byte(self.reg.pc);
+        self.reg.ir
+    }
+
+    pub fn pc(&self) -> u16 {
+        self.reg.pc
+    }
+
+    pub fn set_a(&mut self, val: u8) {
+        self.reg.a = val;
+    }
+
+    pub fn set_x(&mut self, val: u8) {
+        self.reg.x = val;
+    }
+
+    pub fn set_y(&mut self, val: u8) {
+        self.reg.y = val;
+    }
+}
 
 pub struct W65C02Logic {
-    reg: Registers,
-    pins: Rc<W65C02_Pins>,
     stepper: Option<Stepper>,
     cycles: CPUCycles,
-    self_ref: Rc<RefCell<dyn CPU>>,
+    state: Rc<RefCell<CpuState>>,
 }
 
 impl W65C02Logic {
-    pub fn new(pins: Rc<W65C02_Pins>) -> Rc<RefCell<Self>> {
+    pub fn new(pins: Rc<W65C02_Pins>) -> Self {
         let logic = W65C02Logic {
-            reg: Registers::default(),
-            pins,
+            state: Rc::new(RefCell::new(CpuState {
+                reg: Registers::default(),
+                pins,
+            })),
             stepper: None,
             cycles: 0,
-            self_ref: Rc::new(RefCell::new(DummyCPU)),
         };
 
-        let rc = Rc::new(RefCell::new(logic));
-        let clone = Rc::clone(&rc);
-        (*rc.borrow_mut()).self_ref = clone;
-
-        rc
+        logic
     }
 
     pub fn tick(&mut self) {
         if self.stepper.is_none() {
-            self.reg.ir = self.read_byte(self.pc());
-            let op = self.decode_op(&self.reg.ir);
+            let ir = self.state.borrow_mut().set_ir_from_pc();
+            let op = self.decode_op(&ir);
             self.stepper = get_stepper(&op);
         } else {
-            let cpu = Rc::clone(&self.self_ref);
-            match self.stepper.as_mut().unwrap().resume(cpu) {
+            // let cpu = Rc::clone(&self.self_ref);
+            let v = self.stepper.as_mut().unwrap().resume(Rc::clone(&self.state));
+            match v {
                 CoroutineResult::Yield(()) => {}
                 CoroutineResult::Return(_) => {
                     self.stepper = None;
@@ -150,27 +167,23 @@ impl CPU for W65C02Logic {
     }
 
     fn read_byte(&self, addr: Addr) -> u8 {
-        self.pins.by_name("RWB").unwrap().set_high().unwrap();
-        self.pins.addr.write(addr);
-        self.pins.data.read()
+        self.state.borrow().read_byte(addr)
     }
 
     fn write_byte(&mut self, addr: Addr, val: u8) {
-        self.pins.by_name("RWB").unwrap().set_low().unwrap();
-        self.pins.addr.write(addr);
-        self.pins.data.write(val);
+        self.state.borrow_mut().write_byte(addr, val);
     }
 
-    fn execute(&mut self, val: u8) -> u8 {
+    fn execute(&mut self, _val: u8) -> u8 {
         todo!()
     }
 
     fn pc(&self) -> Addr {
-        self.reg.pc
+        self.state.borrow().reg.pc
     }
 
     fn inc_pc(&mut self) {
-        self.reg.pc = self.reg.pc.wrapping_add(1);
+        self.state.borrow_mut().inc_pc();
     }
 }
 
@@ -190,16 +203,16 @@ mod tests {
 
     #[test]
     fn test_steps() {
-        let cpu = W65C02::new();
-        (*cpu.logic.borrow_mut()).stepper = Some(create_stepper());
+        let mut cpu = W65C02::new();
+        cpu.logic.stepper = Some(create_stepper());
 
-        assert_eq!(0, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(1, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(2, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(3, cpu.logic.borrow().cycles());
+        assert_eq!(0, cpu.logic.cycles());
+        cpu.logic.tick();
+        assert_eq!(1, cpu.logic.cycles());
+        cpu.logic.tick();
+        assert_eq!(2, cpu.logic.cycles());
+        cpu.logic.tick();
+        assert_eq!(3, cpu.logic.cycles());
     }
 
     // #[test]
@@ -220,16 +233,16 @@ mod tests {
 
     #[test]
     fn test_with_real_stepper() {
-        let cpu = W65C02::new();
+        let mut cpu = W65C02::new();
         let opdef = OPERATIONS.get(&0xad).unwrap(); // LDA, absolute
-        (*cpu.logic.borrow_mut()).stepper = get_stepper(opdef);
+        cpu.logic.stepper = get_stepper(opdef);
 
-        assert_eq!(0, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(1, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(2, cpu.logic.borrow().cycles());
-        cpu.logic.borrow_mut().tick();
-        assert_eq!(3, cpu.logic.borrow().cycles());
+        assert_eq!(0, cpu.logic.cycles());
+        cpu.logic.tick();
+        assert_eq!(1, cpu.logic.cycles());
+        cpu.logic.tick();
+        assert_eq!(2, cpu.logic.cycles());
+        cpu.logic.tick();
+        assert_eq!(3, cpu.logic.cycles());
     }
 }

@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::emulator::cpus::CpuState;
 use crate::emulator::cpus::mos6502::AddressMode::*;
 use corosensei::{Coroutine, CoroutineResult};
 use genawaiter::{rc::Gen, Generator};
@@ -8,9 +9,11 @@ use genawaiter::{rc::Gen, Generator};
 use crate::emulator::abstractions::{Addr, CPU};
 use crate::emulator::cpus::mos6502::{OperationDef, OPERATIONS};
 
+use super::execute_operation;
+
 pub type OpGen<'a> = Box<dyn Generator<Yield = (), Return = ()> + 'a>;
-pub type Stepper = Coroutine<Rc<RefCell<dyn CPU>>, (), bool>;
-pub type Input = Rc<RefCell<dyn CPU>>;
+pub type Input = Rc<RefCell<CpuState>>;
+pub type Stepper = Coroutine<Input, (), bool>;
 
 pub fn get_stepper(op: &OperationDef) -> Option<Stepper> {
     use crate::emulator::cpus::mos6502::mnemonic::Mnemonic::*;
@@ -43,7 +46,8 @@ fn read_stepper(op: OperationDef) -> Stepper {
         };
 
         let (val, _) = read_from_addr(&cpu, lo, hi);
-        cpu.borrow_mut().execute(val);
+        // cpu.borrow_mut().execute(val);
+        execute_operation(&mut cpu.borrow_mut(), &op, val);
         yielder.suspend(());
 
         false
