@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::emulator::cpus::CpuState;
 use crate::emulator::cpus::mos6502::AddressMode::*;
+use crate::emulator::cpus::CpuState;
 use corosensei::{Coroutine, CoroutineResult};
 use genawaiter::{rc::Gen, Generator};
 

@@ -1,4 +1,6 @@
-use super::Addr;
+use std::{cell::RefCell, rc::Rc};
+
+use super::{Addr, RAM};
 
 pub type CPUCycles = u64;
 
@@ -20,7 +22,7 @@ pub trait Machine {
     fn stop(&mut self);
     fn reset(&mut self);
     fn step(&mut self);
-    fn load_to_ram(&mut self, addr: Addr, data: &[u8]);
+    fn with_ram(&self, cb: impl FnOnce(Rc<RefCell<dyn RAM>>));
 }
 
 //

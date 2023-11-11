@@ -30,11 +30,9 @@ pub fn bcd_to_dec(val: u8) -> u8 {
     ((val & 0xf0) >> 4) * 10 + (val & 0x0f)
 }
 
-
 pub fn bool_to_bit(val: &bool, bit: u8) -> u8 {
     if bit > 7 {
         panic!("illegal shift: shifting value by {} bits", bit);
     }
     (*val as u8) << bit
 }
-

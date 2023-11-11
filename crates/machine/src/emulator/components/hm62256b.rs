@@ -94,8 +94,8 @@ impl HM62256BLogic {
 
     pub fn load(&mut self, addr: Addr, data: &[u8]) {
         let a = addr as usize;
-        for i in a..a+data.len() {
-            self.data[i] = data[i-a];
+        for i in a..a + data.len() {
+            self.data[i] = data[i - a];
         }
     }
 }

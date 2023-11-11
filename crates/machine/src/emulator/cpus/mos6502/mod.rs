@@ -10,14 +10,8 @@ mod steppers;
 use std::collections::HashMap;
 
 pub use {
-    address_mode::*,
-    mnemonic::*,
-    opcodes_def::*,
-    opcodes_impl::*,
-    operand::*,
-    operation::*,
-    operation_def::*,
-    steppers::*,
+    address_mode::*, mnemonic::*, opcodes_def::*, opcodes_impl::*, operand::*, operation::*,
+    operation_def::*, steppers::*,
 };
 
 pub type OpsMap = HashMap<u8, OperationDef>;

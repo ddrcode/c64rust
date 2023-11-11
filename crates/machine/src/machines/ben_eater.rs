@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::emulator::{
-    abstractions::{Addressable, Circuit, CircuitBuilder, Machine, Addr},
+    abstractions::{Addr, Addressable, Circuit, CircuitBuilder, Machine},
     components::{HM62256BLogic, Oscilator, HM62256B},
     cpus::W65C02,
     EmulatorError,
@@ -69,8 +69,11 @@ impl Machine for BenEaterMachine {
         });
     }
 
-    fn load_to_ram(&mut self, addr: Addr, data: &[u8]) {
-        // self.circuit.component("U6").borrow().load(addr, data);
+    fn with_ram(
+        &self,
+        cb: impl FnOnce(Rc<std::cell::RefCell<dyn crate::emulator::abstractions::RAM>>),
+    ) {
+        todo!()
     }
 }
 
