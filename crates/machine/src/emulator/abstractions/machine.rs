@@ -20,6 +20,7 @@ pub trait Machine {
     fn stop(&mut self);
     fn reset(&mut self);
     fn step(&mut self);
+    fn load_to_ram(&mut self, addr: Addr, data: &[u8]);
 }
 
 //

@@ -1,7 +1,7 @@
 use crate::emulator::abstractions::{
     Addr, Addressable, Component, Pin, PinBuilder,
     PinDirection::{self, *},
-    PinStateChange, Pins, Port,
+    PinStateChange, Pins, Port, RAM,
 };
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -9,6 +9,27 @@ use std::rc::Rc;
 const ADDR_PINS: [usize; 15] = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 25, 24, 21, 23, 26];
 const DATA_PINS: [usize; 8] = [11, 12, 13, 15, 16, 17, 18, 19];
 
+/// ```text
+///               HM62256B
+///            ----------------
+///    A14 --> |  1 *      28 | <-- VCC
+///    A12 --> |  2 *      27 | <-- WE!
+///     A7 --> |  3 *    * 26 | <-- A13
+///     A6 --> |  4 *    * 25 | <-- A8
+///     A5 --> |  5 *    * 24 | <-- A9
+///     A4 --> |  6 *    * 23 | <-- A11
+///     A3 --> |  7 *      22 | --- OE!
+///     A2 --> |  8 *    * 21 | <-- A10
+///     A1 --> |  9 *      20 | <-- CS!
+///     A0 --> | 10 *    * 19 | <-> IO7
+///    IO0 <-> | 11 *    * 18 | <-> IO6
+///    IO1 <-> | 12 *    * 17 | <-> IO5
+///    IO2 <-> | 13 *    * 16 | <-> IO4
+///    GND <-- | 14      * 15 | <-> IO3
+///            ----------------
+///
+///    * - tri-state, @ - async, ! - active on low
+/// ```
 pub struct HM62256BPins {
     pins: [Rc<Pin>; 28],
     pins_map: HashMap<String, Rc<Pin>>,
@@ -70,6 +91,13 @@ impl HM62256BLogic {
     pub fn new() -> Self {
         HM62256BLogic { data: [0; 1 << 15] }
     }
+
+    pub fn load(&mut self, addr: Addr, data: &[u8]) {
+        let a = addr as usize;
+        for i in a..a+data.len() {
+            self.data[i] = data[i-a];
+        }
+    }
 }
 
 impl Addressable for HM62256BLogic {
@@ -86,25 +114,27 @@ impl Addressable for HM62256BLogic {
     }
 }
 
+impl RAM for HM62256BLogic {}
+
 pub struct HM62256B<T: Addressable> {
     pub pins: Rc<HM62256BPins>,
     pub logic: T,
 }
 
-impl<T: Addressable + 'static> HM62256B<T> {
+impl<T: RAM + 'static> HM62256B<T> {
     pub fn new(logic: T) -> Self {
         let pins = Rc::new(HM62256BPins::new());
         HM62256B { pins, logic }
     }
 }
 
-impl<T: Addressable> Component for HM62256B<T> {
+impl<T: RAM> Component for HM62256B<T> {
     fn get_pin(&self, name: &str) -> Option<&Pin> {
         self.pins.by_name(name)
     }
 }
 
-impl<T: Addressable> PinStateChange for HM62256B<T> {
+impl<T: RAM> PinStateChange for HM62256B<T> {
     fn on_state_change(&mut self, pin: &Pin) {
         let addr = self.pins.addr.read();
         match &*pin.name() {

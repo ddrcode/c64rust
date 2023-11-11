@@ -1,10 +1,9 @@
 use corosensei::CoroutineResult;
 use std::{cell::RefCell, rc::Rc};
 
-use crate::emulator::abstractions::{
-    Addr, Addressable, CPUCycles, Component, Pin, PinStateChange, Pins, CPU,
-};
+use crate::emulator::abstractions::{Addr, CPUCycles, Component, Pin, PinStateChange, Pins, CPU};
 use crate::emulator::cpus::mos6502::{get_stepper, nop, OperationDef, Stepper, OPERATIONS};
+use crate::utils::bool_to_bit;
 
 use super::W65C02_Pins;
 // use genawaiter::{rc::gen, rc::Gen, yield_};
@@ -105,6 +104,14 @@ impl CpuState {
     pub fn set_y(&mut self, val: u8) {
         self.reg.y = val;
     }
+
+    pub fn set_flag_n(&mut self, val: bool) {
+        self.reg.s = self.reg.s & 0b0111_1111 | bool_to_bit(&val, 7);
+    }
+
+    pub fn set_flag_z(&mut self, val: bool) {
+        self.reg.s = self.reg.s & 0b1111_1110 | (val as u8);
+    }
 }
 
 pub struct W65C02Logic {
@@ -134,7 +141,11 @@ impl W65C02Logic {
             self.stepper = get_stepper(&op);
         } else {
             // let cpu = Rc::clone(&self.self_ref);
-            let v = self.stepper.as_mut().unwrap().resume(Rc::clone(&self.state));
+            let v = self
+                .stepper
+                .as_mut()
+                .unwrap()
+                .resume(Rc::clone(&self.state));
             match v {
                 CoroutineResult::Yield(()) => {}
                 CoroutineResult::Return(_) => {

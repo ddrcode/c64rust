@@ -81,8 +81,8 @@ pub fn execute_operation(cpu: &mut CpuState, op: &OperationDef, val: u8) -> u8 {
 // }
 //
 fn set_nz_flags(val: u8, cpu: &mut CpuState) {
-    cpu.reg.status.negative = neg(val);
-    cpu.reg.status.zero = zero(val);
+    cpu.set_flag_n(neg(val));
+    cpu.set_flag_z(zero(val));
 }
 
 fn neg(val: u8) -> bool {
