@@ -1,7 +1,7 @@
 use corosensei::CoroutineResult;
 use std::{cell::RefCell, rc::Rc};
 
-use crate::emulator::abstractions::{Addr, CPUCycles, Component, Pin, PinStateChange, Pins, CPU};
+use crate::emulator::abstractions::{Addr, CPUCycles, Component, Pin, PinStateChange, Pins, CPU, AsAny};
 use crate::emulator::cpus::mos6502::{get_stepper, nop, OperationDef, Stepper, OPERATIONS};
 use crate::utils::bool_to_bit;
 
@@ -195,6 +195,12 @@ impl CPU for W65C02Logic {
 
     fn inc_pc(&mut self) {
         self.state.borrow_mut().inc_pc();
+    }
+}
+
+impl AsAny for W65C02 {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

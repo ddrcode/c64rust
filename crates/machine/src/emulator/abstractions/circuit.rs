@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, ops::Range, rc::Rc};
 
 use crate::{emulator::EmulatorError, utils::if_else};
 
-use super::{Component, Pin, PinStateChange};
+use super::{Component, Pin, PinStateChange, AsAny};
 
 pub struct Circuit {
     pins: HashMap<u32, (String, String)>,
@@ -108,6 +108,12 @@ impl Component for Power {
 
 impl PinStateChange for Power {
     fn on_state_change(&mut self, _pin: &Pin) {}
+}
+
+impl AsAny for Power {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 // --------------------------------------------------------------------

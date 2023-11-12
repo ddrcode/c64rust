@@ -1,5 +1,5 @@
 use crate::{
-    emulator::abstractions::{Component, Pin, PinStateChange, Tickable},
+    emulator::abstractions::{Component, Pin, PinStateChange, Tickable, AsAny},
     utils::if_else,
 };
 use gametime::{Frequency, FrequencyTicker, TimeStamp};
@@ -33,5 +33,11 @@ impl Component for Oscilator {
 impl PinStateChange for Oscilator {
     fn on_state_change(&mut self, _pin: &Pin) {
         // no input pins
+    }
+}
+
+impl AsAny for Oscilator {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

@@ -22,7 +22,6 @@ pub trait Machine {
     fn stop(&mut self);
     fn reset(&mut self);
     fn step(&mut self);
-    fn with_ram(&self, cb: impl FnOnce(Rc<RefCell<dyn RAM>>));
 }
 
 //

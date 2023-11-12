@@ -40,6 +40,15 @@ impl BenEaterMachine {
 
         Ok(BenEaterMachine { circuit })
     }
+
+    pub fn with_ram(&self, cb: impl FnOnce(&HM62256B<HM62256BLogic>)) {
+        let borrowed = self.circuit.component("U6").borrow();
+        let ram = borrowed
+            .as_any()
+            .downcast_ref::<HM62256B<HM62256BLogic>>()
+            .unwrap();
+        cb(ram);
+    }
 }
 
 impl Machine for BenEaterMachine {
@@ -67,13 +76,6 @@ impl Machine for BenEaterMachine {
         self.circuit.with_pin("X1", "OUT", |pin| {
             let _ = pin.toggle();
         });
-    }
-
-    fn with_ram(
-        &self,
-        cb: impl FnOnce(Rc<std::cell::RefCell<dyn crate::emulator::abstractions::RAM>>),
-    ) {
-        todo!()
     }
 }
 

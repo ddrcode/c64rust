@@ -1,7 +1,7 @@
 use crate::emulator::abstractions::{
     Addr, Addressable, Component, Pin, PinBuilder,
     PinDirection::{self, *},
-    PinStateChange, Pins, Port, RAM,
+    PinStateChange, Pins, Port, RAM, AsAny,
 };
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -121,14 +121,14 @@ pub struct HM62256B<T: Addressable> {
     pub logic: T,
 }
 
-impl<T: RAM + 'static> HM62256B<T> {
+impl<T: RAM > HM62256B<T> {
     pub fn new(logic: T) -> Self {
         let pins = Rc::new(HM62256BPins::new());
         HM62256B { pins, logic }
     }
 }
 
-impl<T: RAM> Component for HM62256B<T> {
+impl<T: RAM+'static> Component for HM62256B<T> {
     fn get_pin(&self, name: &str) -> Option<&Pin> {
         self.pins.by_name(name)
     }
@@ -163,6 +163,12 @@ impl<T: RAM> PinStateChange for HM62256B<T> {
                 .unwrap(),
             _ => {}
         }
+    }
+}
+
+impl<T: RAM + 'static> AsAny for HM62256B<T> {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
