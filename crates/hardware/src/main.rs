@@ -1,12 +1,15 @@
 use rppal::gpio::{Gpio, InputPin, IoPin, Mode, Pin};
 use std::{error::Error, time::Duration};
+use std::io::Read;
+use std::{fs::File, path::PathBuf};
+use anyhow::Result;
 
 const ADDR_PINS: [u8; 16] = [4, 17, 27, 22, 10, 9, 11, 5, 6, 13, 19, 26, 21, 20, 16, 12];
 const DATA_PINS: [u8; 8] = [14, 15, 18, 23, 24, 25, 8, 7];
 const CLOCK_PIN: u8 = 3;
 const RW_PIN: u8 = 2;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let addr_pins = ADDR_PINS.map(|id| Gpio::new().unwrap().get(id).unwrap().into_input());
 
     let mut data_pins =
@@ -16,9 +19,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut clock_pin = Gpio::new()?.get(CLOCK_PIN)?.into_output();
 
-    for _ in 0..10 {
+    let program = get_file_as_byte_vec(&PathBuf::from(r"./tests/target/add-sub-16bit.p"))?;
+
+    let mut ram = [0u8; 65536];
+    ram[0xfffc] = 0x00;
+    ram[0xfffd] = 0x02;
+    let mut i = 0;
+    for cell in program {
+        ram[0x200 + i] = cell;
+        i += 1;
+    }
+
+    for cycle in 0..1000 {
         clock_pin.toggle();
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(300));
         if rw_pin.is_high() {
             set_mode(&mut data_pins, Mode::Output);
         } else {
@@ -27,15 +41,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let addr = read_word(&addr_pins);
         if data_pins[0].mode() == Mode::Output {
-            match addr {
-                0x0200..=0xfff0 => write_byte(&mut data_pins, 0xea),
-                0xfffc => write_byte(&mut data_pins, 0),
-                0xfffd => write_byte(&mut data_pins, 2),
-                _ => (),
-            }
-            println!("Writing to {:04x}", addr);
+            write_byte(&mut data_pins, ram[addr as usize]);
+            println!("Writing from [{:05}] {:04x}: {:02x}", cycle, addr, read_byte(&data_pins));
         } else {
-            println!("Reading from {:04x}: {:02x}", addr, read_byte(&data_pins));
+            ram[addr as usize] = read_byte(&data_pins);
+            println!("Reading from [{:05}] {:04x}: {:02x}", cycle, addr, read_byte(&data_pins));
         }
     }
 
@@ -73,3 +83,11 @@ fn set_mode(pins: &mut [IoPin], mode: Mode) {
         pin.set_mode(mode);
     });
 }
+
+pub fn get_file_as_byte_vec(filename: &PathBuf) -> Result<Vec<u8>> {
+    let mut f = File::open(filename)?;
+    let mut buffer = Vec::new();
+    f.read_to_end(&mut buffer)?;
+    Ok(buffer)
+}
+
