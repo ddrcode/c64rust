@@ -20,6 +20,8 @@ keyboard-types = { version="0.7", features=["webdriver"] }
 lazy_static = "1.4.0"
 anyhow = "1.0.75"
 crossbeam-channel = "0.5.8"
+embedded-graphics-simulator = "0.6.0"
+embedded-graphics = "0.8.1"
 
 [[bin]]
 name = "gui"
